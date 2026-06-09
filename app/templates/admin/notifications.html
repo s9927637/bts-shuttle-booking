@@ -34,7 +34,7 @@
       <tbody class="divide-y divide-gray-50">
         {% for n in notifications %}
         <tr class="hover:bg-gray-50 transition-colors">
-          <td class="px-6 py-4 text-xs text-gray-400 whitespace-nowrap">{{ n.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+          <td class="px-6 py-4 text-xs text-gray-400 whitespace-nowrap">{{ n.created_at.strftime('%Y/%m/%d %H:%M') if n.created_at else '—' }}</td>
           <td class="px-6 py-4">
             {% if n.receiver_type == 'driver' %}
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">司機</span>

@@ -30,7 +30,7 @@
       </div>
       <h1 class="text-xl font-bold text-gray-900 leading-snug">{{ announcement.title }}</h1>
       <p class="mt-2 text-xs text-gray-400">
-        發布於 {{ announcement.created_at.strftime('%Y 年 %m 月 %d 日 %H:%M') }}
+        發布於 {{ announcement.created_at.strftime('%Y 年 %m 月 %d 日 %H:%M') if announcement.created_at else '—' }}
         {% if announcement.updated_at %}
           · 更新於 {{ announcement.updated_at.strftime('%Y 年 %m 月 %d 日 %H:%M') }}
         {% endif %}

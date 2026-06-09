@@ -42,7 +42,7 @@
 </div>
 
 <!-- Stats Cards Row 2 -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
 
   <div class="bg-white border border-gray-100 rounded-2xl p-5">
     <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">訂金已確認</p>
@@ -68,6 +68,23 @@
     <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">待收尾款</p>
     <p class="text-2xl font-semibold text-white tracking-tight">{{ "{:,}".format(stats.total_balance_pending) }}</p>
     <p class="mt-1 text-xs text-gray-500">NT$1,700 × 訂金已確認</p>
+  </div>
+
+</div>
+
+<!-- Stats Cards Row 3：通知 -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">通知成功</p>
+    <p class="text-3xl font-semibold text-green-600 tracking-tight">{{ stats.notify_success }}</p>
+    <p class="mt-1 text-xs text-gray-400">LINE 訊息發送成功</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">通知失敗</p>
+    <p class="text-3xl font-semibold {% if stats.notify_failed > 0 %}text-red-500{% else %}text-gray-900{% endif %} tracking-tight">{{ stats.notify_failed }}</p>
+    <p class="mt-1 text-xs text-gray-400">LINE 訊息發送失敗</p>
   </div>
 
 </div>

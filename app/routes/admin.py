@@ -7,6 +7,7 @@ from app.models.vehicle import Vehicle
 from app.models.payment import Payment
 from app.models.driver import Driver
 from app.models.admin import Admin
+from app.models.notification import Notification
 from sqlalchemy import func
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -62,6 +63,9 @@ def dashboard():
         Order.payment_status == "訂金已確認"
     ).scalar() or 0
 
+    notify_success = db.session.query(func.count(Notification.id)).filter(Notification.status == "success").scalar() or 0
+    notify_failed  = db.session.query(func.count(Notification.id)).filter(Notification.status == "failed").scalar() or 0
+
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
 
     return render_template(
@@ -78,6 +82,8 @@ def dashboard():
             "total_revenue":            total_revenue,
             "total_deposit_collected":  total_deposit_collected,
             "total_balance_pending":    total_balance_pending,
+            "notify_success":           notify_success,
+            "notify_failed":            notify_failed,
         },
         recent_orders=recent_orders,
     )

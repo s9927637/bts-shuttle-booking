@@ -97,6 +97,30 @@
         </div>
         <p class="text-base font-bold text-gray-900 font-mono">{{ item.dispatch.vehicle.plate_number }}</p>
         <p class="text-xs text-gray-500 mt-0.5">{{ item.dispatch.vehicle.driver_name }} · {{ item.dispatch.vehicle.driver_phone }}</p>
+
+        <!-- 通知按鈕 -->
+        <div class="flex gap-2 mt-3">
+          <form action="{{ url_for('dispatch.notify_driver', dispatch_id=item.dispatch.id) }}" method="post" class="flex-1">
+            <input type="hidden" name="date" value="{{ active_date }}" />
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              通知司機
+            </button>
+          </form>
+          <form action="{{ url_for('dispatch.notify_passengers', dispatch_id=item.dispatch.id) }}" method="post" class="flex-1">
+            <input type="hidden" name="date" value="{{ active_date }}" />
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              通知乘客
+            </button>
+          </form>
+        </div>
       </div>
 
       <!-- 容量條 -->

@@ -4,10 +4,12 @@ from app.models.order import Order
 from app.models.vehicle import Vehicle
 from app.models.driver import Driver
 from app.models.dispatch import Dispatch, DispatchOrder
+from app.models.notification import Notification
 from app.services.dispatch_service import (
     auto_dispatch, create_dispatch, assign_order,
     calculate_capacity, remove_order_from_dispatch, move_order_to_dispatch,
 )
+from app.services.line_service import notify_dispatch_driver, notify_dispatch_passengers
 
 dispatch_bp = Blueprint("dispatch", __name__, url_prefix="/admin/dispatch")
 
@@ -30,10 +32,10 @@ def index():
 
     active_date = request.args.get("date", DEPARTURE_OPTIONS[0])
 
-    # 待排車訂單：已付款 + 未排車
+    # 待排車訂單：訂金已確認 + 未排車
     unassigned = (
         Order.query
-        .filter_by(departure_date=active_date, payment_status="已付款")
+        .filter_by(departure_date=active_date, payment_status="訂金已確認")
         .filter(Order.dispatch_id.is_(None))
         .order_by(Order.created_at.asc())
         .all()
@@ -137,8 +139,8 @@ def assign():
     dispatch = Dispatch.query.get_or_404(dispatch_id)
     order    = Order.query.get_or_404(order_id)
 
-    if order.payment_status != "已付款":
-        flash("只有已付款訂單才可排車。", "error")
+    if order.payment_status != "訂金已確認":
+        flash("只有訂金已確認的訂單才可排車。", "error")
         return redirect(url_for("dispatch.index", date=date))
 
     if not assign_order(dispatch, order):
@@ -217,4 +219,46 @@ def delete(dispatch_id):
     db.session.commit()
 
     flash(f"Dispatch #{dispatch_id} 已刪除，訂單已移回待排車。", "success")
+    return redirect(url_for("dispatch.index", date=date))
+
+
+# ── 通知司機 ────────────────────────────────────────────────────────────────
+
+@dispatch_bp.route("/<int:dispatch_id>/notify-driver", methods=["POST"])
+def notify_driver(dispatch_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    date     = request.form.get("date", DEPARTURE_OPTIONS[0])
+    dispatch = Dispatch.query.get_or_404(dispatch_id)
+    result   = notify_dispatch_driver(dispatch)
+
+    status_map = {"success": "成功", "failed": "失敗", "skipped": "略過（未綁定 LINE）"}
+    flash(
+        f"司機通知 [{result['name']}]：{status_map.get(result['status'], result['status'])}",
+        "success" if result["status"] == "success" else "error",
+    )
+    return redirect(url_for("dispatch.index", date=date))
+
+
+# ── 通知乘客 ────────────────────────────────────────────────────────────────
+
+@dispatch_bp.route("/<int:dispatch_id>/notify-passengers", methods=["POST"])
+def notify_passengers(dispatch_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    date     = request.form.get("date", DEPARTURE_OPTIONS[0])
+    dispatch = Dispatch.query.get_or_404(dispatch_id)
+    results  = notify_dispatch_passengers(dispatch)
+
+    success = sum(1 for r in results if r["status"] == "success")
+    failed  = sum(1 for r in results if r["status"] == "failed")
+    skipped = sum(1 for r in results if r["status"] == "skipped")
+    flash(
+        f"乘客通知完成：成功 {success}、失敗 {failed}、略過 {skipped}（共 {len(results)} 人）",
+        "success" if failed == 0 else "error",
+    )
     return redirect(url_for("dispatch.index", date=date))

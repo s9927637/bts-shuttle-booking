@@ -91,14 +91,25 @@ def booking_submit():
         deposit_amount  = passenger_count * DEPOSIT_PER_PERSON
         balance_amount  = passenger_count * BALANCE_PER_PERSON
 
-        # 加入現有群組或建立新群組
-        join_group_id = request.form.get("join_group_id", "").strip() or None
-        if join_group_id:
-            # 驗證群組存在且日期相符
-            ref = Order.query.filter_by(group_id=join_group_id).first()
-            if not ref or ref.departure_date != form_data["departure_date"]:
-                join_group_id = None
-        group_id = join_group_id or _gen_group_id()
+        # 同行群組邏輯
+        with_friends = request.form.get("with_friends", "no")
+        friend_code  = request.form.get("friend_code", "").strip() or None
+        show_group   = None   # None / "created" / "joined"
+
+        if with_friends == "yes":
+            if friend_code:
+                ref = Order.query.filter_by(group_id=friend_code).first()
+                if not ref:
+                    raise ValueError("找不到同行群組，請確認同行代碼是否正確。")
+                if ref.departure_date != form_data["departure_date"]:
+                    raise ValueError("同行代碼對應的出發日期與您選擇的不符。")
+                group_id   = friend_code
+                show_group = "joined"
+            else:
+                group_id   = _gen_group_id()
+                show_group = "created"
+        else:
+            group_id = _gen_group_id()
 
         order = Order(
             order_no        = "TEMP",
@@ -122,8 +133,22 @@ def booking_submit():
         db.session.commit()
 
         flash(f"預約成功！您的訂單編號為 {order.order_no}，請完成訂金匯款後回報。", "success")
-        return redirect(url_for("passenger.payment_report", order_no=order.order_no, group_id=order.group_id))
+        redirect_kwargs = dict(order_no=order.order_no)
+        if show_group:
+            redirect_kwargs["group_id"]   = order.group_id
+            redirect_kwargs["show_group"] = show_group
+        return redirect(url_for("passenger.payment_report", **redirect_kwargs))
 
+    except ValueError as e:
+        db.session.rollback()
+        flash(str(e), "error")
+        return render_template("passenger/booking.html",
+                               price_per_person=PRICE_PER_PERSON,
+                               deposit_per_person=DEPOSIT_PER_PERSON,
+                               balance_per_person=BALANCE_PER_PERSON,
+                               departure_options=DEPARTURE_OPTIONS,
+                               passenger_liff_id=PASSENGER_LIFF_ID,
+                               form=form_data)
     except Exception as e:
         db.session.rollback()
         flash(f"預約失敗，請重試。（{e}）", "error")
@@ -182,6 +207,14 @@ def order_search():
         if order.vehicle_id:
             vehicle = Vehicle.query.get(order.vehicle_id)
 
+    # 群組成員資訊（單筆訂單模式）
+    group_member_count = 0
+    group_total_pax   = 0
+    if order and order.group_id:
+        g_orders = Order.query.filter_by(group_id=order.group_id).all()
+        group_member_count = len(g_orders)
+        group_total_pax   = sum(o.passenger_count for o in g_orders)
+
     return render_template(
         "passenger/order_search.html",
         q=q,
@@ -191,6 +224,8 @@ def order_search():
         orders=orders,
         vehicle=vehicle,
         searched=searched,
+        group_member_count=group_member_count,
+        group_total_pax=group_total_pax,
         passenger_liff_id=PASSENGER_LIFF_ID,
     )
 
@@ -202,12 +237,12 @@ def payment_report():
     prefill_order_no = request.args.get("order_no", "")
     line_user_id     = request.args.get("line_user_id", "")
     group_id         = request.args.get("group_id", "")
+    show_group       = request.args.get("show_group", "")   # "created" / "joined" / ""
     line_orders = []
     if line_user_id:
         line_orders = Order.query.filter_by(line_user_id=line_user_id)\
                                  .filter(Order.payment_status.in_(["待付款", "待確認"]))\
                                  .order_by(Order.created_at.desc()).all()
-    # 取得群組資訊
     group_orders = []
     if group_id:
         group_orders = Order.query.filter_by(group_id=group_id)\
@@ -218,6 +253,7 @@ def payment_report():
                            line_orders=line_orders,
                            group_id=group_id,
                            group_orders=group_orders,
+                           show_group=show_group,
                            passenger_liff_id=PASSENGER_LIFF_ID)
 
 

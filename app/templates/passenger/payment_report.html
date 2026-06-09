@@ -137,49 +137,66 @@
 
   </form>
 
-  {% if group_id %}
-  <!-- 同行群組邀請卡 -->
+  {% if show_group == 'joined' %}
+  <!-- 已加入同行群組 -->
+  <div class="mt-8 bg-green-50 border border-green-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex items-center gap-2 mb-2">
+      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <h3 class="text-sm font-semibold text-green-800">已成功加入同行群組</h3>
+    </div>
+    <p class="text-xs text-green-700">您的訂單已與朋友的群組連結，系統將優先安排同一台車。</p>
+    {% if group_orders %}
+    <div class="mt-3 pt-3 border-t border-green-100">
+      <p class="text-xs text-green-600">群組共 {{ group_orders|length }} 份訂單・{{ group_orders|sum(attribute='passenger_count') }} 人</p>
+    </div>
+    {% endif %}
+  </div>
+  {% elif show_group == 'created' and group_id %}
+  <!-- 已建立同行群組邀請卡 -->
   <div class="mt-8 bg-white border border-blue-100 rounded-2xl p-6 shadow-sm">
-    <div class="flex items-center gap-2 mb-4">
+    <div class="flex items-center gap-2 mb-1">
       <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
       </svg>
-      <h3 class="text-sm font-semibold text-gray-900">邀請朋友同行</h3>
+      <h3 class="text-sm font-semibold text-gray-900">已建立同行群組</h3>
     </div>
-    <p class="text-xs text-gray-500 mb-4">分享同行代碼，讓朋友的訂單與您安排同一台車。</p>
+    <p class="text-xs text-gray-500 mb-5">分享邀請連結，讓朋友的訂單與您安排同一台車。</p>
 
-    <!-- 同行代碼 -->
-    <div class="bg-gray-50 rounded-xl p-4 mb-4">
-      <p class="text-xs text-gray-400 mb-1.5">同行代碼</p>
-      <div class="flex items-center justify-between">
-        <span id="group-code" class="text-base font-bold text-gray-900 font-mono tracking-wider">{{ group_id }}</span>
-        <button type="button" onclick="copyCode(this)"
-                class="text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-          複製代碼
-        </button>
-      </div>
-    </div>
-
-    <!-- 邀請連結 -->
-    <div class="bg-gray-50 rounded-xl p-4 mb-4">
-      <p class="text-xs text-gray-400 mb-1.5">邀請連結</p>
-      <div class="flex items-center justify-between gap-2">
-        <span id="invite-link" class="text-xs text-gray-600 font-mono break-all">{{ request.host_url }}join/{{ group_id }}</span>
-        <button type="button" onclick="copyLink(this)"
-                class="shrink-0 text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-          複製
-        </button>
-      </div>
-    </div>
-
-    <!-- LINE 分享 -->
+    <!-- LINE 分享（主要 CTA） -->
     <button type="button" onclick="shareToLine()"
-            class="w-full py-3 px-6 bg-[#06C755] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+            class="w-full py-3 px-6 bg-[#06C755] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.979C23.176 14.393 24 12.458 24 10.314"/>
       </svg>
       邀請朋友同行（LINE 分享）
     </button>
+
+    <!-- 複製邀請連結 -->
+    <button type="button" onclick="copyLink(this)"
+            class="w-full py-2.5 px-6 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mb-4">
+      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      複製邀請連結
+    </button>
+
+    <!-- 進階資訊：同行代碼 -->
+    <details class="text-xs">
+      <summary class="cursor-pointer text-gray-400 hover:text-gray-600 select-none">查看同行代碼</summary>
+      <div class="mt-2 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+        <span id="group-code" class="font-mono font-bold text-gray-800 tracking-wider">{{ group_id }}</span>
+        <button type="button" onclick="copyCode(this)"
+                class="text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+          複製代碼
+        </button>
+      </div>
+      <p class="mt-1.5 text-gray-400 px-1">朋友可在預約時輸入此代碼加入您的群組。</p>
+    </details>
+
+    <!-- 邀請連結（供 JS 使用，不顯示） -->
+    <span id="invite-link" class="hidden">{{ request.host_url }}join/{{ group_id }}</span>
 
     {% if group_orders and group_orders|length > 1 %}
     <div class="mt-4 pt-4 border-t border-gray-100">
@@ -219,9 +236,10 @@ function copyCode(btn) {
 
 function copyLink(btn) {
   const link = document.getElementById('invite-link').textContent.trim();
+  const orig = btn.textContent;
   navigator.clipboard.writeText(link).then(() => {
     btn.textContent = '已複製！';
-    setTimeout(() => { btn.textContent = '複製'; }, 2000);
+    setTimeout(() => { btn.textContent = orig; }, 2000);
   });
 }
 

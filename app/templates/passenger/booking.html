@@ -101,6 +101,39 @@
       </div>
     </div>
 
+    <!-- 朋友同行 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-4 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-900">朋友同行 <span class="text-xs font-normal text-gray-400">（選填）</span></h2>
+
+      <div>
+        <p class="text-xs font-medium text-gray-500 mb-3">是否與朋友同車？</p>
+        <div class="flex items-center gap-6">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="radio" name="with_friends" value="no" checked
+                   class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                   onchange="toggleFriendCode(this.value)" />
+            <span class="text-sm text-gray-700">否</span>
+          </label>
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="radio" name="with_friends" value="yes"
+                   class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                   onchange="toggleFriendCode(this.value)" />
+            <span class="text-sm text-gray-700">是</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="friend-code-wrap" class="hidden space-y-1.5">
+        <label for="friend_code" class="block text-xs font-medium text-gray-500">同行代碼（選填）</label>
+        <input type="text" id="friend_code" name="friend_code"
+               placeholder="若朋友已建立同行群組，請輸入同行代碼"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono" />
+        <p class="text-xs text-gray-400 leading-relaxed">
+          若朋友已建立同行群組，請輸入朋友提供的同行代碼。<br>若留空，系統將自動建立同行群組。
+        </p>
+      </div>
+    </div>
+
     <!-- 費用 -->
     <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6">
       <h2 class="text-sm font-semibold text-gray-900 mb-4">費用明細</h2>
@@ -175,6 +208,16 @@
   }
 
   calcTotal(document.getElementById('passenger_count').value);
+
+  function toggleFriendCode(val) {
+    const wrap = document.getElementById('friend-code-wrap');
+    if (val === 'yes') {
+      wrap.classList.remove('hidden');
+    } else {
+      wrap.classList.add('hidden');
+      document.getElementById('friend_code').value = '';
+    }
+  }
 
   // LIFF 初始化
   liff.init({ liffId: '{{ passenger_liff_id }}' })

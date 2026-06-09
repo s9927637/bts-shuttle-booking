@@ -41,6 +41,7 @@
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">電話</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">LINE UID</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">綁定狀態</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">綁定時間</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider text-right">操作</th>
       </tr>
     </thead>
@@ -54,9 +55,13 @@
 
         <td class="px-6 py-4">
           {% if d.line_user_id %}
-            <span class="font-mono text-xs text-gray-500">{{ d.line_user_id }}</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>✓ 已綁定
+            </span>
           {% else %}
-            <span class="text-xs text-gray-300">—</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>✗ 未綁定
+            </span>
           {% endif %}
         </td>
 
@@ -69,6 +74,14 @@
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
               <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>未綁定
             </span>
+          {% endif %}
+        </td>
+
+        <td class="px-6 py-4 text-xs text-gray-400">
+          {% if d.bound_at %}
+            {{ d.bound_at.strftime('%Y/%m/%d %H:%M') }}
+          {% else %}
+            —
           {% endif %}
         </td>
 
@@ -131,7 +144,7 @@
 
       {% else %}
       <tr>
-        <td colspan="5" class="px-6 py-16 text-center">
+        <td colspan="6" class="px-6 py-16 text-center">
           <p class="text-sm text-gray-400">找不到符合條件的司機</p>
         </td>
       </tr>

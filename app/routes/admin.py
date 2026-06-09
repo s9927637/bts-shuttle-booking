@@ -67,12 +67,17 @@ def dashboard():
     notify_success = db.session.query(func.count(Notification.id)).filter(Notification.status == "success").scalar() or 0
     notify_failed  = db.session.query(func.count(Notification.id)).filter(Notification.status == "failed").scalar() or 0
 
+    line_bound_passengers   = db.session.query(func.count(Order.id)).filter(Order.line_user_id.isnot(None)).scalar() or 0
+    line_unbound_passengers = db.session.query(func.count(Order.id)).filter(Order.line_user_id.is_(None)).scalar() or 0
+    line_bound_drivers      = db.session.query(func.count(Driver.id)).filter(Driver.is_line_bound == True).scalar() or 0
+    line_unbound_drivers    = db.session.query(func.count(Driver.id)).filter(Driver.is_line_bound == False).scalar() or 0
+
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
 
     return render_template(
         "admin/dashboard.html",
         stats={
-            "total_groups":             total_groups,
+            "total_groups":               total_groups,
             "total_orders":             total_orders,
             "total_passengers":         total_passengers,
             "unpaid_orders":            unpaid_orders,
@@ -83,8 +88,12 @@ def dashboard():
             "total_revenue":            total_revenue,
             "total_deposit_collected":  total_deposit_collected,
             "total_balance_pending":    total_balance_pending,
-            "notify_success":           notify_success,
-            "notify_failed":            notify_failed,
+            "notify_success":             notify_success,
+            "notify_failed":             notify_failed,
+            "line_bound_passengers":     line_bound_passengers,
+            "line_unbound_passengers":   line_unbound_passengers,
+            "line_bound_drivers":        line_bound_drivers,
+            "line_unbound_drivers":      line_unbound_drivers,
         },
         recent_orders=recent_orders,
     )

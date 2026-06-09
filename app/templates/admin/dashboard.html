@@ -72,7 +72,36 @@
 
 </div>
 
-<!-- Stats Cards Row 3：通知 -->
+<!-- Stats Cards Row 3：LINE 綁定 -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">LINE 乘客已綁定</p>
+    <p class="text-3xl font-semibold text-green-600 tracking-tight">{{ stats.line_bound_passengers }}</p>
+    <p class="mt-1 text-xs text-gray-400">已完成 LINE 登入</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">LINE 乘客未綁定</p>
+    <p class="text-3xl font-semibold text-gray-400 tracking-tight">{{ stats.line_unbound_passengers }}</p>
+    <p class="mt-1 text-xs text-gray-400">未透過 LINE 預約</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">LINE 司機已綁定</p>
+    <p class="text-3xl font-semibold text-green-600 tracking-tight">{{ stats.line_bound_drivers }}</p>
+    <p class="mt-1 text-xs text-gray-400">可接收 LINE 通知</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">LINE 司機未綁定</p>
+    <p class="text-3xl font-semibold {% if stats.line_unbound_drivers > 0 %}text-amber-500{% else %}text-gray-400{% endif %} tracking-tight">{{ stats.line_unbound_drivers }}</p>
+    <p class="mt-1 text-xs text-gray-400">無法接收 LINE 通知</p>
+  </div>
+
+</div>
+
+<!-- Stats Cards Row 4：通知 -->
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
 
   <div class="bg-white border border-gray-100 rounded-2xl p-5">

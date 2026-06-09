@@ -1,0 +1,124 @@
+{% extends "layouts/base.html" %}
+{% block title %}查詢訂單 — BTS Shuttle{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-16">
+
+  <!-- Header -->
+  <div class="mb-10">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">訂單查詢</p>
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">查詢我的訂單</h1>
+    <p class="mt-2 text-sm text-gray-500">輸入訂單編號或聯絡電話查詢訂單狀態。</p>
+  </div>
+
+  <!-- Search form -->
+  <form method="get" action="/orders/lookup" class="flex gap-3 mb-10">
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+        </svg>
+      </div>
+      <input type="text" name="q" value="{{ q or '' }}" required
+             placeholder="訂單編號 BTS-… 或聯絡電話"
+             class="pl-11 pr-4 py-2.5 w-full bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder-gray-300" />
+    </div>
+    <button type="submit"
+            class="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 shrink-0">
+      查詢
+    </button>
+  </form>
+
+  <!-- Results -->
+  {% if searched %}
+    {% if order %}
+
+    <!-- Order card -->
+    <div class="border border-gray-100 rounded-2xl overflow-hidden">
+
+      <!-- Status header -->
+      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <div>
+          <p class="text-xs font-medium text-gray-400 mb-0.5">訂單編號</p>
+          <p class="font-mono text-sm font-semibold text-gray-900">{{ order.order_no }}</p>
+        </div>
+        {% if order.payment_status == '已付款' %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-900 text-white">已付款</span>
+        {% elif order.payment_status == '待確認' %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">待確認</span>
+        {% else %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">{{ order.payment_status }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Details -->
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-xs text-gray-400 mb-0.5">聯絡人</p>
+            <p class="font-medium text-gray-900">{{ order.contact_name }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-0.5">電話</p>
+            <p class="font-medium text-gray-900">{{ order.phone }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-0.5">出發日期</p>
+            <p class="font-medium text-gray-900">{{ order.departure_date }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-0.5">乘客人數</p>
+            <p class="font-medium text-gray-900">{{ order.passenger_count }} 人</p>
+          </div>
+          {% if order.companion_names %}
+          <div class="col-span-2">
+            <p class="text-xs text-gray-400 mb-0.5">同行人員</p>
+            <p class="font-medium text-gray-900">{{ order.companion_names }}</p>
+          </div>
+          {% endif %}
+          {% if order.remark %}
+          <div class="col-span-2">
+            <p class="text-xs text-gray-400 mb-0.5">備註</p>
+            <p class="text-gray-700">{{ order.remark }}</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+          <span class="text-sm text-gray-500">應付金額</span>
+          <span class="text-xl font-bold text-gray-900">NT$ {{ "{:,}".format(order.total_amount) }}</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      {% if order.payment_status == '待付款' %}
+      <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <p class="text-xs text-gray-500 mb-3">尚未完成付款，請匯款後回報以完成預約。</p>
+        <a href="/payment/report?order_no={{ order.order_no }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+          前往匯款回報
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+          </svg>
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% else %}
+    <!-- Not found -->
+    <div class="text-center py-16 border border-gray-100 rounded-2xl">
+      <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-medium text-gray-700 mb-1">找不到符合的訂單</p>
+      <p class="text-xs text-gray-400">請確認訂單編號或電話是否正確</p>
+    </div>
+    {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

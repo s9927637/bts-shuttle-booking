@@ -1,0 +1,238 @@
+{% extends "layouts/base.html" %}
+{% block title %}查詢訂單 — BTS Shuttle{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
+
+  <!-- Header -->
+  <div class="mb-10">
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">查詢訂單</h1>
+    <p class="mt-2 text-sm text-gray-500">輸入訂單編號或手機後四碼即可查詢您的預約狀態。</p>
+  </div>
+
+  <!-- LIFF 載入中 -->
+  <div id="liff-loading" class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+    </svg>
+    正在取得身份資訊…
+  </div>
+
+  <!-- Search Form（LIFF 無 userId 時顯示） -->
+  <form id="search-form" method="get" action="/orders/search" class="space-y-4 mb-10 hidden">
+    <div class="flex gap-3">
+      <div class="relative flex-1">
+        <input type="text" name="q" value="{{ q or '' }}"
+               placeholder="BTS-KHH-000001 或手機後四碼"
+               autofocus
+               class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+      </div>
+      <button type="submit"
+              class="px-5 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors whitespace-nowrap">
+        查詢
+      </button>
+    </div>
+    <p class="text-xs text-gray-400">支援：完整訂單編號（BTS-KHH-XXXXXX）或手機號碼後四碼</p>
+  </form>
+
+  <!-- Results -->
+  <div id="results">
+  {% if searched %}
+
+    {# ── LINE 模式：多筆訂單 ── #}
+    {% if orders %}
+    <div class="space-y-4">
+      {% for o in orders %}
+      <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">訂單編號</p>
+            <p class="text-base font-bold text-gray-900 font-mono tracking-wide">{{ o.order_no }}</p>
+          </div>
+          {% if o.payment_status == '已付款' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已付款
+            </span>
+          {% elif o.payment_status == '待確認' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>待確認
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>待付款
+            </span>
+          {% endif %}
+        </div>
+        <div class="px-6 py-4 grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">出發日期</p>
+            <p class="text-sm font-semibold text-gray-900">{{ o.departure_date }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">費用總計</p>
+            <p class="text-sm font-semibold text-gray-900">NT$ {{ "{:,}".format(o.total_amount) }}</p>
+          </div>
+        </div>
+        {% if o.payment_status == '待付款' %}
+        <div class="px-6 pb-4">
+          <a href="/payment/report?order_no={{ o.order_no }}&line_user_id={{ line_user_id }}"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+            前往匯款回報
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {# ── 單筆訂單（LINE 一筆 or 表單查詢） ── #}
+    {% elif order %}
+    <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">訂單編號</p>
+          <p class="text-base font-bold text-gray-900 font-mono tracking-wide">{{ order.order_no }}</p>
+        </div>
+        {% if order.payment_status == '已付款' %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已付款
+          </span>
+        {% elif order.payment_status == '待確認' %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>待確認
+          </span>
+        {% else %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>待付款
+          </span>
+        {% endif %}
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">姓名</p>
+            <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">出發日期</p>
+            <p class="text-sm font-semibold text-gray-900">{{ order.departure_date }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">乘客人數</p>
+            <p class="text-sm font-semibold text-gray-900">{{ order.passenger_count }} 人</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">費用總計</p>
+            <p class="text-sm font-semibold text-gray-900">NT$ {{ "{:,}".format(order.total_amount) }}</p>
+          </div>
+        </div>
+        {% if order.remark %}
+        <div class="pt-1">
+          <p class="text-xs text-gray-400 mb-1">備註</p>
+          <p class="text-sm text-gray-600">{{ order.remark }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if vehicle %}
+      <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">車輛資訊</p>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">車牌號碼</p>
+            <p class="text-sm font-bold text-gray-900 font-mono">{{ vehicle.plate_number }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">司機姓名</p>
+            <p class="text-sm font-semibold text-gray-900">{{ vehicle.driver_name }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">司機電話</p>
+            <p class="text-sm font-semibold text-gray-900">{{ vehicle.driver_phone }}</p>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="px-6 py-4 border-t border-gray-100">
+        <p class="text-xs text-gray-400 flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          尚未排定車輛，確認後將通知您。
+        </p>
+      </div>
+      {% endif %}
+
+      {% if order.payment_status == '待付款' %}
+      <div class="px-6 py-4 border-t border-gray-100">
+        <a href="/payment/report?order_no={{ order.order_no }}{% if line_user_id %}&line_user_id={{ line_user_id }}{% endif %}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+          前往匯款回報
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+          </svg>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Not found -->
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-semibold text-gray-700 mb-1">找不到符合的訂單</p>
+      <p class="text-xs text-gray-400">請確認訂單編號或手機後四碼是否正確。</p>
+    </div>
+    {% endif %}
+
+  {% endif %}
+  </div>
+
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+liff.init({ liffId: '2007738901-IDdb6jr9' })
+  .then(() => {
+    if (liff.isLoggedIn()) {
+      // 有 LINE userId → 直接導向帶 line_user_id 的查詢
+      return liff.getProfile().then(profile => {
+        const url = new URL(location.href);
+        // 若尚未帶 line_user_id 參數才導向，避免無限 redirect
+        if (!url.searchParams.get('line_user_id')) {
+          url.searchParams.set('line_user_id', profile.userId);
+          url.searchParams.delete('q');
+          location.replace(url.toString());
+        } else {
+          showPage();
+        }
+      });
+    } else {
+      // 未登入 LINE → 顯示表單
+      showForm();
+    }
+  })
+  .catch(() => {
+    // LIFF 不可用（一般瀏覽器）→ 顯示表單
+    showForm();
+  });
+
+function showForm() {
+  document.getElementById('liff-loading').classList.add('hidden');
+  document.getElementById('search-form').classList.remove('hidden');
+}
+
+function showPage() {
+  document.getElementById('liff-loading').classList.add('hidden');
+  // LINE 模式下不需要顯示搜尋框，直接顯示結果
+}
+</script>
+{% endblock %}

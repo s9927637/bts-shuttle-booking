@@ -1,0 +1,196 @@
+{% extends "layouts/base.html" %}
+{% block title %}匯款回報 — BTS Shuttle{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">訂金匯款回報</h1>
+    <p class="mt-2 text-sm text-gray-500">請完成訂金匯款後填寫以下資料，我們確認後即完成預約。</p>
+  </div>
+
+  <!-- 訂金說明 -->
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-6 shadow-sm space-y-3">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest">付款方式說明</p>
+    <div class="flex items-center justify-between py-2 border-b border-gray-50">
+      <div>
+        <p class="text-sm font-medium text-gray-800">訂金（現在匯款）</p>
+        <p class="text-xs text-gray-400 mt-0.5">每人 NT$300，預約成立需先完成</p>
+      </div>
+      <span id="deposit_amount_display" class="text-sm font-bold text-gray-900">—</span>
+    </div>
+    <div class="flex items-center justify-between py-2">
+      <div>
+        <p class="text-sm font-medium text-gray-800">尾款（搭車當日現金）</p>
+        <p class="text-xs text-gray-400 mt-0.5">每人 NT$1,700，現場交給司機</p>
+      </div>
+      <span id="balance_amount_display" class="text-sm font-bold text-gray-900">—</span>
+    </div>
+  </div>
+
+  <!-- Bank info card -->
+  <div class="bg-gray-900 rounded-2xl p-6 mb-8">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4">匯款帳號資訊</p>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-400">銀行</span>
+        <span class="text-sm font-semibold text-white">國泰世華（013）</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-400">帳號</span>
+        <div class="flex items-center gap-2">
+          <span id="acct-no" class="text-sm font-bold text-white font-mono tracking-wider">699503672590</span>
+          <button type="button" onclick="copyAcct(this)"
+                  class="text-xs text-gray-400 hover:text-white transition-colors px-2 py-0.5 rounded-lg border border-gray-700 hover:border-gray-500">
+            複製
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-400">戶名</span>
+        <span class="text-sm font-semibold text-white">蘇心慈</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form action="/payment/report" method="post" class="space-y-6">
+
+    <!-- LINE 隱藏欄位 -->
+    <input type="hidden" name="line_user_id" id="f-line-user-id" value="{{ line_user_id or '' }}" />
+
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-900">填寫匯款資料</h2>
+
+      <!-- 訂單編號：LINE 模式有多筆待付款訂單時顯示下拉選單 -->
+      <div>
+        <label for="order_no" class="block mb-1.5 text-xs font-medium text-gray-500">
+          訂單編號 <span class="text-red-400">*</span>
+        </label>
+        {% if line_orders and line_orders|length > 1 %}
+        <select id="order_no" name="order_no" required
+                class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 font-mono">
+          <option value="">— 選擇訂單 —</option>
+          {% for o in line_orders %}
+          <option value="{{ o.order_no }}" {% if prefill_order_no == o.order_no %}selected{% endif %}>
+            {{ o.order_no }}（{{ o.departure_date }}，{{ o.passenger_count }} 人）
+          </option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input type="text" id="order_no" name="order_no" required
+               placeholder="BTS-KHH-000001"
+               value="{{ prefill_order_no or (line_orders[0].order_no if line_orders else '') }}"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono" />
+        {% endif %}
+        <p class="mt-1.5 text-xs text-gray-400">請填寫預約完成時取得的訂單編號</p>
+      </div>
+
+      <!-- 匯款人姓名 -->
+      <div>
+        <label for="payer_name" class="block mb-1.5 text-xs font-medium text-gray-500">
+          匯款人姓名 <span class="text-red-400">*</span>
+        </label>
+        <input type="text" id="payer_name" name="payer_name" required
+               placeholder="王小明"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        <p class="mt-1.5 text-xs text-gray-400">請填寫匯款帳戶的戶名</p>
+      </div>
+
+      <!-- 帳號後五碼 -->
+      <div>
+        <label for="bank_last5" class="block mb-1.5 text-xs font-medium text-gray-500">
+          匯款帳號後五碼 <span class="text-red-400">*</span>
+        </label>
+        <input type="text" id="bank_last5" name="bank_last5" required
+               placeholder="12345"
+               maxlength="5" pattern="\d{5}"
+               inputmode="numeric"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono tracking-widest" />
+        <p class="mt-1.5 text-xs text-gray-400">請填寫您匯款帳戶的後五碼，供對帳使用</p>
+      </div>
+    </div>
+
+    <!-- 注意事項 -->
+    <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+      <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-xs text-blue-700 leading-relaxed">
+        回報後狀態將顯示為「<strong>待確認</strong>」，確認訂金後更新為「<strong>訂金已確認</strong>」。尾款於搭車當日現金交給司機，無需事先匯款。
+      </p>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit"
+            class="w-full py-3.5 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+      送出匯款回報
+    </button>
+
+    <p class="text-center text-xs text-gray-400">
+      需要查詢訂單？
+      <a href="/orders/search{% if line_user_id %}?line_user_id={{ line_user_id }}{% endif %}"
+         class="font-medium text-gray-700 hover:underline">前往訂單查詢</a>
+    </p>
+
+  </form>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+function copyAcct(btn) {
+  const acct = document.getElementById('acct-no').textContent.replace(/-/g, '');
+  navigator.clipboard.writeText(acct).then(() => {
+    btn.textContent = '已複製';
+    setTimeout(() => { btn.textContent = '複製'; }, 2000);
+  });
+}
+
+// 訂金/尾款金額對照（從後端注入）
+const ORDER_MAP = {
+  {% for o in line_orders %}
+  "{{ o.order_no }}": { deposit: {{ o.deposit_amount }}, balance: {{ o.balance_amount }} },
+  {% endfor %}
+};
+
+function updateAmounts(orderNo) {
+  const data = ORDER_MAP[orderNo];
+  const dep = document.getElementById('deposit_amount_display');
+  const bal = document.getElementById('balance_amount_display');
+  if (data && dep && bal) {
+    dep.textContent = 'NT$ ' + data.deposit.toLocaleString();
+    bal.textContent = 'NT$ ' + data.balance.toLocaleString();
+  } else if (dep && bal) {
+    dep.textContent = '—';
+    bal.textContent = '—';
+  }
+}
+
+// 如果是單筆訂單直接顯示
+{% if line_orders and line_orders|length == 1 %}
+updateAmounts("{{ line_orders[0].order_no }}");
+{% endif %}
+
+// 下拉選單切換時更新
+const sel = document.getElementById('order_no');
+if (sel && sel.tagName === 'SELECT') {
+  sel.addEventListener('change', () => updateAmounts(sel.value));
+  if (sel.value) updateAmounts(sel.value);
+} else if (sel) {
+  updateAmounts(sel.value.trim());
+}
+
+// 若 URL 未帶 line_user_id，嘗試從 LIFF 取得後補入隱藏欄位
+liff.init({ liffId: '2007738901-IDdb6jr9' })
+  .then(() => {
+    if (liff.isLoggedIn()) {
+      return liff.getProfile().then(profile => {
+        const hidden = document.getElementById('f-line-user-id');
+        if (!hidden.value) hidden.value = profile.userId;
+      });
+    }
+  })
+  .catch(() => {});
+</script>
+{% endblock %}

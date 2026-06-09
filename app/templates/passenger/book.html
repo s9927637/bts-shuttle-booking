@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+{% block title %}預約接駁 — BTS Shuttle{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-16">
+
+  <!-- Header -->
+  <div class="mb-10">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">預約</p>
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">填寫預約資料</h1>
+    <p class="mt-2 text-sm text-gray-500">請確認所有資料正確後送出，訂單一旦建立請至「匯款回報」完成付款。</p>
+  </div>
+
+  <form action="/book" method="post" class="space-y-6">
+
+    <!-- 聯絡資料 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
+      <h2 class="text-sm font-semibold text-gray-900">聯絡資料</h2>
+
+      <div>
+        <label for="contact_name" class="block mb-1.5 text-xs font-medium text-gray-500">
+          聯絡人姓名 <span class="text-red-400">*</span>
+        </label>
+        <input type="text" id="contact_name" name="contact_name" required
+               placeholder="王小明"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="phone" class="block mb-1.5 text-xs font-medium text-gray-500">
+            聯絡電話 <span class="text-red-400">*</span>
+          </label>
+          <input type="tel" id="phone" name="phone" required
+                 placeholder="0912-345-678"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+        <div>
+          <label for="emergency_phone" class="block mb-1.5 text-xs font-medium text-gray-500">
+            緊急聯絡電話
+          </label>
+          <input type="tel" id="emergency_phone" name="emergency_phone"
+                 placeholder="0987-654-321"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 行程資料 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
+      <h2 class="text-sm font-semibold text-gray-900">行程資料</h2>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="departure_date" class="block mb-1.5 text-xs font-medium text-gray-500">
+            出發日期 <span class="text-red-400">*</span>
+          </label>
+          <select id="departure_date" name="departure_date" required
+                  class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5">
+            <option value="">— 選擇班次 —</option>
+            {% for opt in departure_options %}
+            <option value="{{ opt }}">{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="passenger_count" class="block mb-1.5 text-xs font-medium text-gray-500">
+            乘客人數 <span class="text-red-400">*</span>
+          </label>
+          <input type="number" id="passenger_count" name="passenger_count"
+                 min="1" max="50" value="1" required
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5" />
+        </div>
+      </div>
+
+      <div>
+        <label for="companion_names" class="block mb-1.5 text-xs font-medium text-gray-500">
+          同行人員姓名
+        </label>
+        <input type="text" id="companion_names" name="companion_names"
+               placeholder="張三、李四（逗號分隔）"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+      </div>
+
+      <div>
+        <label for="remark" class="block mb-1.5 text-xs font-medium text-gray-500">備註</label>
+        <textarea id="remark" name="remark" rows="3"
+                  placeholder="特殊需求或其他說明…"
+                  class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 resize-none"></textarea>
+      </div>
+    </div>
+
+    <!-- 費用說明 -->
+    <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+      <h2 class="text-sm font-semibold text-gray-900 mb-3">費用說明</h2>
+      <div class="flex items-baseline justify-between">
+        <span class="text-sm text-gray-500">每人費用</span>
+        <span class="text-sm font-semibold text-gray-900">NT$ {{ price_per_person | default(500) }}</span>
+      </div>
+      <div class="mt-2 pt-2 border-t border-gray-200 flex items-baseline justify-between">
+        <span class="text-sm text-gray-500">總計（依人數計算）</span>
+        <span id="total_display" class="text-lg font-bold text-gray-900">NT$ {{ price_per_person | default(500) }}</span>
+      </div>
+      <input type="hidden" name="total_amount" id="total_amount" value="{{ price_per_person | default(500) }}" />
+    </div>
+
+    <button type="submit"
+            class="w-full py-3 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+      確認送出預約
+    </button>
+
+  </form>
+</div>
+
+<script>
+  const pricePerPerson = {{ price_per_person | default(500) }};
+  const countInput     = document.getElementById('passenger_count');
+  const totalDisplay   = document.getElementById('total_display');
+  const totalInput     = document.getElementById('total_amount');
+
+  function updateTotal() {
+    const n     = Math.max(1, parseInt(countInput.value) || 1);
+    const total = n * pricePerPerson;
+    totalDisplay.textContent = 'NT$ ' + total.toLocaleString();
+    totalInput.value         = total;
+  }
+
+  countInput.addEventListener('input', updateTotal);
+</script>
+{% endblock %}

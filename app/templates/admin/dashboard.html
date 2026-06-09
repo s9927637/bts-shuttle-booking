@@ -1,0 +1,116 @@
+{% extends "layouts/admin_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stats Cards Row 1 -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">總訂單</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.total_orders }}</p>
+    <p class="mt-1 text-xs text-gray-400">所有訂單</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">總人數</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.total_passengers }}</p>
+    <p class="mt-1 text-xs text-gray-400">乘客總數</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">待付款</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.unpaid_orders }}</p>
+    <p class="mt-1 text-xs text-gray-400">未付款訂單</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">待確認</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.pending_orders }}</p>
+    <p class="mt-1 text-xs text-gray-400">等待確認</p>
+  </div>
+
+</div>
+
+<!-- Stats Cards Row 2 -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">訂金已確認</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.confirmed_orders }}</p>
+    <p class="mt-1 text-xs text-gray-400">
+      <a href="/admin/dispatch" class="hover:underline">排車 {{ stats.dispatched_orders }} 筆 →</a>
+    </p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">已完成</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.completed_orders }}</p>
+    <p class="mt-1 text-xs text-gray-400">尾款已收</p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">已收訂金</p>
+    <p class="text-2xl font-semibold text-gray-900 tracking-tight">{{ "{:,}".format(stats.total_deposit_collected) }}</p>
+    <p class="mt-1 text-xs text-gray-400">NT$300 × 已確認人數</p>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-900 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">待收尾款</p>
+    <p class="text-2xl font-semibold text-white tracking-tight">{{ "{:,}".format(stats.total_balance_pending) }}</p>
+    <p class="mt-1 text-xs text-gray-500">NT$1,700 × 訂金已確認</p>
+  </div>
+
+</div>
+
+<!-- Recent Orders -->
+<div class="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900">最近訂單</h2>
+    <a href="/admin/orders" class="text-xs font-medium text-gray-400 hover:text-gray-900 transition-colors">查看全部 →</a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead class="bg-gray-50 border-b border-gray-100">
+        <tr>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">訂單編號</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">姓名</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">出發日期</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">人數</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">金額</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">付款狀態</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for order in recent_orders %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4 font-mono text-xs text-gray-500">{{ order.order_no }}</td>
+          <td class="px-6 py-4 font-medium text-gray-900">{{ order.contact_name }}</td>
+          <td class="px-6 py-4 text-gray-500">{{ order.departure_date }}</td>
+          <td class="px-6 py-4 text-gray-900">{{ order.passenger_count }}</td>
+          <td class="px-6 py-4 text-gray-900 font-medium">NT$ {{ "{:,}".format(order.total_amount) }}</td>
+          <td class="px-6 py-4">
+            {% if order.payment_status == '已付款' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">已付款</span>
+            {% elif order.payment_status == '待確認' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">待確認</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{{ order.payment_status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-400">目前沒有訂單</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

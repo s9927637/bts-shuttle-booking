@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-white">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}後台管理{% endblock %} — BTS Shuttle</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  <style>
+    * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
+    :root { --sidebar-w: 240px; }
+    .sidebar-link { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors; }
+    .sidebar-link.active { @apply text-gray-900 bg-gray-100; }
+  </style>
+</head>
+<body class="h-full bg-white text-gray-900 antialiased">
+
+  <div class="flex h-full min-h-screen">
+    {% include "components/sidebar.html" %}
+
+    <div class="flex flex-col flex-1 min-w-0">
+      {% include "components/navbar.html" %}
+
+      <main class="flex-1 px-8 py-8 overflow-auto bg-gray-50">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flex items-center p-4 mb-6 rounded-xl border
+                {% if category == 'error' %}bg-red-50 border-red-200 text-red-800
+                {% else %}bg-green-50 border-green-200 text-green-800{% endif %}" role="alert">
+                <svg class="w-4 h-4 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm font-medium">{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+</body>
+</html>

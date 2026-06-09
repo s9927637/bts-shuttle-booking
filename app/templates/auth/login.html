@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>後台登入 — BTS Shuttle</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  <style>
+    * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
+    .login-title { font-size: 1.5rem; }
+    @media (min-width: 640px) {
+      .login-title { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center px-4 antialiased" style="min-height: 100vh;">
+
+  <div class="w-full max-w-sm">
+
+    <!-- Logo -->
+    <div class="flex flex-col items-center mb-8">
+      <h1 class="login-title font-bold text-gray-900 tracking-tight leading-tight text-center">BTS演唱會包車預約<br><span class="text-gray-400" style="font-size: 0.45em; font-weight: 500; letter-spacing: 0.05em;">後台管理系統</span></h1>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
+
+      {% if error %}
+      <div class="flex items-center gap-2.5 p-3 mb-6 rounded-xl bg-red-50 border border-red-100 text-red-700">
+        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+        </svg>
+        <p class="text-sm font-medium">{{ error }}</p>
+      </div>
+      {% endif %}
+
+      <form action="/admin/login" method="post" class="space-y-5">
+
+        <div>
+          <label for="username" class="block mb-1.5 text-xs font-medium text-gray-500">帳號</label>
+          <input type="text" id="username" name="username" required autofocus
+                 value="{{ username or '' }}"
+                 placeholder="admin"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+
+        <div>
+          <label for="password" class="block mb-1.5 text-xs font-medium text-gray-500">密碼</label>
+          <input type="password" id="password" name="password" required
+                 placeholder="••••••••"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+
+        <button type="submit"
+                class="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+          登入
+        </button>
+
+      </form>
+    </div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}管理員帳號{% endblock %}
+{% block page_title %}管理員帳號{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <p class="text-sm text-gray-400">共 {{ admin_list|length }} 個帳號</p>
+  <button type="button" data-modal-target="createModal" data-modal-toggle="createModal"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    新增管理員
+  </button>
+</div>
+
+<!-- 管理員列表 -->
+<div class="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+  <table class="w-full text-sm text-left">
+    <thead class="bg-gray-50 border-b border-gray-100">
+      <tr>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">帳號</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">管理員名稱</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">建立時間</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">狀態</th>
+        <th class="px-6 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for a in admin_list %}
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-6 py-4 font-medium text-gray-900 font-mono text-xs">{{ a.username }}</td>
+        <td class="px-6 py-4 text-gray-700">{{ a.display_name or '—' }}</td>
+        <td class="px-6 py-4 text-gray-400 text-xs">{{ a.created_at.strftime('%Y/%m/%d %H:%M') if a.created_at else '—' }}</td>
+        <td class="px-6 py-4">
+          {% if a.id == current_id %}
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>目前登入
+          </span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4">
+          <div class="flex items-center gap-2 justify-end">
+            <!-- 編輯 -->
+            <button type="button"
+                    data-modal-target="editModal-{{ a.id }}"
+                    data-modal-toggle="editModal-{{ a.id }}"
+                    class="text-xs font-medium text-gray-500 hover:text-gray-900 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">
+              編輯
+            </button>
+            <!-- 刪除 -->
+            {% if a.id != current_id %}
+            <button type="button"
+                    data-modal-target="deleteModal-{{ a.id }}"
+                    data-modal-toggle="deleteModal-{{ a.id }}"
+                    class="text-xs font-medium text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+              刪除
+            </button>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+
+      <!-- 編輯 Modal -->
+      <div id="editModal-{{ a.id }}" tabindex="-1" aria-hidden="true"
+           class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-full">
+        <div class="relative p-4 w-full max-w-md">
+          <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+            <div class="flex items-center justify-between border-b border-gray-100" style="padding: 1.25rem 2rem;">
+              <h3 class="text-sm font-semibold text-gray-900">編輯管理員 — {{ a.username }}</h3>
+              <button type="button" data-modal-hide="editModal-{{ a.id }}"
+                      class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <form action="{{ url_for('admin.admin_update', admin_id=a.id) }}" method="post" class="space-y-4" style="padding: 1.5rem 2rem;">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">管理員名稱</label>
+                <input type="text" name="display_name" value="{{ a.display_name or '' }}"
+                       placeholder="顯示名稱"
+                       class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">新密碼（留空不更改）</label>
+                <input type="password" name="password" placeholder="輸入新密碼"
+                       class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+              </div>
+              <div class="flex gap-3 justify-end pt-2">
+                <button type="button" data-modal-hide="editModal-{{ a.id }}"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  取消
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+                  儲存
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 刪除 Modal -->
+      {% if a.id != current_id %}
+      <div id="deleteModal-{{ a.id }}" tabindex="-1" aria-hidden="true"
+           class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-full">
+        <div class="relative p-4 w-full max-w-md">
+          <div class="relative bg-white rounded-2xl shadow border border-gray-100 p-6">
+            <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <h3 class="text-base font-semibold text-gray-900 mb-1">刪除管理員</h3>
+            <p class="text-sm text-gray-500 mb-6">確定要刪除帳號 <span class="font-mono font-medium text-gray-800">{{ a.username }}</span>？此操作無法復原。</p>
+            <div class="flex gap-3 justify-end">
+              <button type="button" data-modal-hide="deleteModal-{{ a.id }}"
+                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                取消
+              </button>
+              <form action="{{ url_for('admin.admin_delete', admin_id=a.id) }}" method="post">
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
+                  確認刪除
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- 新增 Modal -->
+<div id="createModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-full">
+  <div class="relative p-4 w-full max-w-md">
+    <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">新增管理員</h3>
+        <button type="button" data-modal-hide="createModal"
+                class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form action="{{ url_for('admin.admin_create') }}" method="post" class="px-6 py-5 space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">帳號 <span class="text-red-400">*</span></label>
+          <input type="text" name="username" required placeholder="username"
+                 class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">管理員名稱</label>
+          <input type="text" name="display_name" placeholder="王小明"
+                 class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">密碼 <span class="text-red-400">*</span></label>
+          <input type="password" name="password" required placeholder="••••••••"
+                 class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+        </div>
+        <div class="flex gap-3 justify-end pt-2">
+          <button type="button" data-modal-hide="createModal"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+            建立
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

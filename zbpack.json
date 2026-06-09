@@ -1,0 +1,4 @@
+{
+  "build_command": "",
+  "start_command": "gunicorn run:app"
+}

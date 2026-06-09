@@ -1,0 +1,198 @@
+{% extends "layouts/base.html" %}
+{% block title %}填寫預約 — BTS Shuttle{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
+
+  <!-- Header -->
+  <div class="mb-10">
+
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">填寫預約資料</h1>
+    <p class="mt-2 text-sm text-gray-500">請確認所有資料正確後送出，完成後請至「匯款回報」完成付款。</p>
+  </div>
+
+  <!-- LINE 身份提示（LIFF 登入成功時顯示） -->
+  <div id="line-identity" class="hidden mb-6 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
+    <img id="line-avatar" src="" class="w-8 h-8 rounded-full object-cover hidden" />
+    <p class="text-sm text-green-700">已透過 LINE 登入：<span id="line-display-name" class="font-semibold"></span></p>
+  </div>
+
+  <form action="/booking" method="post" class="space-y-6">
+    <!-- LINE 隱藏欄位，由 LIFF 填入 -->
+    <input type="hidden" name="line_user_id" id="f-line-user-id" />
+    <input type="hidden" name="display_name"  id="f-display-name" />
+
+    <!-- 聯絡資料 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-900">聯絡資料</h2>
+
+      <!-- 姓名 -->
+      <div>
+        <label for="contact_name" class="block mb-1.5 text-xs font-medium text-gray-500">
+          姓名 <span class="text-red-400">*</span>
+        </label>
+        <input type="text" id="contact_name" name="contact_name" required
+               placeholder="王小明"
+               value="{{ form.contact_name or '' }}"
+               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+      </div>
+
+      <!-- 手機 / 緊急聯絡 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="phone" class="block mb-1.5 text-xs font-medium text-gray-500">
+            手機 <span class="text-red-400">*</span>
+          </label>
+          <input type="tel" id="phone" name="phone" required
+                 placeholder="0912-345-678"
+                 value="{{ form.phone or '' }}"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+        <div>
+          <label for="emergency_phone" class="block mb-1.5 text-xs font-medium text-gray-500">
+            緊急聯絡電話
+          </label>
+          <input type="tel" id="emergency_phone" name="emergency_phone"
+                 placeholder="0987-654-321"
+                 value="{{ form.emergency_phone or '' }}"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 行程資料 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-900">行程資料</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- 出發日期 -->
+        <div>
+          <label for="departure_date" class="block mb-1.5 text-xs font-medium text-gray-500">
+            出發日期 <span class="text-red-400">*</span>
+          </label>
+          <select id="departure_date" name="departure_date" required
+                  class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5">
+            <option value="">— 選擇場次 —</option>
+            {% for opt in departure_options %}
+            <option value="{{ opt }}" {% if form.departure_date == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- 人數 -->
+        <div>
+          <label for="passenger_count" class="block mb-1.5 text-xs font-medium text-gray-500">
+            人數 <span class="text-red-400">*</span>
+          </label>
+          <input type="number" id="passenger_count" name="passenger_count"
+                 min="1" max="50" value="{{ form.passenger_count or 1 }}" required
+                 oninput="calcTotal(this.value)"
+                 class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5" />
+        </div>
+      </div>
+
+      <!-- 備註 -->
+      <div>
+        <label for="remark" class="block mb-1.5 text-xs font-medium text-gray-500">備註</label>
+        <textarea id="remark" name="remark" rows="3"
+                  placeholder="特殊需求或其他說明…"
+                  class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 resize-none">{{ form.remark or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- 費用 -->
+    <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+      <h2 class="text-sm font-semibold text-gray-900 mb-4">費用明細</h2>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-500">每人費用</span>
+          <span class="font-medium text-gray-700">NT$ 2,000</span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-500">人數</span>
+          <span id="count_display" class="font-medium text-gray-700">1 人</span>
+        </div>
+        <div class="border-t border-gray-200 pt-3 mt-3 flex items-center justify-between">
+          <span class="text-sm font-semibold text-gray-900">總金額</span>
+          <span id="total_display" class="text-xl font-bold text-gray-900">NT$ 2,000</span>
+        </div>
+      </div>
+      <input type="hidden" name="total_amount" id="total_amount" value="2000" />
+    </div>
+
+    <!-- 付款方式 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-3">
+      <h2 class="text-sm font-semibold text-gray-900 mb-1">付款方式</h2>
+      <div class="flex items-center justify-between py-3 border-b border-gray-100">
+        <div>
+          <p class="text-sm font-medium text-gray-800">立即匯款訂金</p>
+          <p class="text-xs text-gray-400 mt-0.5">預約後完成匯款，每人 NT$300</p>
+        </div>
+        <span id="deposit_display" class="text-base font-bold text-gray-900">NT$ 300</span>
+      </div>
+      <div class="flex items-center justify-between py-3">
+        <div>
+          <p class="text-sm font-medium text-gray-800">搭車當日支付尾款</p>
+          <p class="text-xs text-gray-400 mt-0.5">現金交給司機，每人 NT$1,700</p>
+        </div>
+        <span id="balance_display" class="text-base font-bold text-gray-900">NT$ 1,700</span>
+      </div>
+    </div>
+
+    <!-- 注意事項 -->
+    <div class="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+      <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <p class="text-xs text-amber-700 leading-relaxed">
+        送出預約後請至「<strong>匯款回報</strong>」頁面完成訂金匯款，確認後即完成預約。尾款 NT$1,700/人 於搭車當日現金交給司機。
+      </p>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit"
+            class="w-full py-3.5 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+      確認送出預約
+    </button>
+
+  </form>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const PRICE   = 2000;
+  const DEPOSIT = 300;
+  const BALANCE = 1700;
+
+  function calcTotal(count) {
+    const n = Math.max(1, parseInt(count) || 1);
+    document.getElementById('count_display').textContent  = n + ' 人';
+    document.getElementById('total_display').textContent  = 'NT$ ' + (n * PRICE).toLocaleString();
+    document.getElementById('deposit_display').textContent = 'NT$ ' + (n * DEPOSIT).toLocaleString();
+    document.getElementById('balance_display').textContent = 'NT$ ' + (n * BALANCE).toLocaleString();
+    document.getElementById('total_amount').value = n * PRICE;
+  }
+
+  calcTotal(document.getElementById('passenger_count').value);
+
+  // LIFF 初始化
+  liff.init({ liffId: '2007738901-IDdb6jr9' })
+    .then(() => {
+      if (!liff.isLoggedIn()) return;
+      return liff.getProfile();
+    })
+    .then(profile => {
+      if (!profile) return;
+      document.getElementById('f-line-user-id').value = profile.userId;
+      document.getElementById('f-display-name').value  = profile.displayName;
+      document.getElementById('line-display-name').textContent = profile.displayName;
+      if (profile.pictureUrl) {
+        const img = document.getElementById('line-avatar');
+        img.src = profile.pictureUrl;
+        img.classList.remove('hidden');
+      }
+      document.getElementById('line-identity').classList.remove('hidden');
+    })
+    .catch(() => { /* LIFF 不可用，靜默略過 */ });
+</script>
+{% endblock %}

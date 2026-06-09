@@ -1,0 +1,289 @@
+{% extends "layouts/admin_base.html" %}
+
+{% block title %}司機管理{% endblock %}
+{% block page_title %}司機管理{% endblock %}
+
+{% block content %}
+
+<!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-2">
+    <form method="get" class="relative">
+      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+        </svg>
+      </div>
+      <input type="text" name="q" value="{{ request.args.get('q','') }}"
+             class="pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent w-64"
+             placeholder="姓名、電話、LINE UID…" />
+    </form>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <span class="text-xs text-gray-400 font-medium">共 {{ total }} 位</span>
+    <button type="button" data-modal-target="createModal" data-modal-toggle="createModal"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      新增司機
+    </button>
+  </div>
+</div>
+
+<!-- ── Flowbite Table ───────────────────────────────────────────────────── -->
+<div class="relative overflow-x-auto shadow-sm sm:rounded-2xl border border-gray-100">
+  <table class="w-full text-sm text-left text-gray-700 bg-white">
+    <thead class="text-xs text-gray-400 uppercase bg-gray-50 border-b border-gray-100">
+      <tr>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">姓名</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">電話</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">LINE UID</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">綁定狀態</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in drivers %}
+      <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+
+        <td class="px-6 py-4 font-medium text-gray-900">{{ d.name }}</td>
+
+        <td class="px-6 py-4 text-gray-600">{{ d.phone }}</td>
+
+        <td class="px-6 py-4">
+          {% if d.line_user_id %}
+            <span class="font-mono text-xs text-gray-500">{{ d.line_user_id }}</span>
+          {% else %}
+            <span class="text-xs text-gray-300">—</span>
+          {% endif %}
+        </td>
+
+        <td class="px-6 py-4">
+          {% if d.bind_status == '已綁定' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>已綁定
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>未綁定
+            </span>
+          {% endif %}
+        </td>
+
+        <td class="px-6 py-4 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <button type="button"
+                    data-modal-target="editModal"
+                    data-modal-toggle="editModal"
+                    data-did="{{ d.id }}"
+                    data-name="{{ d.name }}"
+                    data-phone="{{ d.phone }}"
+                    data-line="{{ d.line_user_id or '' }}"
+                    data-bind="{{ d.bind_status }}"
+                    onclick="fillEditModal(this)"
+                    class="text-xs font-medium text-gray-500 hover:text-gray-900 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">
+              編輯
+            </button>
+            <button type="button"
+                    data-modal-target="deleteModal-{{ d.id }}"
+                    data-modal-toggle="deleteModal-{{ d.id }}"
+                    class="text-xs font-medium text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+              刪除
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Delete modal -->
+      <div id="deleteModal-{{ d.id }}" tabindex="-1" aria-hidden="true"
+           class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-md max-h-full">
+          <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+            <div class="p-6">
+              <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+              </div>
+              <h3 class="text-base font-semibold text-gray-900 mb-1">刪除司機</h3>
+              <p class="text-sm text-gray-500 mb-6">
+                確定要刪除司機 <span class="font-semibold text-gray-800">{{ d.name }}</span>？此操作無法復原。
+              </p>
+              <div class="flex items-center gap-3 justify-end">
+                <button type="button" data-modal-hide="deleteModal-{{ d.id }}"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  取消
+                </button>
+                <form action="{{ url_for('admin.driver_delete', driver_id=d.id) }}" method="post">
+                  <button type="submit"
+                          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
+                    確認刪除
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <tr>
+        <td colspan="5" class="px-6 py-16 text-center">
+          <p class="text-sm text-gray-400">找不到符合條件的司機</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- Create Modal                                                          -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<div id="createModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-lg max-h-full">
+    <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 class="text-base font-semibold text-gray-900">新增司機</h3>
+        <button type="button" data-modal-hide="createModal"
+                class="text-gray-400 hover:text-gray-700 rounded-lg p-1.5 hover:bg-gray-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form action="{{ url_for('admin.driver_create') }}" method="post">
+        <div class="px-6 py-5 grid grid-cols-2 gap-4">
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">姓名 <span class="text-red-400">*</span></label>
+            <input name="name" type="text" required placeholder="王大明"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">電話 <span class="text-red-400">*</span></label>
+            <input name="phone" type="text" required placeholder="0912-345-678"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">LINE UID</label>
+            <input name="line_user_id" type="text" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            <p class="mt-1 text-xs text-gray-400">可留空，待司機完成 LINE 綁定後自動填入</p>
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">綁定狀態</label>
+            <select name="bind_status"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+              {% for s in bind_statuses %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+          <button type="button" data-modal-hide="createModal"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+            新增司機
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- Edit Modal                                                            -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<div id="editModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+  <div class="relative p-4 w-full max-w-lg max-h-full">
+    <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 class="text-base font-semibold text-gray-900">編輯司機</h3>
+        <button type="button" data-modal-hide="editModal"
+                class="text-gray-400 hover:text-gray-700 rounded-lg p-1.5 hover:bg-gray-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="editForm" action="" method="post">
+        <div class="px-6 py-5 grid grid-cols-2 gap-4">
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">姓名 <span class="text-red-400">*</span></label>
+            <input id="edit_name" name="name" type="text" required
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">電話 <span class="text-red-400">*</span></label>
+            <input id="edit_phone" name="phone" type="text" required
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">LINE UID</label>
+            <input id="edit_line" name="line_user_id" type="text"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">綁定狀態</label>
+            <select id="edit_bind" name="bind_status"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+              {% for s in bind_statuses %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+          <button type="button" data-modal-hide="editModal"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+            儲存變更
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+function fillEditModal(btn) {
+  const d = btn.dataset;
+  document.getElementById('editForm').action = '/admin/drivers/' + d.did + '/edit';
+  document.getElementById('edit_name').value  = d.name;
+  document.getElementById('edit_phone').value = d.phone;
+  document.getElementById('edit_line').value  = d.line;
+  document.getElementById('edit_bind').value  = d.bind;
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,293 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}排車管理{% endblock %}
+{% block page_title %}排車管理{% endblock %}
+
+{% block content %}
+
+<!-- 日期 Tabs -->
+<div class="flex items-center gap-2 mb-6">
+  {% for date in departure_options %}
+  <a href="{{ url_for('dispatch.index', date=date) }}"
+     class="px-4 py-2 rounded-xl text-sm font-medium transition-colors
+            {% if active_date == date %}bg-gray-900 text-white{% else %}bg-white border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+    {{ date }}
+  </a>
+  {% endfor %}
+
+  <!-- 自動排車 -->
+  <form action="{{ url_for('dispatch.auto') }}" method="post" class="ml-auto">
+    <input type="hidden" name="date" value="{{ active_date }}" />
+    <button type="submit"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      自動排車
+    </button>
+  </form>
+
+  <!-- 手動建立車輛 -->
+  <button type="button" data-modal-target="createDispatchModal" data-modal-toggle="createDispatchModal"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    新增車輛
+  </button>
+</div>
+
+<!-- Kanban Board -->
+<div class="flex gap-6 items-start overflow-x-auto pb-4">
+
+  <!-- 左側：待排車 -->
+  <div class="w-80 shrink-0">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-gray-900">待排車</h2>
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        {{ unassigned|length }} 筆 ／
+        {{ unassigned|sum(attribute='passenger_count') }} 人
+      </span>
+    </div>
+
+    <div id="unassigned-col"
+         class="space-y-3 min-h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-3"
+         data-dispatch-id="">
+
+      {% if unassigned %}
+        {% for order in unassigned %}
+        <div class="order-card bg-white border border-gray-100 rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing"
+             draggable="true"
+             data-order-id="{{ order.id }}"
+             data-passenger-count="{{ order.passenger_count }}">
+          <div class="flex items-start justify-between mb-2">
+            <span class="font-mono text-xs text-gray-400">{{ order.order_no }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+              {{ order.passenger_count }} 人
+            </span>
+          </div>
+          <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ order.departure_date }}</p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="flex items-center justify-center h-24 text-xs text-gray-400">
+          無待排訂單
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 右側：各台車 -->
+  {% for item in dispatch_data %}
+  <div class="w-72 shrink-0">
+    <!-- 車輛 Card Header -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mb-3 overflow-hidden">
+      <div class="px-4 py-4 border-b border-gray-100">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">車輛 #{{ loop.index }}</span>
+          <form action="{{ url_for('dispatch.delete', dispatch_id=item.dispatch.id) }}" method="post"
+                onsubmit="return confirm('確定刪除此排車？訂單將移回待排車。')">
+            <input type="hidden" name="date" value="{{ active_date }}" />
+            <button type="submit" class="text-gray-300 hover:text-red-500 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+        <p class="text-base font-bold text-gray-900 font-mono">{{ item.dispatch.vehicle.plate_number }}</p>
+        <p class="text-xs text-gray-500 mt-0.5">{{ item.dispatch.vehicle.driver_name }} · {{ item.dispatch.vehicle.driver_phone }}</p>
+      </div>
+
+      <!-- 容量條 -->
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs text-gray-400">乘客人數</span>
+          <span class="text-xs font-semibold {% if item.full %}text-red-600{% else %}text-gray-700{% endif %}">
+            {{ item.current }} / {{ item.max }}
+          </span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+          <div class="h-1.5 rounded-full transition-all
+                      {% if item.full %}bg-red-500{% elif item.current >= item.max * 0.75 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+               style="width: {{ [(item.current / item.max * 100)|int, 100]|min }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drag & Drop 區域 -->
+    <div id="dispatch-col-{{ item.dispatch.id }}"
+         class="space-y-2 min-h-24 bg-white border-2 border-dashed border-gray-200 rounded-2xl p-3"
+         data-dispatch-id="{{ item.dispatch.id }}"
+         data-current="{{ item.current }}"
+         data-max="{{ item.max }}">
+
+      {% for order in item.orders %}
+      <div class="order-card bg-white border border-gray-100 rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing group"
+           draggable="true"
+           data-order-id="{{ order.id }}"
+           data-passenger-count="{{ order.passenger_count }}">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-mono text-xs text-gray-400">{{ order.order_no }}</span>
+            <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+              {{ order.passenger_count }} 人
+            </span>
+            <!-- 移除按鈕 -->
+            <form action="{{ url_for('dispatch.remove_order') }}" method="post">
+              <input type="hidden" name="order_id" value="{{ order.id }}" />
+              <input type="hidden" name="date" value="{{ active_date }}" />
+              <button type="submit"
+                      class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not item.orders %}
+      <div class="flex items-center justify-center h-16 text-xs text-gray-300 drop-target-hint">
+        拖曳訂單至此
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not dispatch_data %}
+  <div class="flex-1 flex flex-col items-center justify-center py-20 text-center text-gray-400">
+    <svg class="w-10 h-10 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2.67-2.67A2 2 0 017.08 13H13zm0 0h2l3-5h-3a1 1 0 00-1 1v4z"/>
+    </svg>
+    <p class="text-sm font-medium text-gray-400">尚無排車記錄</p>
+    <p class="text-xs text-gray-300 mt-1">點「自動排車」或手動「新增車輛」開始排車。</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal：手動建立車輛 -->
+<div id="createDispatchModal" tabindex="-1" aria-hidden="true"
+     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-full">
+  <div class="relative p-4 w-full max-w-md">
+    <div class="relative bg-white rounded-2xl shadow border border-gray-100">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">新增排車車輛</h3>
+        <button type="button" data-modal-hide="createDispatchModal"
+                class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form action="{{ url_for('dispatch.create') }}" method="post" class="px-6 py-5 space-y-4">
+        <input type="hidden" name="date" value="{{ active_date }}" />
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">出發日期</label>
+          <input type="text" value="{{ active_date }}" readonly
+                 class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-500" />
+        </div>
+
+        <div>
+          <label for="vehicle_id" class="block text-xs font-medium text-gray-500 mb-1.5">車輛 <span class="text-red-400">*</span></label>
+          <select name="vehicle_id" id="vehicle_id" required
+                  class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+            <option value="">— 選擇車輛 —</option>
+            {% for v in vehicles %}
+            <option value="{{ v.id }}">{{ v.plate_number }} — {{ v.driver_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="driver_id" class="block text-xs font-medium text-gray-500 mb-1.5">司機（選填）</label>
+          <select name="driver_id" id="driver_id"
+                  class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+            <option value="">— 不指定 —</option>
+            {% for d in drivers %}
+            <option value="{{ d.id }}">{{ d.name }} · {{ d.phone }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="flex gap-3 justify-end pt-2">
+          <button type="button" data-modal-hide="createDispatchModal"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+            建立
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Drag & Drop Script -->
+<script>
+const MOVE_URL = "{{ url_for('dispatch.move') }}";
+
+let draggingCard = null;
+
+document.querySelectorAll('.order-card').forEach(card => {
+  card.addEventListener('dragstart', e => {
+    draggingCard = card;
+    card.classList.add('opacity-50');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    draggingCard = null;
+    card.classList.remove('opacity-50');
+    document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50'));
+  });
+});
+
+document.querySelectorAll('[id^="dispatch-col-"], #unassigned-col').forEach(col => {
+  col.addEventListener('dragover', e => {
+    e.preventDefault();
+    col.classList.add('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+  });
+  col.addEventListener('dragleave', e => {
+    if (!col.contains(e.relatedTarget)) {
+      col.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+    }
+  });
+  col.addEventListener('drop', async e => {
+    e.preventDefault();
+    col.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+    if (!draggingCard) return;
+
+    const orderId    = draggingCard.dataset.orderId;
+    const dispatchId = col.dataset.dispatchId || null;
+
+    const res = await fetch(MOVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_id:    parseInt(orderId),
+        dispatch_id: dispatchId ? parseInt(dispatchId) : null,
+      }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      location.reload();
+    } else {
+      alert(data.error || '移動失敗');
+    }
+  });
+});
+</script>
+
+{% endblock %}

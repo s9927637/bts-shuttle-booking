@@ -75,7 +75,7 @@
           <td class="px-6 py-4 text-xs text-gray-500">
             {% if a.publish_to_line %}{{ a.line_target or '—' }}{% else %}—{% endif %}
           </td>
-          <td class="px-6 py-4 text-xs text-gray-400">{{ a.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+          <td class="px-6 py-4 text-xs text-gray-400">{{ a.created_at.strftime('%Y/%m/%d %H:%M') if a.created_at else '—' }}</td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-2">
               <button onclick="openEditModal({{ a.id }}, {{ a.title|tojson }}, {{ a.content|tojson }}, {{ a.announcement_type|tojson }}, {{ a.status|tojson }}, {{ a.is_pinned|tojson }}, {{ a.publish_to_line|tojson }}, {{ (a.line_target or '')|tojson }})"

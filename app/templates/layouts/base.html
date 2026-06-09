@@ -29,10 +29,6 @@
           {% if '/book' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %} transition-colors">
           預約
         </a>
-        <a href="/announcements" class="px-3 py-1.5 text-sm font-medium rounded-lg
-          {% if '/announcements' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %} transition-colors">
-          最新公告
-        </a>
         <a href="/orders/search" class="px-3 py-1.5 text-sm font-medium rounded-lg
           {% if '/orders/lookup' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %} transition-colors">
           查詢訂單
@@ -40,6 +36,10 @@
         <a href="/payment/report" class="px-3 py-1.5 text-sm font-medium rounded-lg
           {% if '/payment' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %} transition-colors">
           匯款回報
+        </a>
+        <a href="/announcements" class="px-3 py-1.5 text-sm font-medium rounded-lg
+          {% if '/announcements' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %} transition-colors">
+          最新公告
         </a>
       </div>
 
@@ -56,9 +56,9 @@
     <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
       <div class="px-4 py-3 space-y-1">
         <a href="/booking" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">預約</a>
-        <a href="/announcements" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">最新公告</a>
         <a href="/orders/search" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">查詢訂單</a>
         <a href="/payment/report" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">匯款回報</a>
+        <a href="/announcements" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">最新公告</a>
       </div>
     </div>
   </nav>

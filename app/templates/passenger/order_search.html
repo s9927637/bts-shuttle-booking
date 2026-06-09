@@ -138,6 +138,20 @@
         {% endif %}
       </div>
 
+      {% if order.group_id %}
+      <div class="px-6 py-4 border-t border-gray-100 bg-blue-50">
+        <p class="text-xs font-medium text-blue-400 uppercase tracking-widest mb-3">同行群組</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs text-blue-500 mb-0.5">同行代碼</p>
+            <p class="text-sm font-bold text-gray-900 font-mono tracking-wider">{{ order.group_id }}</p>
+          </div>
+          <a href="/join/{{ order.group_id }}"
+             class="text-xs font-medium text-blue-600 hover:underline">查看群組 →</a>
+        </div>
+      </div>
+      {% endif %}
+
       {% if vehicle %}
       <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
         <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">車輛資訊</p>

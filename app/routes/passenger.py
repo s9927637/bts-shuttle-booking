@@ -1,4 +1,6 @@
 import uuid
+import random
+import string
 from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from app import db
@@ -21,6 +23,12 @@ DEPARTURE_OPTIONS = [
 
 def _gen_order_no(order_id: int) -> str:
     return f"BTS-KHH-{order_id:06d}"
+
+
+def _gen_group_id() -> str:
+    chars = string.ascii_uppercase + string.digits
+    suffix = ''.join(random.choices(chars, k=6))
+    return f"BTS-FRIEND-{suffix}"
 
 
 # ── 首頁 ────────────────────────────────────────────────────────────────────
@@ -79,6 +87,15 @@ def booking_submit():
         deposit_amount  = passenger_count * DEPOSIT_PER_PERSON
         balance_amount  = passenger_count * BALANCE_PER_PERSON
 
+        # 加入現有群組或建立新群組
+        join_group_id = request.form.get("join_group_id", "").strip() or None
+        if join_group_id:
+            # 驗證群組存在且日期相符
+            ref = Order.query.filter_by(group_id=join_group_id).first()
+            if not ref or ref.departure_date != form_data["departure_date"]:
+                join_group_id = None
+        group_id = join_group_id or _gen_group_id()
+
         order = Order(
             order_no        = "TEMP",
             contact_name    = form_data["contact_name"],
@@ -91,6 +108,7 @@ def booking_submit():
             deposit_amount  = deposit_amount,
             balance_amount  = balance_amount,
             payment_status  = "待付款",
+            group_id        = group_id,
             line_user_id    = line_user_id,
             display_name    = display_name,
         )
@@ -100,7 +118,7 @@ def booking_submit():
         db.session.commit()
 
         flash(f"預約成功！您的訂單編號為 {order.order_no}，請完成訂金匯款後回報。", "success")
-        return redirect(url_for("passenger.payment_report", order_no=order.order_no))
+        return redirect(url_for("passenger.payment_report", order_no=order.order_no, group_id=order.group_id))
 
     except Exception as e:
         db.session.rollback()
@@ -175,19 +193,25 @@ def order_search():
 
 @passenger_bp.route("/payment/report", methods=["GET"])
 def payment_report():
-    from app.models.vehicle import Vehicle
     prefill_order_no = request.args.get("order_no", "")
     line_user_id     = request.args.get("line_user_id", "")
-    # 若有 line_user_id，預先撈出待付款訂單供前端選擇
+    group_id         = request.args.get("group_id", "")
     line_orders = []
     if line_user_id:
         line_orders = Order.query.filter_by(line_user_id=line_user_id)\
                                  .filter(Order.payment_status.in_(["待付款", "待確認"]))\
                                  .order_by(Order.created_at.desc()).all()
+    # 取得群組資訊
+    group_orders = []
+    if group_id:
+        group_orders = Order.query.filter_by(group_id=group_id)\
+                                  .order_by(Order.created_at.asc()).all()
     return render_template("passenger/payment_report.html",
                            prefill_order_no=prefill_order_no,
                            line_user_id=line_user_id,
-                           line_orders=line_orders)
+                           line_orders=line_orders,
+                           group_id=group_id,
+                           group_orders=group_orders)
 
 
 @passenger_bp.route("/payment/report", methods=["POST"])
@@ -227,3 +251,56 @@ def payment_report_submit():
         db.session.rollback()
         flash(f"回報失敗，請重試。（{e}）", "error")
         return redirect(url_for("passenger.payment_report", order_no=order_no))
+
+
+# ── 同行群組邀請連結 ─────────────────────────────────────────────────────────
+
+@passenger_bp.route("/join/<group_id>")
+def join_group(group_id):
+    group_orders = Order.query.filter_by(group_id=group_id)\
+                              .order_by(Order.created_at.asc()).all()
+    if not group_orders:
+        return render_template("passenger/join_group.html",
+                               group_id=group_id, group_orders=[], not_found=True)
+    departure_date = group_orders[0].departure_date
+    total_pax = sum(o.passenger_count for o in group_orders)
+    line_user_id = request.args.get("line_user_id", "")
+    return render_template("passenger/join_group.html",
+                           group_id=group_id,
+                           group_orders=group_orders,
+                           departure_date=departure_date,
+                           total_pax=total_pax,
+                           line_user_id=line_user_id,
+                           not_found=False)
+
+
+@passenger_bp.route("/join/<group_id>", methods=["POST"])
+def join_group_submit(group_id):
+    order_no = request.form.get("order_no", "").strip()
+    group_orders = Order.query.filter_by(group_id=group_id).all()
+    if not group_orders:
+        flash("找不到同行群組。", "error")
+        return redirect(url_for("passenger.join_group", group_id=group_id))
+
+    order = Order.query.filter_by(order_no=order_no).first()
+    if not order:
+        flash("找不到此訂單編號。", "error")
+        return redirect(url_for("passenger.join_group", group_id=group_id))
+
+    if order.group_id == group_id:
+        flash("此訂單已在同行群組中。", "error")
+        return redirect(url_for("passenger.join_group", group_id=group_id))
+
+    if order.departure_date != group_orders[0].departure_date:
+        flash("訂單出發日期與群組不符，無法加入。", "error")
+        return redirect(url_for("passenger.join_group", group_id=group_id))
+
+    try:
+        order.group_id = group_id
+        db.session.commit()
+        flash(f"已成功加入同行群組！", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"加入失敗：{e}", "error")
+
+    return redirect(url_for("passenger.join_group", group_id=group_id))

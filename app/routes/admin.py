@@ -42,6 +42,7 @@ def dashboard():
     if guard:
         return guard
 
+    total_groups      = db.session.query(func.count(func.distinct(Order.group_id))).filter(Order.group_id.isnot(None)).scalar() or 0
     total_orders      = db.session.query(func.count(Order.id)).scalar() or 0
     total_passengers  = db.session.query(func.sum(Order.passenger_count)).scalar() or 0
     unpaid_orders     = db.session.query(func.count(Order.id)).filter(Order.payment_status == "待付款").scalar() or 0
@@ -66,6 +67,7 @@ def dashboard():
     return render_template(
         "admin/dashboard.html",
         stats={
+            "total_groups":             total_groups,
             "total_orders":             total_orders,
             "total_passengers":         total_passengers,
             "unpaid_orders":            unpaid_orders,

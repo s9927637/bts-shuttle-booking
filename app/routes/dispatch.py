@@ -90,6 +90,8 @@ def auto():
         f"分配 {result['orders_assigned']} 筆訂單。",
         "success",
     )
+    for w in result.get("warnings", []):
+        flash(w, "error")
     return redirect(url_for("dispatch.index", date=date))
 
 

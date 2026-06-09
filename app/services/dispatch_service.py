@@ -47,13 +47,12 @@ def assign_order(dispatch: Dispatch, order: Order) -> bool:
 def auto_dispatch(departure_date: str) -> dict:
     """
     自動排車：
-    - 只處理 payment_status='已付款' AND dispatch_id IS NULL
-    - 依建立時間排序
+    Priority 1: 相同 group_id 的訂單優先同車
+    Priority 2: 依建立時間排序
+    Priority 3: 優先塞滿車
+    - 同一 group 若總人數 > MAX_CAPACITY，不自動排車，回傳警告
     - 同一訂單不拆車
-    - 優先塞滿車後再開新車
-    回傳 { "dispatches_created": int, "orders_assigned": int }
     """
-    # 取出符合條件的訂單，依建立時間排序
     orders = (
         Order.query
         .filter_by(departure_date=departure_date, payment_status="訂金已確認")
@@ -63,61 +62,106 @@ def auto_dispatch(departure_date: str) -> dict:
     )
 
     if not orders:
-        return {"dispatches_created": 0, "orders_assigned": 0}
+        return {"dispatches_created": 0, "orders_assigned": 0, "warnings": []}
 
-    # 取出該日期可用車輛（已有 dispatch 且尚未滿的車）
     existing_dispatches = (
         Dispatch.query
         .filter_by(departure_date=departure_date)
         .all()
     )
 
-    # 以可用空間排序，優先塞滿
     active = [d for d in existing_dispatches if calculate_capacity(d) < MAX_CAPACITY]
 
+    # 群組分析：計算每個 group 的總人數
+    from collections import defaultdict
+    group_pax = defaultdict(int)
+    group_orders_map = defaultdict(list)
+    solo_orders = []
+
+    for o in orders:
+        if o.group_id:
+            group_pax[o.group_id] += o.passenger_count
+            group_orders_map[o.group_id].append(o)
+        else:
+            solo_orders.append(o)
+
+    warnings = []
     dispatches_created = 0
     orders_assigned = 0
+    assigned_ids = set()
 
-    for order in orders:
-        placed = False
+    def _get_or_create_vehicle():
+        used_vehicle_ids = {d.vehicle_id for d in existing_dispatches}
+        return Vehicle.query.filter(Vehicle.id.notin_(used_vehicle_ids)).first()
 
-        # 嘗試放入現有 dispatch
-        for dispatch in active:
+    def _place_order(order, preferred_dispatch=None):
+        nonlocal dispatches_created, orders_assigned
+        targets = [preferred_dispatch] if preferred_dispatch else []
+        targets += [d for d in active if d is not preferred_dispatch]
+
+        for dispatch in targets:
             if assign_order(dispatch, order):
-                placed = True
                 orders_assigned += 1
-                # 若滿了，移出 active
+                assigned_ids.add(order.id)
                 if calculate_capacity(dispatch) >= MAX_CAPACITY:
-                    active.remove(dispatch)
+                    if dispatch in active:
+                        active.remove(dispatch)
+                return dispatch
+
+        # 需要新車
+        free_vehicle = _get_or_create_vehicle()
+        if free_vehicle is None:
+            return None
+        new_d = create_dispatch(departure_date=departure_date, vehicle_id=free_vehicle.id)
+        existing_dispatches.append(new_d)
+        nonlocal dispatches_created
+        dispatches_created += 1
+        if assign_order(new_d, order):
+            orders_assigned += 1
+            assigned_ids.add(order.id)
+            if calculate_capacity(new_d) < MAX_CAPACITY:
+                active.append(new_d)
+        return new_d
+
+    # Priority 1：處理群組訂單
+    for gid, g_orders in group_orders_map.items():
+        total = group_pax[gid]
+        if total > MAX_CAPACITY:
+            warnings.append(f"同行群組 {gid} 共 {total} 人，超過單車容量，請管理員手動安排。")
+            continue
+
+        # 找一台有足夠空間的車放整個群組
+        placed_dispatch = None
+        for d in active:
+            if calculate_capacity(d) + total <= MAX_CAPACITY:
+                placed_dispatch = d
                 break
 
-        if not placed:
-            # 需要新車：取一台尚未被 dispatch 使用的車輛
-            used_vehicle_ids = {d.vehicle_id for d in existing_dispatches}
-            free_vehicle = (
-                Vehicle.query
-                .filter(Vehicle.id.notin_(used_vehicle_ids))
-                .first()
-            )
-
+        if placed_dispatch is None:
+            free_vehicle = _get_or_create_vehicle()
             if free_vehicle is None:
-                # 沒有可用車輛，略過
+                warnings.append(f"同行群組 {gid} 無可用車輛。")
                 continue
-
-            new_dispatch = create_dispatch(
-                departure_date=departure_date,
-                vehicle_id=free_vehicle.id,
-            )
-            existing_dispatches.append(new_dispatch)
+            placed_dispatch = create_dispatch(departure_date=departure_date, vehicle_id=free_vehicle.id)
+            existing_dispatches.append(placed_dispatch)
             dispatches_created += 1
+            if calculate_capacity(placed_dispatch) < MAX_CAPACITY:
+                active.append(placed_dispatch)
 
-            if assign_order(new_dispatch, order):
+        for o in g_orders:
+            if assign_order(placed_dispatch, o):
                 orders_assigned += 1
-                if calculate_capacity(new_dispatch) < MAX_CAPACITY:
-                    active.append(new_dispatch)
+                assigned_ids.add(o.id)
+        if calculate_capacity(placed_dispatch) >= MAX_CAPACITY and placed_dispatch in active:
+            active.remove(placed_dispatch)
+
+    # Priority 2：處理無群組訂單
+    for order in solo_orders:
+        if order.id not in assigned_ids:
+            _place_order(order)
 
     db.session.commit()
-    return {"dispatches_created": dispatches_created, "orders_assigned": orders_assigned}
+    return {"dispatches_created": dispatches_created, "orders_assigned": orders_assigned, "warnings": warnings}
 
 
 def remove_order_from_dispatch(order: Order) -> bool:

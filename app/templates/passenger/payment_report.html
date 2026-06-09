@@ -135,6 +135,67 @@
     </p>
 
   </form>
+
+  {% if group_id %}
+  <!-- 同行群組邀請卡 -->
+  <div class="mt-8 bg-white border border-blue-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex items-center gap-2 mb-4">
+      <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <h3 class="text-sm font-semibold text-gray-900">邀請朋友同行</h3>
+    </div>
+    <p class="text-xs text-gray-500 mb-4">分享同行代碼，讓朋友的訂單與您安排同一台車。</p>
+
+    <!-- 同行代碼 -->
+    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+      <p class="text-xs text-gray-400 mb-1.5">同行代碼</p>
+      <div class="flex items-center justify-between">
+        <span id="group-code" class="text-base font-bold text-gray-900 font-mono tracking-wider">{{ group_id }}</span>
+        <button type="button" onclick="copyCode(this)"
+                class="text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+          複製代碼
+        </button>
+      </div>
+    </div>
+
+    <!-- 邀請連結 -->
+    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+      <p class="text-xs text-gray-400 mb-1.5">邀請連結</p>
+      <div class="flex items-center justify-between gap-2">
+        <span id="invite-link" class="text-xs text-gray-600 font-mono break-all">{{ request.host_url }}join/{{ group_id }}</span>
+        <button type="button" onclick="copyLink(this)"
+                class="shrink-0 text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+          複製
+        </button>
+      </div>
+    </div>
+
+    <!-- LINE 分享 -->
+    <button type="button" onclick="shareToLine()"
+            class="w-full py-3 px-6 bg-[#06C755] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.979C23.176 14.393 24 12.458 24 10.314"/>
+      </svg>
+      邀請朋友同行（LINE 分享）
+    </button>
+
+    {% if group_orders and group_orders|length > 1 %}
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <p class="text-xs text-gray-400 mb-2">目前群組成員（{{ group_orders|length }} 筆訂單）</p>
+      <div class="space-y-1.5">
+        {% for o in group_orders %}
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-700 font-medium">{{ o.contact_name }}</span>
+          <span class="text-gray-400">{{ o.passenger_count }} 人</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
 </div>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -145,6 +206,38 @@ function copyAcct(btn) {
     btn.textContent = '已複製';
     setTimeout(() => { btn.textContent = '複製'; }, 2000);
   });
+}
+
+function copyCode(btn) {
+  const code = document.getElementById('group-code').textContent.trim();
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '已複製！';
+    setTimeout(() => { btn.textContent = '複製代碼'; }, 2000);
+  });
+}
+
+function copyLink(btn) {
+  const link = document.getElementById('invite-link').textContent.trim();
+  navigator.clipboard.writeText(link).then(() => {
+    btn.textContent = '已複製！';
+    setTimeout(() => { btn.textContent = '複製'; }, 2000);
+  });
+}
+
+function shareToLine() {
+  const link = document.getElementById('invite-link') ? document.getElementById('invite-link').textContent.trim() : '';
+  const code = document.getElementById('group-code') ? document.getElementById('group-code').textContent.trim() : '';
+  const msg = `我已完成 BTS 高雄演唱會包車預約！邀請你一起同行，點連結加入我們的包車群組：\n${link}\n\n或輸入同行代碼：${code}`;
+
+  if (liff && liff.isInClient()) {
+    liff.shareTargetPicker([{
+      type: 'text',
+      text: msg,
+    }]).catch(() => {});
+  } else {
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://line.me/R/msg/text/?${encoded}`, '_blank');
+  }
 }
 
 // 訂金/尾款金額對照（從後端注入）

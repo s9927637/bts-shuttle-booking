@@ -2,33 +2,33 @@
 {% block title %}公告中心 — BTS Shuttle{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6">
+<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
 
   <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">公告中心</h1>
-    <p class="mt-1.5 text-sm text-gray-500">最新消息與重要通知。</p>
+  <div class="mb-10">
+    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">公告中心</h1>
+    <p class="mt-2 text-sm text-gray-500">最新消息與重要通知。</p>
   </div>
 
   {% if announcements %}
-  <div class="space-y-3">
+  <div class="space-y-4">
     {% for a in announcements %}
     <a href="/announcements/{{ a.id }}"
-       class="block bg-white border border-gray-100 rounded-2xl p-5 hover:border-gray-200 hover:shadow-sm transition-all">
+       class="block bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
 
-      <!-- Type + Pin badges -->
-      <div class="flex items-center gap-2 mb-2.5">
+      <!-- Type + Pin + Date row -->
+      <div class="flex items-center gap-2 mb-3">
         {% if a.is_pinned %}
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
             📌 置頂
           </span>
         {% endif %}
         {% if a.announcement_type == '緊急公告' %}
-          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
             <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>緊急公告
           </span>
         {% elif a.announcement_type == '重要公告' %}
-          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>重要公告
           </span>
         {% else %}
@@ -42,15 +42,15 @@
       </div>
 
       <!-- Title -->
-      <p class="text-sm font-semibold text-gray-900 mb-1.5 leading-snug">{{ a.title }}</p>
+      <p class="text-base font-semibold text-gray-900 mb-2 leading-snug">{{ a.title }}</p>
 
       <!-- Excerpt -->
-      <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">
+      <p class="text-sm text-gray-500 leading-relaxed line-clamp-2">
         {{ a.content[:120] }}{% if a.content | length > 120 %}…{% endif %}
       </p>
 
-      <!-- CTA -->
-      <div class="mt-3 flex items-center gap-1 text-xs font-medium text-gray-400">
+      <!-- Arrow hint -->
+      <div class="mt-4 flex items-center gap-1 text-xs font-medium text-gray-400">
         查看詳情
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
@@ -82,7 +82,7 @@
 
   {% else %}
   <!-- Empty state -->
-  <div class="flex flex-col items-center justify-center py-20 text-center">
+  <div class="flex flex-col items-center justify-center py-16 text-center">
     <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
       <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"

@@ -88,6 +88,7 @@
   <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
     <h2 class="text-sm font-semibold text-gray-900 mb-5">輸入您的訂單編號加入</h2>
     <form action="/join/{{ group_id }}" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div>
         <label class="block text-xs font-medium text-gray-500 mb-1.5">
           訂單編號 <span class="text-red-400">*</span>

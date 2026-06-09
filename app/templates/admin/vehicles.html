@@ -103,6 +103,7 @@
                   取消
                 </button>
                 <form action="{{ url_for('admin.vehicle_delete', vehicle_id=v.id) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                   <button type="submit"
                           class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
                     確認刪除
@@ -145,6 +146,7 @@
       </div>
 
       <form action="{{ url_for('admin.vehicle_create') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="px-6 py-5 grid grid-cols-2 gap-4">
 
           <div class="col-span-2">
@@ -208,6 +210,7 @@
       </div>
 
       <form id="editForm" action="" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="px-6 py-5 grid grid-cols-2 gap-4">
 
           <div class="col-span-2">

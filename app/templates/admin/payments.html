@@ -101,6 +101,7 @@
         <td class="px-6 py-4 text-right">
           <form action="{{ url_for('admin.payment_update_status', payment_id=payment.id) }}" method="post"
                 class="flex items-center justify-end gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <select name="status"
                     class="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
               {% for s in statuses %}

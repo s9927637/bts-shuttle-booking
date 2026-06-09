@@ -18,6 +18,7 @@
   </div>
 
   <form action="/booking" method="post" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <!-- LINE 隱藏欄位，由 LIFF 填入 -->
     <input type="hidden" name="line_user_id" id="f-line-user-id" />
     <input type="hidden" name="display_name"  id="f-display-name" />

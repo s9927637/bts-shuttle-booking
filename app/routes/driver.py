@@ -6,7 +6,7 @@ Driver LIFF 綁定路由
 import os
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify
-from app import db
+from app import db, csrf
 from app.models.driver import Driver
 
 driver_bp = Blueprint("driver", __name__, url_prefix="/driver")
@@ -21,6 +21,7 @@ def bind():
 
 
 @driver_bp.route("/bind/confirm", methods=["POST"])
+@csrf.exempt
 def bind_confirm():
     """
     接收 LIFF 取得的 userId + displayName，

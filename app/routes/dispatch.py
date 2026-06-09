@@ -5,6 +5,7 @@ from app.models.vehicle import Vehicle
 from app.models.driver import Driver
 from app.models.dispatch import Dispatch, DispatchOrder
 from app.models.notification import Notification
+from app import csrf
 from app.services.dispatch_service import (
     auto_dispatch, create_dispatch, assign_order,
     calculate_capacity, remove_order_from_dispatch, move_order_to_dispatch,
@@ -181,6 +182,7 @@ def remove_order():
 # ── Drag & Drop：移動訂單至另一 dispatch（JSON API）──────────────────────────
 
 @dispatch_bp.route("/move", methods=["POST"])
+@csrf.exempt
 def move():
     guard = require_admin()
     if guard:

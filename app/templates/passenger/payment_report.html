@@ -56,6 +56,7 @@
 
   <!-- Form -->
   <form action="/payment/report" method="post" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <!-- LINE 隱藏欄位 -->
     <input type="hidden" name="line_user_id" id="f-line-user-id" value="{{ line_user_id or '' }}" />

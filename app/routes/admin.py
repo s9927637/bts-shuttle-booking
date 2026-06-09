@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, session, redirect, render_template, request, flash, url_for
+from werkzeug.security import generate_password_hash
 from app import db
 from app.models.order import Order
 from app.models.vehicle import Vehicle
@@ -515,7 +516,7 @@ def admin_create():
         return redirect(url_for("admin.admins"))
 
     try:
-        a = Admin(username=username, password_hash=password, display_name=display_name or None)
+        a = Admin(username=username, password_hash=generate_password_hash(password), display_name=display_name or None)
         db.session.add(a)
         db.session.commit()
         flash(f"管理員「{username}」已建立。", "success")
@@ -539,7 +540,7 @@ def admin_update(admin_id):
     try:
         a.display_name = display_name or None
         if password:
-            a.password_hash = password
+            a.password_hash = generate_password_hash(password)
         db.session.commit()
         flash(f"管理員「{a.username}」已更新。", "success")
     except Exception as e:

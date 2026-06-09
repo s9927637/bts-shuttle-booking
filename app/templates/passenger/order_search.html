@@ -4,6 +4,29 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
 
+  <!-- 重要/緊急公告 Banner -->
+  {% if important_announcements %}
+  <div class="mb-6 space-y-2">
+    {% for a in important_announcements %}
+    <a href="/announcements/{{ a.id }}"
+       class="flex items-start gap-3 px-4 py-3 rounded-xl border transition-colors
+              {% if a.announcement_type == '緊急公告' %}bg-red-50 border-red-100 hover:bg-red-100{% else %}bg-amber-50 border-amber-100 hover:bg-amber-100{% endif %}">
+      {% if a.announcement_type == '緊急公告' %}
+        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 mt-0.5">🚨 緊急</span>
+      {% else %}
+        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 mt-0.5">⚠️ 重要</span>
+      {% endif %}
+      <span class="text-sm font-medium {% if a.announcement_type == '緊急公告' %}text-red-800{% else %}text-amber-800{% endif %} leading-snug">
+        {{ a.title }}
+      </span>
+      <svg class="w-3.5 h-3.5 shrink-0 mt-0.5 ml-auto {% if a.announcement_type == '緊急公告' %}text-red-400{% else %}text-amber-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- Header -->
   <div class="mb-10">
     <h1 class="text-3xl font-bold text-gray-900 tracking-tight">查詢訂單</h1>

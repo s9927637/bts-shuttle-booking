@@ -275,6 +275,17 @@ def order_search():
         group_member_count = len(g_orders)
         group_total_pax   = sum(o.passenger_count for o in g_orders)
 
+    # 重要/緊急公告（顯示於頁面頂部，最多 3 筆）
+    important_announcements = (
+        Announcement.query
+        .filter(
+            Announcement.status == "已發布",
+            Announcement.announcement_type.in_(["重要公告", "緊急公告"]),
+        )
+        .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+        .limit(3).all()
+    )
+
     return render_template(
         "passenger/order_search.html",
         order_no=order_no,
@@ -290,6 +301,7 @@ def order_search():
         group_member_count=group_member_count,
         group_total_pax=group_total_pax,
         passenger_liff_id=PASSENGER_LIFF_ID,
+        important_announcements=important_announcements,
     )
 
 

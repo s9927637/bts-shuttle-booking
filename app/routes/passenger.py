@@ -38,8 +38,46 @@ def _gen_group_id() -> str:
 
 @passenger_bp.route("/")
 def home():
-    announcements = Announcement.query.order_by(Announcement.created_at.desc()).limit(3).all()
+    announcements = (
+        Announcement.query
+        .filter(Announcement.status == "已發布")
+        .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+        .limit(3).all()
+    )
     return render_template("passenger/home.html", announcements=announcements)
+
+
+@passenger_bp.route("/announcements")
+def announcement_list():
+    page  = max(1, request.args.get("page", 1, type=int))
+    per   = 10
+    query = (
+        Announcement.query
+        .filter(Announcement.status == "已發布")
+        .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+    )
+    total = query.count()
+    pages = max(1, (total + per - 1) // per)
+    page  = min(page, pages)
+    items = query.offset((page - 1) * per).limit(per).all()
+    return render_template(
+        "passenger/announcements.html",
+        announcements=items, total=total, page=page, pages=pages,
+        passenger_liff_id=PASSENGER_LIFF_ID,
+    )
+
+
+@passenger_bp.route("/announcements/<int:ann_id>")
+def announcement_detail(ann_id):
+    a = Announcement.query.get_or_404(ann_id)
+    if a.status != "已發布":
+        from flask import abort
+        abort(404)
+    return render_template(
+        "passenger/announcement_detail.html",
+        announcement=a,
+        passenger_liff_id=PASSENGER_LIFF_ID,
+    )
 
 
 @passenger_bp.route("/home-old")

@@ -167,6 +167,56 @@ def notify_dispatch_passengers(dispatch) -> list:
     return [send_passenger_notification(order, dispatch) for order in orders]
 
 
+# ── 公告推播 ─────────────────────────────────────────────────────────────────
+
+def send_announcement_notification(announcement) -> dict:
+    """
+    推播公告到指定 LINE 對象。
+    回傳 {"sent": int, "failed": int}
+    """
+    import os
+    from app.models.order import Order
+    from app.models.driver import Driver
+
+    liff_id = os.environ.get("PASSENGER_LIFF_ID", "")
+    excerpt = announcement.content[:100] + ("…" if len(announcement.content) > 100 else "")
+    deep_link = f"https://liff.line.me/{liff_id}/announcements/{announcement.id}" if liff_id else ""
+
+    msg = (
+        f"【BTS高雄演唱會 公告】\n"
+        f"─────────────────\n"
+        f"{announcement.title}\n\n"
+        f"{excerpt}\n"
+    )
+    if deep_link:
+        msg += f"\n詳情請點：{deep_link}"
+
+    target = announcement.line_target or "全部乘客"
+    sent, failed = 0, 0
+
+    if target in ("全部乘客", "11/19 乘客", "11/21 乘客", "11/22 乘客"):
+        q = Order.query.filter(Order.line_user_id.isnot(None))
+        date_map = {"11/19 乘客": "11/19(四)", "11/21 乘客": "11/21(六)", "11/22 乘客": "11/22(日)"}
+        if target in date_map:
+            q = q.filter(Order.departure_date == date_map[target])
+        for order in q.all():
+            ok = _push_passenger(order.line_user_id, msg)
+            if ok:
+                sent += 1
+            else:
+                failed += 1
+
+    elif target == "全部司機":
+        for driver in Driver.query.filter(Driver.line_user_id.isnot(None)).all():
+            ok = _push_driver(driver.line_user_id, msg)
+            if ok:
+                sent += 1
+            else:
+                failed += 1
+
+    return {"sent": sent, "failed": failed}
+
+
 # ── 重新發送（retry）────────────────────────────────────────────────────────
 
 def resend_notification(notification_id: int) -> dict:

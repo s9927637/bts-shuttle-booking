@@ -101,7 +101,26 @@
 
 </div>
 
-<!-- Stats Cards Row 4：通知 -->
+<!-- Stats Cards Row 4：公告 -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">公告總數</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.total_announcements }}</p>
+    <p class="mt-1 text-xs text-gray-400">
+      <a href="/admin/announcements" class="hover:underline">管理公告 →</a>
+    </p>
+  </div>
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">本月公告</p>
+    <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ stats.monthly_announcements }}</p>
+    <p class="mt-1 text-xs text-gray-400">本月發布數量</p>
+  </div>
+
+</div>
+
+<!-- Stats Cards Row 5：通知 -->
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
 
   <div class="bg-white border border-gray-100 rounded-2xl p-5">

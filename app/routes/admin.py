@@ -9,6 +9,7 @@ from app.models.payment import Payment
 from app.models.driver import Driver
 from app.models.admin import Admin
 from app.models.notification import Notification
+from app.models.announcement import Announcement
 from sqlalchemy import func
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -72,6 +73,12 @@ def dashboard():
     line_bound_drivers      = db.session.query(func.count(Driver.id)).filter(Driver.is_line_bound == True).scalar() or 0
     line_unbound_drivers    = db.session.query(func.count(Driver.id)).filter(Driver.is_line_bound == False).scalar() or 0
 
+    now = datetime.utcnow()
+    total_announcements = db.session.query(func.count(Announcement.id)).scalar() or 0
+    monthly_announcements = db.session.query(func.count(Announcement.id)).filter(
+        Announcement.created_at >= now.replace(day=1, hour=0, minute=0, second=0)
+    ).scalar() or 0
+
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
 
     return render_template(
@@ -94,6 +101,8 @@ def dashboard():
             "line_unbound_passengers":   line_unbound_passengers,
             "line_bound_drivers":        line_bound_drivers,
             "line_unbound_drivers":      line_unbound_drivers,
+            "total_announcements":        total_announcements,
+            "monthly_announcements":      monthly_announcements,
         },
         recent_orders=recent_orders,
     )
@@ -580,3 +589,152 @@ def admin_delete(admin_id):
         flash(f"刪除失敗：{e}", "error")
 
     return redirect(url_for("admin.admins"))
+
+
+# ── Announcements ──────────────────────────────────────────────────────────
+
+ANNOUNCEMENT_TYPES = ["一般公告", "重要公告", "緊急公告"]
+ANNOUNCEMENT_STATUSES = ["草稿", "已發布", "已下架"]
+LINE_TARGETS = ["全部乘客", "11/19 乘客", "11/21 乘客", "11/22 乘客", "全部司機"]
+
+
+@admin_bp.route("/announcements")
+def announcements():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    page  = max(1, request.args.get("page", 1, type=int))
+    query = Announcement.query.order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+    total = query.count()
+    pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+    page  = min(page, pages)
+    items = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+
+    return render_template(
+        "admin/announcements.html",
+        announcements=items,
+        total=total, page=page, pages=pages,
+        announcement_types=ANNOUNCEMENT_TYPES,
+        announcement_statuses=ANNOUNCEMENT_STATUSES,
+        line_targets=LINE_TARGETS,
+    )
+
+
+@admin_bp.route("/announcements/create", methods=["POST"])
+def announcement_create():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    try:
+        a = Announcement(
+            title             = request.form["title"].strip(),
+            content           = request.form["content"].strip(),
+            announcement_type = request.form.get("announcement_type", "一般公告"),
+            status            = request.form.get("status", "草稿"),
+            is_pinned         = bool(request.form.get("is_pinned")),
+            publish_to_line   = bool(request.form.get("publish_to_line")),
+            line_target       = request.form.get("line_target") or None,
+        )
+        db.session.add(a)
+        db.session.flush()
+
+        if a.status == "已發布" and a.publish_to_line:
+            from app.services.line_service import send_announcement_notification
+            send_announcement_notification(a)
+
+        db.session.commit()
+        flash("公告已建立。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"建立失敗：{e}", "error")
+
+    return redirect(url_for("admin.announcements"))
+
+
+@admin_bp.route("/announcements/<int:ann_id>/update", methods=["POST"])
+def announcement_update(ann_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    a = Announcement.query.get_or_404(ann_id)
+    old_status = a.status
+    try:
+        a.title             = request.form["title"].strip()
+        a.content           = request.form["content"].strip()
+        a.announcement_type = request.form.get("announcement_type", a.announcement_type)
+        a.status            = request.form.get("status", a.status)
+        a.is_pinned         = bool(request.form.get("is_pinned"))
+        a.publish_to_line   = bool(request.form.get("publish_to_line"))
+        a.line_target       = request.form.get("line_target") or None
+        a.updated_at        = datetime.utcnow()
+
+        if a.status == "已發布" and old_status != "已發布" and a.publish_to_line:
+            from app.services.line_service import send_announcement_notification
+            send_announcement_notification(a)
+
+        db.session.commit()
+        flash("公告已更新。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"更新失敗：{e}", "error")
+
+    return redirect(url_for("admin.announcements"))
+
+
+@admin_bp.route("/announcements/<int:ann_id>/delete", methods=["POST"])
+def announcement_delete(ann_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    a = Announcement.query.get_or_404(ann_id)
+    try:
+        db.session.delete(a)
+        db.session.commit()
+        flash("公告已刪除。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"刪除失敗：{e}", "error")
+
+    return redirect(url_for("admin.announcements"))
+
+
+# ── Notifications Log ──────────────────────────────────────────────────────
+
+@admin_bp.route("/notifications")
+def notifications_log():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    page  = max(1, request.args.get("page", 1, type=int))
+    query = Notification.query.order_by(Notification.created_at.desc())
+    total = query.count()
+    pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+    page  = min(page, pages)
+    items = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+
+    return render_template(
+        "admin/notifications.html",
+        notifications=items,
+        total=total, page=page, pages=pages,
+    )
+
+
+@admin_bp.route("/notifications/<int:notif_id>/resend", methods=["POST"])
+def notification_resend(notif_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    from app.services.line_service import resend_notification
+    result = resend_notification(notif_id)
+    if result["status"] == "success":
+        flash("已重新發送。", "success")
+    else:
+        flash(f"發送失敗：{result.get('msg', '')}", "error")
+
+    return redirect(url_for("admin.notifications_log"))

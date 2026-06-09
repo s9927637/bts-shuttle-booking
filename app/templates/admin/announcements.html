@@ -1,0 +1,178 @@
+{% extends "layouts/admin_base.html" %}
+
+{% block title %}公告管理{% endblock %}
+{% block page_title %}公告管理{% endblock %}
+
+{% block content %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+    {% if category == 'success' %}bg-green-50 text-green-700 border border-green-100{% else %}bg-red-50 text-red-700 border border-red-100{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+  <p class="text-sm text-gray-500">共 {{ total }} 則公告</p>
+  <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+          class="px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+    新增公告
+  </button>
+</div>
+
+<!-- Table -->
+<div class="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead class="bg-gray-50 border-b border-gray-100">
+        <tr>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">標題</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">類型</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">狀態</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">置頂</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">LINE 推播</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">建立時間</th>
+          <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for a in announcements %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4 font-medium text-gray-900 max-w-xs">
+            {{ a.title }}
+          </td>
+          <td class="px-6 py-4">
+            {% if a.announcement_type == '緊急公告' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">緊急</span>
+            {% elif a.announcement_type == '重要公告' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">重要</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">一般</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if a.status == '已發布' %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已發布
+              </span>
+            {% elif a.status == '已下架' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">已下架</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700">草稿</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if a.is_pinned %}
+              <span class="text-amber-500 font-bold">⭐</span>
+            {% else %}
+              <span class="text-gray-300">—</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-xs text-gray-500">
+            {% if a.publish_to_line %}{{ a.line_target or '—' }}{% else %}—{% endif %}
+          </td>
+          <td class="px-6 py-4 text-xs text-gray-400">{{ a.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <button onclick="openEditModal({{ a.id }}, {{ a.title|tojson }}, {{ a.content|tojson }}, {{ a.announcement_type|tojson }}, {{ a.status|tojson }}, {{ a.is_pinned|tojson }}, {{ a.publish_to_line|tojson }}, {{ (a.line_target or '')|tojson }})"
+                      class="text-xs text-blue-600 hover:text-blue-800 font-medium">編輯</button>
+              <form method="post" action="/admin/announcements/{{ a.id }}/delete"
+                    onsubmit="return confirm('確定刪除此公告？')" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button class="text-xs text-red-500 hover:text-red-700 font-medium">刪除</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-400">目前沒有公告</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pages > 1 %}
+  <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+    <p class="text-xs text-gray-400">第 {{ page }} / {{ pages }} 頁</p>
+    <div class="flex gap-2">
+      {% if page > 1 %}
+      <a href="?page={{ page - 1 }}" class="px-3 py-1 text-xs font-medium bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">上一頁</a>
+      {% endif %}
+      {% if page < pages %}
+      <a href="?page={{ page + 1 }}" class="px-3 py-1 text-xs font-medium bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">下一頁</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- Create Modal -->
+<div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900">新增公告</h2>
+      <button onclick="document.getElementById('createModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+    <form method="post" action="/admin/announcements/create" class="p-6 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {% include "admin/_announcement_form.html" %}
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
+                class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">取消</button>
+        <button type="submit" class="px-5 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">建立</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900">編輯公告</h2>
+      <button onclick="document.getElementById('editModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+    <form id="editForm" method="post" action="" class="p-6 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {% include "admin/_announcement_form.html" %}
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')"
+                class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">取消</button>
+        <button type="submit" class="px-5 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">儲存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, title, content, type, status, isPinned, publishToLine, lineTarget) {
+  const form = document.getElementById('editForm');
+  form.action = `/admin/announcements/${id}/update`;
+  form.querySelector('[name=title]').value = title;
+  form.querySelector('[name=content]').value = content;
+  form.querySelector('[name=announcement_type]').value = type;
+  form.querySelector('[name=status]').value = status;
+  form.querySelector('[name=is_pinned]').checked = isPinned;
+  form.querySelector('[name=publish_to_line]').checked = publishToLine;
+  const lt = form.querySelector('[name=line_target]');
+  if (lt) lt.value = lineTarget;
+  toggleLineTarget(form.querySelector('[name=publish_to_line]'), form);
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+function toggleLineTarget(cb, form) {
+  const wrap = (form || document).querySelector('.line-target-wrap');
+  if (!wrap) return;
+  wrap.classList.toggle('hidden', !cb.checked);
+}
+</script>
+
+{% endblock %}

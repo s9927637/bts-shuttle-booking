@@ -63,12 +63,14 @@ def book():
 
 @passenger_bp.route("/booking", methods=["GET"])
 def booking():
+    friend_code = request.args.get("friend_code", "").strip() or None
     return render_template("passenger/booking.html",
                            price_per_person=PRICE_PER_PERSON,
                            deposit_per_person=DEPOSIT_PER_PERSON,
                            balance_per_person=BALANCE_PER_PERSON,
                            departure_options=DEPARTURE_OPTIONS,
                            passenger_liff_id=PASSENGER_LIFF_ID,
+                           prefill_friend_code=friend_code,
                            form={})
 
 

@@ -84,26 +84,65 @@
     </div>
   </div>
 
-  <!-- 加入表單 -->
+  <!-- 您是否已完成預約？ -->
   <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-    <h2 class="text-sm font-semibold text-gray-900 mb-5">輸入您的訂單編號加入</h2>
-    <form action="/join/{{ group_id }}" method="post" class="space-y-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1.5">
-          訂單編號 <span class="text-red-400">*</span>
-        </label>
-        <input type="text" name="order_no" required
-               placeholder="BTS-KHH-000001"
-               id="join-order-no"
-               class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 font-mono focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder-gray-300" />
-        <p class="mt-1.5 text-xs text-gray-400">請輸入您在預約時取得的訂單編號</p>
+    <h2 class="text-sm font-semibold text-gray-900 mb-1">您是否已完成預約？</h2>
+    <p class="text-xs text-gray-400 mb-5">請選擇您的狀態，我們將引導您完成後續步驟。</p>
+
+    <div class="flex items-center gap-4 mb-6">
+      <label class="flex items-center gap-2.5 cursor-pointer">
+        <input type="radio" name="booking_status" value="done" checked
+               class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+               onchange="toggleJoinMode(this.value)" />
+        <span class="text-sm text-gray-700">我已完成預約</span>
+      </label>
+      <label class="flex items-center gap-2.5 cursor-pointer">
+        <input type="radio" name="booking_status" value="new"
+               class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+               onchange="toggleJoinMode(this.value)" />
+        <span class="text-sm text-gray-700">我尚未預約</span>
+      </label>
+    </div>
+
+    <!-- 已有訂單：輸入訂單編號加入 -->
+    <div id="join-existing">
+      <form action="/join/{{ group_id }}" method="post" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">
+            訂單編號 <span class="text-red-400">*</span>
+          </label>
+          <input type="text" name="order_no" required
+                 placeholder="BTS-KHH-000001"
+                 id="join-order-no"
+                 class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 font-mono focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder-gray-300" />
+          <p class="mt-1.5 text-xs text-gray-400">請輸入您在預約時取得的訂單編號</p>
+        </div>
+        <button type="submit"
+                class="w-full py-3 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+          加入同行群組
+        </button>
+      </form>
+    </div>
+
+    <!-- 尚未預約：跳轉到 booking 並帶入 friend_code -->
+    <div id="join-new" class="hidden">
+      <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl mb-4">
+        <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-xs text-blue-700 leading-relaxed">
+          完成預約後，系統將自動將您的訂單加入同行群組，不需要再次輸入代碼。
+        </p>
       </div>
-      <button type="submit"
-              class="w-full py-3 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
-        加入同行群組
-      </button>
-    </form>
+      <a href="/booking?friend_code={{ group_id }}"
+         class="w-full py-3 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+        立即預約
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </div>
   </div>
 
   {% endif %}
@@ -112,6 +151,11 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
+function toggleJoinMode(val) {
+  document.getElementById('join-existing').classList.toggle('hidden', val === 'new');
+  document.getElementById('join-new').classList.toggle('hidden', val === 'done');
+}
+
 // LIFF：若登入且有訂單，嘗試自動填入訂單編號
 liff.init({ liffId: '2007738901-IDdb6jr9' })
   .then(() => {

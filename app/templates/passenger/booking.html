@@ -11,6 +11,16 @@
     <p class="mt-2 text-sm text-gray-500">請確認所有資料正確後送出，完成後請至「匯款回報」完成付款。</p>
   </div>
 
+  <!-- 朋友邀請提示（從 /join 頁面帶入 friend_code 時顯示） -->
+  {% if prefill_friend_code %}
+  <div class="mb-6 flex items-start gap-3 px-4 py-3.5 bg-blue-50 border border-blue-100 rounded-xl">
+    <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+    <p class="text-sm text-blue-700">您已透過朋友邀請加入同行群組，完成預約後將自動與朋友安排同一台車。</p>
+  </div>
+  {% endif %}
+
   <!-- LINE 身份提示（LIFF 登入成功時顯示） -->
   <div id="line-identity" class="hidden mb-6 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
     <img id="line-avatar" src="" class="w-8 h-8 rounded-full object-cover hidden" />
@@ -109,13 +119,17 @@
         <p class="text-xs font-medium text-gray-500 mb-3">是否與朋友同車？</p>
         <div class="flex items-center gap-6">
           <label class="flex items-center gap-2.5 cursor-pointer">
-            <input type="radio" name="with_friends" value="no" checked
+            <input type="radio" name="with_friends" value="no"
+                   id="radio-no"
+                   {% if not prefill_friend_code %}checked{% endif %}
                    class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
                    onchange="toggleFriendCode(this.value)" />
             <span class="text-sm text-gray-700">否</span>
           </label>
           <label class="flex items-center gap-2.5 cursor-pointer">
             <input type="radio" name="with_friends" value="yes"
+                   id="radio-yes"
+                   {% if prefill_friend_code %}checked{% endif %}
                    class="w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-900"
                    onchange="toggleFriendCode(this.value)" />
             <span class="text-sm text-gray-700">是</span>
@@ -123,9 +137,10 @@
         </div>
       </div>
 
-      <div id="friend-code-wrap" class="hidden space-y-1.5">
+      <div id="friend-code-wrap" class="{% if not prefill_friend_code %}hidden {% endif %}space-y-1.5">
         <label for="friend_code" class="block text-xs font-medium text-gray-500">同行代碼（選填）</label>
         <input type="text" id="friend_code" name="friend_code"
+               value="{{ prefill_friend_code or '' }}"
                placeholder="若朋友已建立同行群組，請輸入同行代碼"
                class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono" />
         <p class="text-xs text-gray-400 leading-relaxed">

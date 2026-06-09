@@ -31,10 +31,12 @@ def create_app():
     from app.routes.admin import admin_bp
     from app.routes.auth import auth_bp
     from app.routes.dispatch import dispatch_bp
+    from app.routes.driver import driver_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dispatch_bp)
+    app.register_blueprint(driver_bp)
 
     return app

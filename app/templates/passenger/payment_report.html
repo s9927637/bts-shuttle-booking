@@ -275,7 +275,7 @@ if (sel && sel.tagName === 'SELECT') {
 }
 
 // 若 URL 未帶 line_user_id，嘗試從 LIFF 取得後補入隱藏欄位
-liff.init({ liffId: '2007738901-IDdb6jr9' })
+liff.init({ liffId: '{{ passenger_liff_id }}' })
   .then(() => {
     if (liff.isLoggedIn()) {
       return liff.getProfile().then(profile => {

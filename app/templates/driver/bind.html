@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>司機 LINE 綁定 — BTS 演唱會包車</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/flowbite@2.3.0/dist/flowbite.min.css" rel="stylesheet" />
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+
+<div class="w-full max-w-sm">
+
+  <!-- Logo / Title -->
+  <div class="text-center mb-8">
+    <div class="inline-flex w-14 h-14 bg-gray-900 rounded-2xl items-center justify-center mb-4">
+      <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+      </svg>
+    </div>
+    <h1 class="text-xl font-bold text-gray-900">司機 LINE 綁定</h1>
+    <p class="mt-1 text-sm text-gray-500">BTS 高雄演唱會包車</p>
+  </div>
+
+  <!-- 狀態卡片 -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+
+    <!-- 載入中 -->
+    <div id="state-loading" class="px-6 py-8 text-center">
+      <div class="flex items-center justify-center gap-2 text-sm text-gray-400">
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        正在取得 LINE 身份…
+      </div>
+    </div>
+
+    <!-- 輸入電話表單 -->
+    <div id="state-form" class="hidden px-6 py-6 space-y-5">
+      <div>
+        <p class="text-sm font-semibold text-gray-900 mb-1">輸入您的手機號碼</p>
+        <p class="text-xs text-gray-400">請輸入向管理員登記的電話號碼，系統將自動完成綁定。</p>
+      </div>
+
+      <div id="line-info" class="hidden flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
+        <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <p class="text-xs text-green-700 font-semibold" id="line-display-name-text"></p>
+          <p class="text-xs text-green-500" id="line-uid-text"></p>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">手機號碼 <span class="text-red-400">*</span></label>
+        <input id="input-phone" type="tel" placeholder="0912-345-678"
+               class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+      </div>
+
+      <button id="btn-bind" type="button"
+              class="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+        完成綁定
+      </button>
+
+      <div id="bind-error" class="hidden text-xs text-red-500 text-center"></div>
+    </div>
+
+    <!-- 成功 -->
+    <div id="state-success" class="hidden px-6 py-8 text-center space-y-3">
+      <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto">
+        <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-semibold text-gray-900" id="success-message"></p>
+      <p class="text-xs text-gray-400">您將透過此 LINE 帳號接收派車通知，無需再次操作。</p>
+    </div>
+
+    <!-- 失敗（未登入 LINE） -->
+    <div id="state-no-line" class="hidden px-6 py-8 text-center space-y-3">
+      <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto">
+        <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-semibold text-gray-900">請透過 LINE 開啟此頁面</p>
+      <p class="text-xs text-gray-400">此頁面需要在 LINE 應用程式內開啟才能完成綁定。</p>
+    </div>
+
+  </div>
+
+  <p class="mt-6 text-center text-xs text-gray-300">© 2025 BTS 演唱會包車預約系統</p>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+const LIFF_ID = "{{ liff_id }}";
+const BIND_URL = "/driver/bind/confirm";
+
+let lineUserId = null;
+let displayName = null;
+
+function show(id) {
+  ["state-loading", "state-form", "state-success", "state-no-line"].forEach(s => {
+    document.getElementById(s).classList.add("hidden");
+  });
+  document.getElementById(id).classList.remove("hidden");
+}
+
+liff.init({ liffId: LIFF_ID })
+  .then(() => {
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    return liff.getProfile().then(profile => {
+      lineUserId  = profile.userId;
+      displayName = profile.displayName;
+
+      document.getElementById("line-display-name-text").textContent = displayName;
+      document.getElementById("line-uid-text").textContent = lineUserId.substring(0, 16) + "…";
+      document.getElementById("line-info").classList.remove("hidden");
+
+      show("state-form");
+    });
+  })
+  .catch(() => {
+    show("state-no-line");
+  });
+
+document.getElementById("btn-bind").addEventListener("click", async () => {
+  const phone = document.getElementById("input-phone").value.trim();
+  if (!phone) {
+    document.getElementById("bind-error").textContent = "請輸入手機號碼";
+    document.getElementById("bind-error").classList.remove("hidden");
+    return;
+  }
+
+  document.getElementById("btn-bind").disabled = true;
+  document.getElementById("btn-bind").textContent = "綁定中…";
+  document.getElementById("bind-error").classList.add("hidden");
+
+  try {
+    const res = await fetch(BIND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        line_user_id: lineUserId,
+        display_name: displayName,
+        phone: phone,
+      }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById("success-message").textContent = data.message;
+      show("state-success");
+    } else {
+      document.getElementById("bind-error").textContent = data.message;
+      document.getElementById("bind-error").classList.remove("hidden");
+      document.getElementById("btn-bind").disabled = false;
+      document.getElementById("btn-bind").textContent = "完成綁定";
+    }
+  } catch (e) {
+    document.getElementById("bind-error").textContent = "網路錯誤，請稍後再試。";
+    document.getElementById("bind-error").classList.remove("hidden");
+    document.getElementById("btn-bind").disabled = false;
+    document.getElementById("btn-bind").textContent = "完成綁定";
+  }
+});
+</script>
+
+</body>
+</html>

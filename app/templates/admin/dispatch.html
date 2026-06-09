@@ -14,11 +14,37 @@
   </a>
   {% endfor %}
 
-  <!-- 自動排車 -->
-  <form action="{{ url_for('dispatch.auto') }}" method="post" class="ml-auto">
+  <!-- 批次通知司機 -->
+  <form action="{{ url_for('dispatch.batch_notify_drivers') }}" method="post" class="ml-auto">
     <input type="hidden" name="date" value="{{ active_date }}" />
     <button type="submit"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+            onclick="return confirm('批次通知 {{ active_date }} 所有司機？')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-semibold rounded-xl hover:bg-indigo-100 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      批次通知司機
+    </button>
+  </form>
+
+  <!-- 批次通知乘客 -->
+  <form action="{{ url_for('dispatch.batch_notify_passengers') }}" method="post">
+    <input type="hidden" name="date" value="{{ active_date }}" />
+    <button type="submit"
+            onclick="return confirm('批次通知 {{ active_date }} 所有乘客？')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-100 text-sm font-semibold rounded-xl hover:bg-green-100 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      批次通知乘客
+    </button>
+  </form>
+
+  <!-- 自動排車 -->
+  <form action="{{ url_for('dispatch.auto') }}" method="post">
+    <input type="hidden" name="date" value="{{ active_date }}" />
+    <button type="submit"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
       </svg>
@@ -121,6 +147,66 @@
             </button>
           </form>
         </div>
+
+        <!-- 通知狀態 -->
+        {% set driver_success  = item.driver_notifs | selectattr('status','eq','success') | list %}
+        {% set driver_failed   = item.driver_notifs | selectattr('status','eq','failed')  | list %}
+        {% set pax_success     = item.passenger_notifs | selectattr('status','eq','success') | list %}
+        {% set pax_failed      = item.passenger_notifs | selectattr('status','eq','failed')  | list %}
+
+        {% if item.driver_notifs or item.passenger_notifs %}
+        <div class="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+          <!-- 司機通知狀態 -->
+          {% if item.driver_notifs %}
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">司機通知</span>
+            <div class="flex items-center gap-1.5">
+              {% if driver_success %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已送達
+                </span>
+              {% endif %}
+              {% if driver_failed %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>失敗
+                </span>
+                {% for n in driver_failed %}
+                <form action="{{ url_for('dispatch.resend_notification_route', notification_id=n.id) }}" method="post" class="inline">
+                  <input type="hidden" name="date" value="{{ active_date }}" />
+                  <button type="submit" class="text-xs text-red-500 hover:text-red-700 underline">重送</button>
+                </form>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- 乘客通知狀態 -->
+          {% if item.passenger_notifs %}
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">乘客通知</span>
+            <div class="flex items-center gap-1.5 flex-wrap justify-end">
+              {% if pax_success %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>{{ pax_success|length }} 人已送
+                </span>
+              {% endif %}
+              {% if pax_failed %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>{{ pax_failed|length }} 失敗
+                </span>
+                {% for n in pax_failed %}
+                <form action="{{ url_for('dispatch.resend_notification_route', notification_id=n.id) }}" method="post" class="inline">
+                  <input type="hidden" name="date" value="{{ active_date }}" />
+                  <button type="submit" class="text-xs text-red-500 hover:text-red-700 underline">重送</button>
+                </form>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
 
       <!-- 容量條 -->

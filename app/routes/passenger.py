@@ -1,3 +1,4 @@
+import os
 import uuid
 import random
 import string
@@ -7,6 +8,8 @@ from app import db
 from app.models.order import Order
 from app.models.payment import Payment
 from app.models.announcement import Announcement
+
+PASSENGER_LIFF_ID = os.environ.get("PASSENGER_LIFF_ID", "")
 
 passenger_bp = Blueprint("passenger", __name__)
 
@@ -65,6 +68,7 @@ def booking():
                            deposit_per_person=DEPOSIT_PER_PERSON,
                            balance_per_person=BALANCE_PER_PERSON,
                            departure_options=DEPARTURE_OPTIONS,
+                           passenger_liff_id=PASSENGER_LIFF_ID,
                            form={})
 
 
@@ -128,6 +132,7 @@ def booking_submit():
                                deposit_per_person=DEPOSIT_PER_PERSON,
                                balance_per_person=BALANCE_PER_PERSON,
                                departure_options=DEPARTURE_OPTIONS,
+                               passenger_liff_id=PASSENGER_LIFF_ID,
                                form=form_data)
 
 
@@ -186,6 +191,7 @@ def order_search():
         orders=orders,
         vehicle=vehicle,
         searched=searched,
+        passenger_liff_id=PASSENGER_LIFF_ID,
     )
 
 
@@ -211,7 +217,8 @@ def payment_report():
                            line_user_id=line_user_id,
                            line_orders=line_orders,
                            group_id=group_id,
-                           group_orders=group_orders)
+                           group_orders=group_orders,
+                           passenger_liff_id=PASSENGER_LIFF_ID)
 
 
 @passenger_bp.route("/payment/report", methods=["POST"])

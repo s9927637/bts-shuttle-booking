@@ -9,7 +9,9 @@ from app.services.dispatch_service import (
     auto_dispatch, create_dispatch, assign_order,
     calculate_capacity, remove_order_from_dispatch, move_order_to_dispatch,
 )
-from app.services.line_service import notify_dispatch_driver, notify_dispatch_passengers
+from app.services.line_service import (
+    notify_dispatch_driver, notify_dispatch_passengers, resend_notification
+)
 
 dispatch_bp = Blueprint("dispatch", __name__, url_prefix="/admin/dispatch")
 
@@ -49,17 +51,24 @@ def index():
         .all()
     )
 
-    # 為每個 dispatch 計算目前人數
+    # 為每個 dispatch 計算目前人數與通知狀態
     dispatch_data = []
     for d in dispatches:
         orders = [do.order for do in d.dispatch_orders if do.order]
         current = sum(o.passenger_count for o in orders)
+
+        notifs = Notification.query.filter_by(dispatch_id=d.id).all()
+        driver_notifs    = [n for n in notifs if n.receiver_type == "driver"]
+        passenger_notifs = [n for n in notifs if n.receiver_type == "passenger"]
+
         dispatch_data.append({
-            "dispatch":  d,
-            "orders":    orders,
-            "current":   current,
-            "max":       MAX_CAPACITY,
-            "full":      current >= MAX_CAPACITY,
+            "dispatch":          d,
+            "orders":            orders,
+            "current":           current,
+            "max":               MAX_CAPACITY,
+            "full":              current >= MAX_CAPACITY,
+            "driver_notifs":     driver_notifs,
+            "passenger_notifs":  passenger_notifs,
         })
 
     vehicles = Vehicle.query.order_by(Vehicle.plate_number).all()
@@ -260,5 +269,70 @@ def notify_passengers(dispatch_id):
     flash(
         f"乘客通知完成：成功 {success}、失敗 {failed}、略過 {skipped}（共 {len(results)} 人）",
         "success" if failed == 0 else "error",
+    )
+    return redirect(url_for("dispatch.index", date=date))
+
+
+# ── 批次通知全部司機（該日期）──────────────────────────────────────────────
+
+@dispatch_bp.route("/batch-notify-drivers", methods=["POST"])
+def batch_notify_drivers():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    date      = request.form.get("date", DEPARTURE_OPTIONS[0])
+    dispatches = Dispatch.query.filter_by(departure_date=date).all()
+    success = failed = skipped = 0
+    for d in dispatches:
+        r = notify_dispatch_driver(d)
+        if r["status"] == "success":   success += 1
+        elif r["status"] == "failed":  failed  += 1
+        else:                          skipped += 1
+
+    flash(
+        f"批次司機通知完成（{date}）：成功 {success}、失敗 {failed}、略過 {skipped}",
+        "success" if failed == 0 else "error",
+    )
+    return redirect(url_for("dispatch.index", date=date))
+
+
+# ── 批次通知全部乘客（該日期）──────────────────────────────────────────────
+
+@dispatch_bp.route("/batch-notify-passengers", methods=["POST"])
+def batch_notify_passengers():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    date       = request.form.get("date", DEPARTURE_OPTIONS[0])
+    dispatches = Dispatch.query.filter_by(departure_date=date).all()
+    success = failed = skipped = 0
+    for d in dispatches:
+        for r in notify_dispatch_passengers(d):
+            if r["status"] == "success":   success += 1
+            elif r["status"] == "failed":  failed  += 1
+            else:                          skipped += 1
+
+    flash(
+        f"批次乘客通知完成（{date}）：成功 {success}、失敗 {failed}、略過 {skipped}",
+        "success" if failed == 0 else "error",
+    )
+    return redirect(url_for("dispatch.index", date=date))
+
+
+# ── 重送失敗通知 ─────────────────────────────────────────────────────────────
+
+@dispatch_bp.route("/resend-notification/<int:notification_id>", methods=["POST"])
+def resend_notification_route(notification_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    date   = request.form.get("date", DEPARTURE_OPTIONS[0])
+    result = resend_notification(notification_id)
+    flash(
+        f"重送結果：{result['status']}",
+        "success" if result["status"] == "success" else "error",
     )
     return redirect(url_for("dispatch.index", date=date))

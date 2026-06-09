@@ -214,7 +214,7 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-liff.init({ liffId: '2007738901-IDdb6jr9' })
+liff.init({ liffId: '{{ passenger_liff_id }}' })
   .then(() => {
     if (liff.isLoggedIn()) {
       // 有 LINE userId → 直接導向帶 line_user_id 的查詢

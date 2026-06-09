@@ -213,36 +213,56 @@ def order_search():
     from app.models.vehicle import Vehicle
 
     line_user_id = request.args.get("line_user_id", "").strip()
-    q            = request.args.get("q", "").strip()
-    orders       = []
-    order        = None
-    vehicle      = None
-    searched     = False
-    mode         = "form"  # "line" or "form"
+    order_no     = request.args.get("order_no", "").strip().upper()
+    name         = request.args.get("name", "").strip()
+    phone4       = request.args.get("phone4", "").strip()
+
+    orders   = []
+    order    = None
+    vehicle  = None
+    searched = False
+    error    = None
+    mode     = "form"  # "line" or "form"
 
     if line_user_id:
-        # LINE 模式：依 line_user_id 查詢所有訂單
+        # Priority 1：LINE 身分驗證，直接用 line_user_id 查詢
         mode     = "line"
         searched = True
-        orders   = Order.query.filter_by(line_user_id=line_user_id)\
-                              .order_by(Order.created_at.desc()).all()
-    elif q:
-        # 表單模式：訂單編號 or 手機後四碼
+        orders   = (Order.query
+                    .filter_by(line_user_id=line_user_id)
+                    .order_by(Order.created_at.desc()).all())
+
+    elif order_no or name or phone4:
+        # Priority 2：必須同時提供 訂單編號 + 姓名 + 手機後四碼
         searched = True
-        order = Order.query.filter(
-            db.or_(
-                Order.order_no == q,
-                Order.phone.endswith(q) if len(q) == 4 and q.isdigit() else False,
-                Order.phone == q,
-            )
-        ).order_by(Order.created_at.desc()).first()
+        missing = []
+        if not order_no:
+            missing.append("訂單編號")
+        if not name:
+            missing.append("姓名")
+        if not phone4:
+            missing.append("手機後四碼")
 
-        if order and order.vehicle_id:
-            vehicle = Vehicle.query.get(order.vehicle_id)
+        if missing:
+            error = f"請填寫：{'、'.join(missing)}"
+        elif len(phone4) != 4 or not phone4.isdigit():
+            error = "手機後四碼請輸入 4 位數字"
+        else:
+            order = (Order.query
+                     .filter(
+                         Order.order_no == order_no,
+                         Order.contact_name == name,
+                         Order.phone.endswith(phone4),
+                     )
+                     .first())
+            if not order:
+                error = "查無符合資料，請確認訂單編號、姓名、手機後四碼是否正確"
+            elif order.vehicle_id:
+                vehicle = Vehicle.query.get(order.vehicle_id)
 
-    # 若 LINE 模式只有一筆，補充 vehicle 資訊
+    # LINE 模式只有一筆 → 轉為單筆顯示
     if mode == "line" and len(orders) == 1:
-        order = orders[0]
+        order  = orders[0]
         orders = []
         if order.vehicle_id:
             vehicle = Vehicle.query.get(order.vehicle_id)
@@ -257,13 +277,16 @@ def order_search():
 
     return render_template(
         "passenger/order_search.html",
-        q=q,
+        order_no=order_no,
+        name=name,
+        phone4=phone4,
         line_user_id=line_user_id,
         mode=mode,
         order=order,
         orders=orders,
         vehicle=vehicle,
         searched=searched,
+        error=error,
         group_member_count=group_member_count,
         group_total_pax=group_total_pax,
         passenger_liff_id=PASSENGER_LIFF_ID,

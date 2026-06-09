@@ -19,22 +19,47 @@
     正在取得身份資訊…
   </div>
 
+  <!-- LINE 已驗證提示 -->
+  <div id="line-verified-msg" class="hidden mb-6 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    已使用 LINE 身分驗證，正在查詢您的訂單
+  </div>
+
   <!-- Search Form（LIFF 無 userId 時顯示） -->
-  <form id="search-form" method="get" action="/orders/search" class="space-y-4 mb-10 hidden">
-    <div class="flex gap-3">
-      <div class="relative flex-1">
-        <input type="text" name="q" value="{{ q or '' }}"
-               placeholder="BTS-KHH-000001 或手機後四碼"
-               autofocus
-               class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
-      </div>
-      <button type="submit"
-              class="px-5 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors whitespace-nowrap">
-        查詢
-      </button>
+  <form id="search-form" method="get" action="/orders/search" class="space-y-3 mb-10 hidden">
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">訂單編號 <span class="text-red-400">*</span></label>
+      <input type="text" name="order_no" value="{{ order_no or '' }}"
+             placeholder="BTS-KHH-000001"
+             class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
     </div>
-    <p class="text-xs text-gray-400">支援：完整訂單編號（BTS-KHH-XXXXXX）或手機號碼後四碼</p>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">姓名 <span class="text-red-400">*</span></label>
+      <input type="text" name="name" value="{{ name or '' }}"
+             placeholder="預約時填寫的姓名"
+             class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">手機後四碼 <span class="text-red-400">*</span></label>
+      <input type="text" name="phone4" value="{{ phone4 or '' }}"
+             placeholder="1234" maxlength="4" inputmode="numeric"
+             class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+    </div>
+    <button type="submit"
+            class="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+      查詢訂單
+    </button>
+    <p class="text-xs text-gray-400 text-center">三欄均為必填，用於驗證您的身分</p>
   </form>
+
+  <!-- 錯誤訊息 -->
+  {% if searched and error %}
+  <div id="search-error" class="mb-6 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+    {{ error }}
+  </div>
+  {% endif %}
 
   <!-- Results -->
   <div id="results">
@@ -233,7 +258,7 @@
         </svg>
       </div>
       <p class="text-sm font-semibold text-gray-700 mb-1">找不到符合的訂單</p>
-      <p class="text-xs text-gray-400">請確認訂單編號或手機後四碼是否正確。</p>
+      <p class="text-xs text-gray-400">請確認訂單編號、姓名、手機後四碼是否正確。</p>
     </div>
     {% endif %}
 
@@ -247,31 +272,34 @@
 liff.init({ liffId: '{{ passenger_liff_id }}' })
   .then(() => {
     if (liff.isLoggedIn()) {
-      // 有 LINE userId → 直接導向帶 line_user_id 的查詢
       return liff.getProfile().then(profile => {
         const url = new URL(location.href);
-        // 若尚未帶 line_user_id 參數才導向，避免無限 redirect
         if (!url.searchParams.get('line_user_id')) {
+          // 清除手動查詢參數，改用 LINE 身分
           url.searchParams.set('line_user_id', profile.userId);
-          url.searchParams.delete('q');
+          ['order_no', 'name', 'phone4'].forEach(k => url.searchParams.delete(k));
           location.replace(url.toString());
         } else {
-          showPage();
+          showLinePage();
         }
       });
     } else {
-      // 未登入 LINE → 顯示表單
       showForm();
     }
   })
   .catch(() => {
-    // LIFF 不可用（一般瀏覽器）→ 顯示表單
+    // LIFF 不可用（一般瀏覽器）→ 顯示手動查詢表單
     showForm();
   });
 
 function showForm() {
   document.getElementById('liff-loading').classList.add('hidden');
   document.getElementById('search-form').classList.remove('hidden');
+}
+
+function showLinePage() {
+  document.getElementById('liff-loading').classList.add('hidden');
+  document.getElementById('line-verified-msg').classList.remove('hidden');
 }
 
 function copyGroupLink(btn) {
@@ -281,11 +309,6 @@ function copyGroupLink(btn) {
     btn.textContent = '已複製！';
     setTimeout(() => { btn.textContent = orig; }, 2000);
   });
-}
-
-function showPage() {
-  document.getElementById('liff-loading').classList.add('hidden');
-  // LINE 模式下不需要顯示搜尋框，直接顯示結果
 }
 </script>
 {% endblock %}

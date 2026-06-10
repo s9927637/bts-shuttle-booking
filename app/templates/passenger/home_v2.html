@@ -9,46 +9,22 @@
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
 
     /* ── Hero background ── */
-    /* Mobile: 設計稿上方為文字，用頂部深色遮罩蓋住，下方保留車輛/舞台視覺 */
     .hero-v2 {
       background:
-        linear-gradient(to bottom,
-          rgba(6,3,18,1)   0%,
-          rgba(6,3,18,1)  45%,
-          rgba(6,3,18,0.6) 65%,
-          rgba(6,3,18,0.2) 85%,
-          rgba(6,3,18,0)  100%
-        ),
         url('{{ url_for("static", filename="images/homepage-mobile.png") }}') center top / cover no-repeat;
       position: relative;
       overflow: hidden;
       min-height: 100vh;
     }
-    /* Tablet: 設計稿文字在左側，左側遮罩 + 右側保留視覺 */
     @media (min-width: 640px) {
       .hero-v2 {
         background:
-          linear-gradient(to right,
-            rgba(6,3,18,1)   0%,
-            rgba(6,3,18,1)  38%,
-            rgba(6,3,18,0.55) 54%,
-            rgba(6,3,18,0.1) 72%,
-            rgba(6,3,18,0)  85%
-          ),
           url('{{ url_for("static", filename="images/homepage-tablet.png") }}') center top / cover no-repeat;
       }
     }
-    /* Desktop: 設計稿文字在左側，左側遮罩 + 右側車輛/舞台/燈光完整露出 */
     @media (min-width: 1024px) {
       .hero-v2 {
         background:
-          linear-gradient(to right,
-            rgba(6,3,18,1)   0%,
-            rgba(6,3,18,1)  36%,
-            rgba(6,3,18,0.5) 50%,
-            rgba(6,3,18,0.1) 64%,
-            rgba(6,3,18,0)  78%
-          ),
           url('{{ url_for("static", filename="images/homepage-desktop.png") }}') center top / cover no-repeat;
       }
     }

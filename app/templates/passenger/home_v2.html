@@ -8,12 +8,22 @@
   <style>
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
 
-    /* ── Hero background（驗證用純色，確認無舊背景） ── */
+    /* ── Hero background ── */
     .hero-v2 {
-      background: #16a34a;
+      background: url('{{ url_for("static", filename="images/homepage-mobile.png") }}') center top / cover no-repeat;
       position: relative;
       overflow: hidden;
       min-height: 100vh;
+    }
+    @media (min-width: 640px) {
+      .hero-v2 {
+        background: url('{{ url_for("static", filename="images/homepage-tablet.png") }}') center top / cover no-repeat;
+      }
+    }
+    @media (min-width: 1024px) {
+      .hero-v2 {
+        background: url('{{ url_for("static", filename="images/homepage-desktop.png") }}') center top / cover no-repeat;
+      }
     }
 
     /* ── 透明浮動 Navbar ── */

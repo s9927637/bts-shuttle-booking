@@ -216,37 +216,36 @@
 
     /* ── Van image per breakpoint ── */
 
-    /* Desktop: right grid column — 高度鎖 100vh，填滿整欄 */
+    /* Desktop: right grid column — background-image 填滿整欄 */
     .van-col {
       display: none;
-      overflow: hidden;
     }
-    @media (min-width: 1024px) { .van-col { display: block; } }
-
-    .van-desktop {
-      display: block;
-      width: 100%;
-      height: 100vh;
-      object-fit: cover;
-      object-position: center 58%;
+    @media (min-width: 1024px) {
+      .van-col {
+        display: block;
+        min-height: 100vh;
+        background-size: cover;
+        background-position: center 58%;
+        background-repeat: no-repeat;
+      }
     }
-    @media (max-width: 1023px) { .van-desktop { display: none; } }
 
     /* Tablet: absolute right background element */
-    .van-tablet {
+    .van-tablet-bg {
       display: none;
       position: absolute;
       right: -4%;
       top: 0;
       height: 68%;
       width: 52%;
-      object-fit: contain;
-      object-position: right bottom;
+      background-size: contain;
+      background-position: right bottom;
+      background-repeat: no-repeat;
       opacity: 0.45;
       pointer-events: none;
       z-index: 1;
     }
-    @media (min-width: 640px) and (max-width: 1023px) { .van-tablet { display: block; } }
+    @media (min-width: 640px) and (max-width: 1023px) { .van-tablet-bg { display: block; } }
 
     /* Mobile: in-flow, between subtitle and info */
     .van-mobile {
@@ -335,7 +334,9 @@
   <div class="sp" style="width:2px;height:2px;top:28%;right:23%;--d:4.3s;--dl:1.1s;"></div>
 
   <!-- Tablet van (background, absolute right) -->
-  <img src="{{ url_for('static', filename='images/van.png') }}" class="van-tablet" alt="" aria-hidden="true">
+  <div class="van-tablet-bg"
+       style="background-image: url('{{ url_for('static', filename='images/van.png') }}');"
+       aria-hidden="true"></div>
 
   <!-- Main grid -->
   <div class="hero-inner">
@@ -471,9 +472,9 @@
     </div><!-- /left content -->
 
     <!-- ── Right: Van (desktop only, in-grid column) ── -->
-    <div class="van-col">
-      <img src="{{ url_for('static', filename='images/van.png') }}" class="van-desktop" alt="專屬包車 Mercedes-Benz">
-    </div>
+    <div class="van-col"
+         style="background-image: url('{{ url_for('static', filename='images/van.png') }}');"
+         role="img" aria-label="專屬包車 Mercedes-Benz"></div>
 
   </div><!-- /hero-inner -->
 </section><!-- /hero-v2 -->

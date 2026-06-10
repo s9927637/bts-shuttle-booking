@@ -85,16 +85,6 @@ def home_old():
     return render_template("passenger/home_old.html")
 
 
-@passenger_bp.route("/home-v2")
-def home_v2():
-    announcements = (
-        Announcement.query
-        .filter(Announcement.status == "已發布")
-        .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
-        .limit(3).all()
-    )
-    return render_template("passenger/home_v2.html", announcements=announcements)
-
 
 @passenger_bp.route("/compare")
 def compare():

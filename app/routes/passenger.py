@@ -214,7 +214,6 @@ def order_search():
 
     line_user_id = request.args.get("line_user_id", "").strip()
     order_no     = request.args.get("order_no", "").strip().upper()
-    name         = request.args.get("name", "").strip()
     phone4       = request.args.get("phone4", "").strip()
 
     orders   = []
@@ -232,14 +231,12 @@ def order_search():
                     .filter_by(line_user_id=line_user_id)
                     .order_by(Order.created_at.desc()).all())
 
-    elif order_no or name or phone4:
-        # Priority 2：必須同時提供 訂單編號 + 姓名 + 手機後四碼
+    elif order_no or phone4:
+        # Priority 2：必須同時提供 訂單編號 + 手機後四碼
         searched = True
         missing = []
         if not order_no:
             missing.append("訂單編號")
-        if not name:
-            missing.append("姓名")
         if not phone4:
             missing.append("手機後四碼")
 
@@ -251,12 +248,11 @@ def order_search():
             order = (Order.query
                      .filter(
                          Order.order_no == order_no,
-                         Order.contact_name == name,
                          Order.phone.endswith(phone4),
                      )
                      .first())
             if not order:
-                error = "查無符合資料，請確認訂單編號、姓名、手機後四碼是否正確"
+                error = "查無符合資料，請確認訂單編號、手機後四碼是否正確"
             elif order.vehicle_id:
                 vehicle = Vehicle.query.get(order.vehicle_id)
 
@@ -289,7 +285,6 @@ def order_search():
     return render_template(
         "passenger/order_search.html",
         order_no=order_no,
-        name=name,
         phone4=phone4,
         line_user_id=line_user_id,
         mode=mode,

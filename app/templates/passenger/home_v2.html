@@ -7,46 +7,90 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
   <style>
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
+
+    /* ── 透明浮動 Navbar ── */
+    .v2-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      /* 頂部漸層遮罩：讓白色文字在深色圖片上清晰可見 */
+      background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));
+      border: none;
+    }
+
+    /* ── 手機展開選單 ── */
+    .v2-mobile-menu-panel {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* ── 熱區：預設全隱藏，依斷點啟用 ── */
+    .v2-hotspot-desktop,
+    .v2-hotspot-tablet,
+    .v2-hotspot-mobile { display: none; }
+
+    @media (min-width: 1024px) {
+      .v2-hotspot-desktop { display: block; }
+    }
+    @media (min-width: 640px) and (max-width: 1023px) {
+      .v2-hotspot-tablet  { display: block; }
+    }
+    @media (max-width: 639px) {
+      .v2-hotspot-mobile  { display: block; }
+    }
   </style>
 </head>
 <body class="bg-white text-gray-900 antialiased">
 
-<!-- ── Navbar ── -->
-<nav class="border-b border-gray-100 bg-white sticky top-0 z-40">
+<!-- ── 透明浮動 Navbar ── -->
+<nav class="v2-nav">
   <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+
+    <!-- Logo -->
     <a href="/" class="flex items-center gap-2.5">
-      <div class="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center"
+           style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2);">
         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
         </svg>
       </div>
-      <span class="text-sm font-semibold tracking-tight">BTS 演唱會包車預約</span>
+      <span class="text-sm font-semibold text-white tracking-tight">BTS 演唱會包車預約</span>
     </a>
+
+    <!-- Desktop links -->
     <div class="hidden md:flex items-center gap-1">
-      <a href="/booking"        class="px-3 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">預約</a>
-      <a href="/orders/search"  class="px-3 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">查詢訂單</a>
-      <a href="/payment/report" class="px-3 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">匯款回報</a>
-      <a href="/announcements"  class="px-3 py-1.5 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">最新公告</a>
+      <a href="/booking"        class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors">預約</a>
+      <a href="/orders/search"  class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors">查詢訂單</a>
+      <a href="/payment/report" class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors">匯款回報</a>
+      <a href="/announcements"  class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors">最新公告</a>
     </div>
+
+    <!-- 漢堡選單（白色圖示） -->
     <button data-collapse-toggle="v2-mobile-menu" type="button"
-            class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+            class="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
+
   </div>
-  <div id="v2-mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
+
+  <!-- 手機展開選單 -->
+  <div id="v2-mobile-menu" class="hidden md:hidden v2-mobile-menu-panel">
     <div class="px-4 py-3 space-y-1">
-      <a href="/booking"        class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">預約</a>
-      <a href="/orders/search"  class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">查詢訂單</a>
-      <a href="/payment/report" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">匯款回報</a>
-      <a href="/announcements"  class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">最新公告</a>
+      <a href="/booking"        class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">預約</a>
+      <a href="/orders/search"  class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">查詢訂單</a>
+      <a href="/payment/report" class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">匯款回報</a>
+      <a href="/announcements"  class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">最新公告</a>
     </div>
   </div>
 </nav>
 
 
-<!-- ── 設計稿圖片 + 預約熱區 ── -->
+<!-- ── 設計稿圖片（緊貼頂部，無 padding-top） + 預約熱區 ── -->
 <div style="position:relative; display:block; line-height:0;">
 
   <picture>
@@ -63,39 +107,22 @@
   <!-- 透明預約熱區 — Desktop (≥ 1024px) -->
   <a href="/booking" aria-label="立即預定"
      class="v2-hotspot-desktop"
-     style="position:absolute; display:block; background:transparent;
+     style="position:absolute; background:transparent;
             left:4%; top:80%; width:22%; height:12%;"></a>
 
   <!-- 透明預約熱區 — Tablet (640–1023px) -->
   <a href="/booking" aria-label="立即預定"
      class="v2-hotspot-tablet"
-     style="position:absolute; display:block; background:transparent;
+     style="position:absolute; background:transparent;
             left:40%; top:86%; width:30%; height:8%;"></a>
 
   <!-- 透明預約熱區 — Mobile (< 640px) -->
   <a href="/booking" aria-label="立即預定"
      class="v2-hotspot-mobile"
-     style="position:absolute; display:block; background:transparent;
+     style="position:absolute; background:transparent;
             left:47%; top:89%; width:44%; height:6%;"></a>
 
 </div>
-
-<style>
-  /* 依視窗寬度只顯示對應熱區 */
-  .v2-hotspot-desktop { display: none; }
-  .v2-hotspot-tablet  { display: none; }
-  .v2-hotspot-mobile  { display: none; }
-
-  @media (min-width: 1024px) {
-    .v2-hotspot-desktop { display: block; }
-  }
-  @media (min-width: 640px) and (max-width: 1023px) {
-    .v2-hotspot-tablet { display: block; }
-  }
-  @media (max-width: 639px) {
-    .v2-hotspot-mobile { display: block; }
-  }
-</style>
 
 
 <!-- ── 最新公告區塊 ── -->
@@ -142,29 +169,6 @@
   </div>
 </section>
 {% endif %}
-
-
-<!-- ── Footer ── -->
-<footer class="border-t border-gray-100 bg-white">
-  <div class="max-w-5xl mx-auto px-6 py-8">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2.5">
-        <div class="w-6 h-6 bg-gray-900 rounded-lg flex items-center justify-center">
-          <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-          </svg>
-        </div>
-        <span class="text-xs font-semibold text-gray-500 tracking-tight">BTS 演唱會包車預約</span>
-      </div>
-      <div class="flex items-center gap-5">
-        <a href="/announcements"  class="text-xs text-gray-400 hover:text-gray-900 transition-colors">公告中心</a>
-        <a href="/booking"        class="text-xs text-gray-400 hover:text-gray-900 transition-colors">立即預約</a>
-        <a href="/orders/search"  class="text-xs text-gray-400 hover:text-gray-900 transition-colors">查詢訂單</a>
-        <a href="/payment/report" class="text-xs text-gray-400 hover:text-gray-900 transition-colors">匯款回報</a>
-      </div>
-    </div>
-  </div>
-</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 </body>

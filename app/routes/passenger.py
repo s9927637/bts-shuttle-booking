@@ -232,6 +232,29 @@ def order_detail(order_no):
 
 # ── 訂單查詢 ────────────────────────────────────────────────────────────────
 
+@passenger_bp.route("/orders/lookup-by-name")
+def order_lookup_by_name():
+    from flask import jsonify
+    name  = request.args.get("name", "").strip()
+    phone = request.args.get("phone", "").strip()
+    if not name or not phone:
+        return jsonify({"error": "請填寫姓名與手機號碼"}), 400
+    orders = (Order.query
+              .filter(Order.contact_name == name,
+                      Order.phone == phone)
+              .order_by(Order.departure_date.asc())
+              .all())
+    if not orders:
+        return jsonify({"orders": []})
+    return jsonify({"orders": [
+        {"order_no": o.order_no,
+         "departure_date": o.departure_date,
+         "passenger_count": o.passenger_count,
+         "payment_status": o.payment_status}
+        for o in orders
+    ]})
+
+
 @passenger_bp.route("/orders/lookup")
 def order_lookup():
     return redirect(url_for("passenger.order_search"))

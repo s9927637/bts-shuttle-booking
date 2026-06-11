@@ -104,7 +104,7 @@
             {% endif %}
           </div>
           {% if g.order_no == order.order_no %}
-          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+          <span class="self-center shrink-0 text-xs px-2 py-0.5 rounded-full font-medium
             {% if g.payment_status == '訂金已確認' or g.payment_status == '已完成' %}bg-green-900/50 text-green-400
             {% elif g.payment_status == '待確認' %}bg-blue-900/50 text-blue-400
             {% else %}bg-gray-800 text-gray-500{% endif %}">

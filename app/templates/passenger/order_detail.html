@@ -77,7 +77,6 @@
   {# ── 區塊 2：同行資訊 ── #}
   {% if order.group_id %}
   {% set invite_link = 'https://bts-shuttle-booking.anjiatra.com/booking?friend_code=' ~ order.group_id %}
-  {% set line_text = '邀請你加入 BTS 演唱會同行包車群組！\n同行代碼：' ~ order.group_id ~ '\n立即預約：' ~ invite_link %}
   <div class="card-dark space-y-4 mb-5">
     <h2 class="section-title">同行群組</h2>
 
@@ -88,7 +87,7 @@
       </div>
       <div class="flex justify-between border-t border-gray-800 pt-2.5">
         <span class="text-gray-500">群組成員</span>
-        <span class="text-gray-200">{{ group_orders | length }} 筆訂單</span>
+        <span class="text-gray-200">{{ group_orders | sum(attribute='passenger_count') }} 人</span>
       </div>
     </div>
 
@@ -119,18 +118,10 @@
     </div>
     {% endif %}
 
-    <div class="flex flex-col gap-2 pt-1">
-      <a href="https://line.me/R/share?text={{ line_text | urlencode }}"
-         target="_blank"
-         class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-         style="background:#06C755;">
-        LINE 分享邀請
-      </a>
-      <button type="button" onclick="copyText('{{ invite_link }}', this)"
-              class="btn-secondary py-2.5">
-        複製邀請連結
-      </button>
-    </div>
+    <button type="button" onclick="copyText('{{ invite_link }}', this)"
+            class="btn-secondary py-2.5 w-full">
+      複製邀請連結
+    </button>
   </div>
   {% endif %}
 

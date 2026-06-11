@@ -188,7 +188,7 @@
       <div class="space-y-2">
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-400">每人費用</span>
-          <span class="font-medium text-gray-300">NT$ 2,000</span>
+          <span id="price_per_person_display" class="font-medium text-gray-300">NT$ 2,000</span>
         </div>
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-400">人數</span>
@@ -272,6 +272,7 @@
       paxInput.disabled = true;
       paxInput.style.opacity = '0.5';
       // 費用
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + Math.round(NX200_TOTAL / NX200_PAX).toLocaleString();
       document.getElementById('count_display').textContent   = NX200_PAX + ' 人';
       document.getElementById('total_display').textContent   = 'NT$ ' + NX200_TOTAL.toLocaleString();
       document.getElementById('deposit_display').textContent = 'NT$ ' + NX200_DEPOSIT.toLocaleString();
@@ -284,10 +285,11 @@
       // Radio dot
       if (radioMin) { radioMin.classList.add('border-purple-500');  radioMin.classList.remove('border-gray-600'); radioMin.querySelector('div').style.background = '#a855f7'; }
       if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600');  radioNx.querySelector('div').style.background = 'transparent'; }
-      // 解鎖人數，重設為 1
+      // 解鎖人數，重設為 1，恢復每人費用
       paxInput.disabled = false;
       paxInput.style.opacity = '';
       paxInput.value = 1;
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + PRICE.toLocaleString();
       calcTotal(1);
     }
   }

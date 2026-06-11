@@ -131,14 +131,10 @@
         </div>
       </div>
 
-      <div id="friend-code-wrap" class="{% if not prefill_friend_code %}hidden {% endif %}space-y-1.5">
-        <label for="friend_code" class="block text-xs font-medium text-gray-400">同行代碼（選填）</label>
-        <input type="text" id="friend_code" name="friend_code"
-               value="{{ prefill_friend_code or '' }}"
-               placeholder="若朋友已建立同行群組，請輸入同行代碼"
-               class="input-dark font-mono" />
-        <p class="text-xs text-gray-500 leading-relaxed">
-          若朋友已建立同行群組，請輸入朋友提供的同行代碼。<br>若留空，系統將自動建立同行群組。
+      <input type="hidden" name="friend_code" value="{{ prefill_friend_code or '' }}" />
+      <div id="friend-code-wrap" class="{% if not prefill_friend_code %}hidden {% endif %}px-4 py-3 bg-purple-950/30 border border-purple-900/50 rounded-xl">
+        <p class="text-xs text-purple-300 leading-relaxed">
+          預約完成後，系統將產生您的專屬邀請連結。<br>將連結分享給朋友，朋友完成預約後將優先安排同車。
         </p>
       </div>
     </div>
@@ -218,12 +214,7 @@
 
   function toggleFriendCode(val) {
     const wrap = document.getElementById('friend-code-wrap');
-    if (val === 'yes') {
-      wrap.classList.remove('hidden');
-    } else {
-      wrap.classList.add('hidden');
-      document.getElementById('friend_code').value = '';
-    }
+    wrap.classList.toggle('hidden', val !== 'yes');
   }
 
   liff.init({ liffId: '{{ passenger_liff_id }}' })

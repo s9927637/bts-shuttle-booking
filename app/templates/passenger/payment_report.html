@@ -99,7 +99,7 @@
     <p class="text-xs text-green-500">您的訂單已與朋友的群組連結，系統將優先安排同一台車。</p>
     {% if group_orders %}
     <div class="mt-3 pt-3 border-t border-green-900/50">
-      <p class="text-xs text-green-600">群組共 {{ group_orders|length }} 份訂單・{{ group_orders|sum(attribute='passenger_count') }} 人</p>
+      <p class="text-xs text-green-600">群組共 {{ group_orders|sum(attribute='passenger_count') }} 人</p>
     </div>
     {% endif %}
   </div>
@@ -118,7 +118,7 @@
       <div class="flex justify-between border-t border-gray-800 pt-2.5">
         <span class="text-gray-500">群組成員</span>
         <span class="font-semibold text-white">
-          {{ group_orders|length if group_orders else 1 }} 份訂單・{{ group_orders|sum(attribute='passenger_count') if group_orders else '' }} 人
+          {{ group_orders|sum(attribute='passenger_count') if group_orders else '' }} 人
         </span>
       </div>
       <div class="flex justify-between border-t border-gray-800 pt-2.5">

@@ -235,34 +235,41 @@
       </div>
 
       {% if order.group_id %}
+      {% set invite_link = request.host_url ~ 'join/' ~ order.group_id %}
+      {% set line_msg = '邀請你加入 BTS 演唱會同行包車群組！\n同行代碼：' ~ order.group_id ~ '\n立即預約：' ~ invite_link %}
       <div class="px-6 py-4 border-t border-gray-800 bg-purple-950/20">
-        <p class="text-xs font-medium text-purple-400 uppercase tracking-widest mb-3">同行群組</p>
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs text-gray-500 mb-0.5">是否同行</p>
-              <p class="text-sm font-semibold text-gray-200">是</p>
-            </div>
-            <div class="text-right">
-              <p class="text-xs text-gray-500 mb-0.5">群組成員</p>
-              <p class="text-sm font-semibold text-gray-200">{{ group_member_count }} 份訂單・{{ group_total_pax }} 人</p>
-            </div>
+        <p class="text-xs font-medium text-purple-400 uppercase tracking-widest mb-4">同行群組</p>
+        <div class="space-y-2.5 text-sm mb-4">
+          <div class="flex justify-between">
+            <span class="text-gray-500">是否同行</span>
+            <span class="font-semibold text-white">是</span>
           </div>
-          <div class="flex items-center justify-between gap-3 pt-1">
-            <button type="button" onclick="copyGroupLink(this)"
-                    data-link="{{ request.host_url }}join/{{ order.group_id }}"
-                    class="btn-secondary" style="padding:0.5rem 1rem; font-size:0.75rem;">
-              複製邀請連結
-            </button>
-            <details class="flex-1">
-              <summary class="py-2 text-xs font-medium text-center text-gray-400 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-700 cursor-pointer select-none">
-                查看同行代碼
-              </summary>
-              <div class="mt-2 px-3 py-2 bg-black border border-gray-800 rounded-xl">
-                <p class="font-mono text-xs font-bold text-white tracking-wider text-center">{{ order.group_id }}</p>
-              </div>
-            </details>
+          <div class="flex justify-between border-t border-gray-800 pt-2.5">
+            <span class="text-gray-500">群組成員</span>
+            <span class="font-semibold text-white">{{ group_member_count }} 份訂單・{{ group_total_pax }} 人</span>
           </div>
+          <div class="flex justify-between border-t border-gray-800 pt-2.5">
+            <span class="text-gray-500">同行代碼</span>
+            <span class="font-mono font-bold text-white tracking-wider">{{ order.group_id }}</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button type="button"
+                  onclick="copyText('{{ order.group_id }}', this)"
+                  class="btn-secondary py-2.5 text-sm">
+            複製同行代碼
+          </button>
+          <a href="https://line.me/R/share?text={{ line_msg | urlencode }}"
+             target="_blank"
+             class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+             style="background:#06C755;">
+            LINE 分享邀請
+          </a>
+          <button type="button"
+                  onclick="copyText('{{ invite_link }}', this)"
+                  class="btn-secondary py-2.5 text-sm">
+            複製邀請連結
+          </button>
         </div>
       </div>
       {% endif %}
@@ -428,10 +435,9 @@ async function doLookup() {
   btn.disabled = false;
 }
 
-function copyGroupLink(btn) {
-  const link = btn.dataset.link;
+function copyText(text, btn) {
   const orig = btn.textContent;
-  navigator.clipboard.writeText(link).then(() => {
+  navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '已複製！';
     setTimeout(() => { btn.textContent = orig; }, 2000);
   });

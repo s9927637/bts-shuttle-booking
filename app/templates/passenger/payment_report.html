@@ -113,36 +113,41 @@
     </div>
     <p class="text-xs text-gray-500 mb-5">分享邀請連結，讓朋友的訂單與您安排同一台車。</p>
 
-    <button type="button" onclick="shareToLine()"
-            class="w-full py-3 px-6 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3"
-            style="background:#06C755;">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.979C23.176 14.393 24 12.458 24 10.314"/>
-      </svg>
-      邀請朋友同行（LINE 分享）
-    </button>
-
-    <button type="button" onclick="copyLink(this)"
-            class="btn-secondary mb-4">
-      複製邀請連結
-    </button>
-
-    <details class="text-xs">
-      <summary class="cursor-pointer text-gray-500 hover:text-gray-300 select-none">查看同行代碼</summary>
-      <div class="mt-2 flex items-center justify-between bg-black rounded-xl px-4 py-3">
-        <span id="group-code" class="font-mono font-bold text-white tracking-wider">{{ group_id }}</span>
-        <button type="button" onclick="copyCode(this)"
-                class="text-xs text-gray-500 hover:text-gray-300 px-2.5 py-1 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors">
-          複製代碼
-        </button>
+    <!-- 同行資訊列表 -->
+    <div class="space-y-2.5 text-sm mb-5">
+      <div class="flex justify-between border-t border-gray-800 pt-2.5">
+        <span class="text-gray-500">群組成員</span>
+        <span class="font-semibold text-white">
+          {{ group_orders|length if group_orders else 1 }} 份訂單・{{ group_orders|sum(attribute='passenger_count') if group_orders else '' }} 人
+        </span>
       </div>
-      <p class="mt-1.5 text-gray-500 px-1">朋友可在預約時輸入此代碼加入您的群組。</p>
-    </details>
+      <div class="flex justify-between border-t border-gray-800 pt-2.5">
+        <span class="text-gray-500">同行代碼</span>
+        <span id="group-code" class="font-mono font-bold text-white tracking-wider">{{ group_id }}</span>
+      </div>
+    </div>
+
+    <!-- 按鈕區：單欄垂直 -->
+    <div class="flex flex-col gap-2">
+      <button type="button" onclick="copyCode(this)"
+              class="btn-secondary py-2.5 text-sm">
+        複製同行代碼
+      </button>
+      <button type="button" onclick="shareToLine()"
+              class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style="background:#06C755;">
+        LINE 分享邀請
+      </button>
+      <button type="button" onclick="copyLink(this)"
+              class="btn-secondary py-2.5 text-sm">
+        複製邀請連結
+      </button>
+    </div>
 
     <span id="invite-link" class="hidden">{{ request.host_url }}join/{{ group_id }}</span>
 
     {% if group_orders and group_orders|length > 1 %}
-    <div class="mt-4 pt-4 border-t border-gray-800">
+    <div class="mt-5 pt-4 border-t border-gray-800">
       <p class="text-xs text-gray-500 mb-2">目前群組成員（{{ group_orders|length }} 筆訂單）</p>
       <div class="space-y-1.5">
         {% for o in group_orders %}
@@ -163,9 +168,10 @@
 <script>
 function copyCode(btn) {
   const code = document.getElementById('group-code').textContent.trim();
+  const orig = btn.textContent;
   navigator.clipboard.writeText(code).then(() => {
     btn.textContent = '已複製！';
-    setTimeout(() => { btn.textContent = '複製代碼'; }, 2000);
+    setTimeout(() => { btn.textContent = orig; }, 2000);
   });
 }
 

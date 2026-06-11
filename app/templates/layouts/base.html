@@ -54,6 +54,9 @@
     .input-dark::placeholder { color: #6b7280; }
     .input-dark:focus { border-color: #9333ea; box-shadow: 0 0 0 2px rgba(147,51,234,0.25); }
     .row-divider { border-top: 1px solid #1f2937; padding-top: 0.625rem; margin-top: 0; }
+    .nav-item { color: #9ca3af; }
+    .nav-item:hover { color: #ffffff; background: rgba(147,51,234,0.15); }
+    .nav-active { color: #ffffff !important; background: #9333ea !important; }
   </style>
 </head>
 <body class="bg-black text-white antialiased min-h-screen flex flex-col">
@@ -72,20 +75,20 @@
 
       <!-- Desktop links -->
       <div class="hidden md:flex items-center gap-1">
-        <a href="/booking" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors
-          {% if '/book' in request.path %}text-white bg-gray-800{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+        <a href="/booking"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/book' in request.path %}nav-active{% endif %}">
           預約
         </a>
-        <a href="/orders/search" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors
-          {% if '/orders' in request.path %}text-white bg-gray-800{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+        <a href="/orders/search"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/orders' in request.path %}nav-active{% endif %}">
           查詢訂單
         </a>
-        <a href="/payment/report" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors
-          {% if '/payment' in request.path %}text-white bg-gray-800{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+        <a href="/payment/report"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/payment' in request.path %}nav-active{% endif %}">
           匯款回報
         </a>
-        <a href="/announcements" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors
-          {% if '/announcements' in request.path %}text-white bg-gray-800{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+        <a href="/announcements"
+           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/announcements' in request.path %}nav-active{% endif %}">
           最新公告
         </a>
       </div>

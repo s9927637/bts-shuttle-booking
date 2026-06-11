@@ -29,31 +29,6 @@
     </div>
   </div>
 
-  <!-- Bank info card -->
-  <div class="bg-gray-900 rounded-2xl p-6 mb-8">
-    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4">匯款帳號資訊</p>
-    <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-400">銀行</span>
-        <span class="text-sm font-semibold text-white">國泰世華（013）</span>
-      </div>
-      <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-400">帳號</span>
-        <div class="flex items-center gap-2">
-          <span id="acct-no" class="text-sm font-bold text-white font-mono tracking-wider">699503672590</span>
-          <button type="button" onclick="copyAcct(this)"
-                  class="text-xs text-gray-400 hover:text-white transition-colors px-2 py-0.5 rounded-lg border border-gray-700 hover:border-gray-500">
-            複製
-          </button>
-        </div>
-      </div>
-      <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-400">戶名</span>
-        <span class="text-sm font-semibold text-white">蘇心慈</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Form -->
   <form action="/payment/report" method="post" class="space-y-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

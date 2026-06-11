@@ -18,8 +18,6 @@ DEPOSIT_PER_PERSON = 300
 BALANCE_PER_PERSON = 1700
 
 DEPARTURE_OPTIONS = [
-    "11/19(四)",
-    "11/21(六)",
     "11/22(日)",
 ]
 

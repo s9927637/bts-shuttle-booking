@@ -79,25 +79,24 @@
   </form>
 
   <!-- ── 忘記訂單編號 Modal ── -->
-  <div id="lookup-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4"
+  <div id="lookup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
        style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl flex flex-col"
+         style="max-height:90vh; max-width: min(600px, 90vw);">
 
-      <div class="flex justify-center pt-3 pb-1 sm:hidden">
-        <div class="w-10 h-1 rounded-full bg-gray-200"></div>
+      <!-- 固定標題列 -->
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+        <h2 class="text-base font-bold text-gray-900">查詢訂單編號</h2>
+        <button type="button" onclick="closeLookupModal()"
+                class="text-gray-400 hover:text-gray-600 transition-colors p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
 
-      <div class="px-6 pt-5 pb-8 space-y-5">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-gray-900">查詢訂單編號</h2>
-          <button type="button" onclick="closeLookupModal()"
-                  class="text-gray-400 hover:text-gray-600 transition-colors p-1">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
+      <!-- 可捲動內容區 -->
+      <div class="overflow-y-auto px-6 pt-4 pb-8 space-y-5">
         <p class="text-xs text-gray-500 leading-relaxed">
           請輸入預約時填寫的姓名與手機號碼，系統將協助您查詢訂單編號。
         </p>

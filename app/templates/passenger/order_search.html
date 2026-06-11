@@ -254,11 +254,6 @@
           </div>
         </div>
         <div class="flex flex-col gap-2">
-          <button type="button"
-                  onclick="copyText('{{ order.group_id }}', this)"
-                  class="btn-secondary py-2.5 text-sm">
-            複製同行代碼
-          </button>
           <a href="https://line.me/R/share?text={{ line_msg | urlencode }}"
              target="_blank"
              class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"

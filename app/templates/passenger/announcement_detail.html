@@ -2,52 +2,45 @@
 {% block title %}{{ announcement.title }} — BTS Shuttle{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6">
+<div class="page-container">
 
-  <!-- Back -->
   <a href="/announcements"
-     class="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-900 transition-colors mb-6">
+     class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 transition-colors mb-6">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
     </svg>
     返回公告列表
   </a>
 
-  <!-- Card -->
-  <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
 
-    <!-- Header -->
-    <div class="px-6 py-6 border-b border-gray-100">
-
-      <!-- Badges -->
+    <div class="px-6 py-6 border-b border-gray-800">
       <div class="flex flex-wrap items-center gap-2 mb-4">
         {% if announcement.is_pinned %}
-          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-900/40 text-amber-400 border border-amber-800">
             📌 置頂
           </span>
         {% endif %}
         {% if announcement.announcement_type == '緊急公告' %}
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-900/40 text-red-400">
             <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>緊急公告
           </span>
         {% elif announcement.announcement_type == '重要公告' %}
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-900/40 text-amber-400">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>重要公告
           </span>
         {% else %}
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-400">
             一般公告
           </span>
         {% endif %}
       </div>
 
-      <!-- Title -->
-      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-3">
+      <h1 class="text-xl sm:text-2xl font-bold text-white leading-snug mb-3">
         {{ announcement.title }}
       </h1>
 
-      <!-- Meta -->
-      <p class="text-xs text-gray-400">
+      <p class="text-xs text-gray-500">
         發布於 {{ announcement.created_at.strftime('%Y 年 %m 月 %d 日 %H:%M') if announcement.created_at else '—' }}
         {% if announcement.updated_at %}
           &nbsp;·&nbsp; 更新於 {{ announcement.updated_at.strftime('%Y/%m/%d %H:%M') }}
@@ -55,17 +48,14 @@
       </p>
     </div>
 
-    <!-- Content -->
     <div class="px-6 py-6">
-      <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ announcement.content }}</div>
+      <div class="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{{ announcement.content }}</div>
     </div>
 
   </div>
 
-  <!-- Back CTA -->
   <div class="mt-6 text-center">
-    <a href="/announcements"
-       class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors">
+    <a href="/announcements" class="btn-secondary" style="width:auto; display:inline-flex;">
       查看所有公告
     </a>
   </div>

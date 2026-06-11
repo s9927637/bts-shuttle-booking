@@ -2,7 +2,7 @@
 {% block title %}查詢訂單 — BTS Shuttle{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
+<div class="page-container">
 
   <!-- 重要/緊急公告 Banner -->
   {% if important_announcements %}
@@ -10,16 +10,16 @@
     {% for a in important_announcements %}
     <a href="/announcements/{{ a.id }}"
        class="flex items-start gap-3 px-4 py-3 rounded-xl border transition-colors
-              {% if a.announcement_type == '緊急公告' %}bg-red-50 border-red-100 hover:bg-red-100{% else %}bg-amber-50 border-amber-100 hover:bg-amber-100{% endif %}">
+              {% if a.announcement_type == '緊急公告' %}bg-red-950/50 border-red-900/60 hover:border-red-700{% else %}bg-amber-950/50 border-amber-900/60 hover:border-amber-700{% endif %}">
       {% if a.announcement_type == '緊急公告' %}
-        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 mt-0.5">🚨 緊急</span>
+        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-900/60 text-red-400 mt-0.5">🚨 緊急</span>
       {% else %}
-        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 mt-0.5">⚠️ 重要</span>
+        <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-900/60 text-amber-400 mt-0.5">⚠️ 重要</span>
       {% endif %}
-      <span class="text-sm font-medium {% if a.announcement_type == '緊急公告' %}text-red-800{% else %}text-amber-800{% endif %} leading-snug">
+      <span class="text-sm font-medium {% if a.announcement_type == '緊急公告' %}text-red-300{% else %}text-amber-300{% endif %} leading-snug">
         {{ a.title }}
       </span>
-      <svg class="w-3.5 h-3.5 shrink-0 mt-0.5 ml-auto {% if a.announcement_type == '緊急公告' %}text-red-400{% else %}text-amber-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-3.5 h-3.5 shrink-0 mt-0.5 ml-auto {% if a.announcement_type == '緊急公告' %}text-red-500{% else %}text-amber-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
       </svg>
     </a>
@@ -27,14 +27,13 @@
   </div>
   {% endif %}
 
-  <!-- Header -->
   <div class="mb-10">
-    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">查詢訂單</h1>
-    <p class="mt-2 text-sm text-gray-500">輸入訂單編號與手機後四碼即可查詢您的預約狀態。</p>
+    <h1 class="text-3xl font-bold text-white tracking-tight">查詢訂單</h1>
+    <p class="mt-2 text-sm text-gray-400">輸入訂單編號與手機後四碼即可查詢您的預約狀態。</p>
   </div>
 
   <!-- LIFF 載入中 -->
-  <div id="liff-loading" class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+  <div id="liff-loading" class="flex items-center gap-2 text-sm text-gray-500 mb-6">
     <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
@@ -43,84 +42,73 @@
   </div>
 
   <!-- LINE 已驗證提示 -->
-  <div id="line-verified-msg" class="hidden mb-6 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+  <div id="line-verified-msg" class="hidden mb-6 flex items-center gap-2 px-4 py-3 bg-green-950/40 border border-green-900/50 rounded-xl text-sm text-green-400">
     <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
     </svg>
     已使用 LINE 身分驗證，正在查詢您的訂單
   </div>
 
-  <!-- Search Form（LIFF 無 userId 時顯示） -->
+  <!-- Search Form -->
   <form id="search-form" method="get" action="/orders/search" class="space-y-3 mb-10 hidden">
     <div>
-      <label class="block text-xs font-medium text-gray-500 mb-1.5">訂單編號 <span class="text-red-400">*</span></label>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">訂單編號 <span class="text-red-400">*</span></label>
       <input type="text" name="order_no" value="{{ order_no or '' }}"
              placeholder="BTS-KHH-000001"
-             class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+             class="input-dark font-mono" />
     </div>
     <div>
-      <label class="block text-xs font-medium text-gray-500 mb-1.5">手機後四碼 <span class="text-red-400">*</span></label>
+      <label class="block text-xs font-medium text-gray-400 mb-1.5">手機後四碼 <span class="text-red-400">*</span></label>
       <input type="text" name="phone4" value="{{ phone4 or '' }}"
              placeholder="1234" maxlength="4" inputmode="numeric"
-             class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+             class="input-dark" />
     </div>
-    <p class="text-xs text-gray-400 mt-1">
+    <p class="text-xs text-gray-500 mt-1">
       忘記訂單編號？
       <button type="button" onclick="openLookupModal()"
-              class="text-gray-600 underline underline-offset-2 hover:text-gray-900 transition-colors">
+              class="text-purple-400 underline underline-offset-2 hover:text-purple-300 transition-colors">
         點此查詢
       </button>
     </p>
-    <button type="submit"
-            class="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+    <button type="submit" class="btn-primary">
       查詢訂單
     </button>
-    <p class="text-xs text-gray-400 text-center">兩欄均為必填，用於驗證您的身分</p>
+    <p class="text-xs text-gray-500 text-center">兩欄均為必填，用於驗證您的身分</p>
   </form>
 
-  <!-- ── 忘記訂單編號 Modal ── -->
+  <!-- 忘記訂單編號 Modal -->
   <div id="lookup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
-       style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl flex flex-col"
+       style="background:rgba(0,0,0,0.7);">
+    <div class="bg-gray-900 border border-gray-700 w-full rounded-2xl shadow-2xl flex flex-col"
          style="max-height:90vh; max-width: min(600px, 90vw);">
 
-      <!-- 固定標題列 -->
-      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-        <h2 class="text-base font-bold text-gray-900">查詢訂單編號</h2>
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+        <h2 class="text-base font-bold text-white">查詢訂單編號</h2>
         <button type="button" onclick="closeLookupModal()"
-                class="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                class="text-gray-500 hover:text-gray-300 transition-colors p-1">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      <!-- 可捲動內容區 -->
       <div class="overflow-y-auto px-6 pt-4 pb-8 space-y-5">
         <p class="text-xs text-gray-500 leading-relaxed">
           請輸入預約時填寫的姓名與手機號碼，系統將協助您查詢訂單編號。
         </p>
-
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1.5">姓名 <span class="text-red-400">*</span></label>
-            <input type="text" id="lookup-name" placeholder="王小明"
-                   class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+            <label class="block text-xs font-medium text-gray-400 mb-1.5">姓名 <span class="text-red-400">*</span></label>
+            <input type="text" id="lookup-name" placeholder="王小明" class="input-dark" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1.5">手機號碼 <span class="text-red-400">*</span></label>
-            <input type="tel" id="lookup-phone" placeholder="0912345678"
-                   class="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+            <label class="block text-xs font-medium text-gray-400 mb-1.5">手機號碼 <span class="text-red-400">*</span></label>
+            <input type="tel" id="lookup-phone" placeholder="0912345678" class="input-dark" />
           </div>
         </div>
-
-        <button type="button" onclick="doLookup()"
-                id="lookup-btn"
-                class="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+        <button type="button" onclick="doLookup()" id="lookup-btn" class="btn-primary">
           查詢訂單
         </button>
-
-        <!-- 查詢結果區 -->
         <div id="lookup-result" class="hidden space-y-3"></div>
       </div>
     </div>
@@ -128,7 +116,7 @@
 
   <!-- 錯誤訊息 -->
   {% if searched and error %}
-  <div id="search-error" class="mb-6 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+  <div id="search-error" class="mb-6 px-4 py-3 bg-red-950/50 border border-red-900/50 rounded-xl text-sm text-red-400">
     {{ error }}
   </div>
   {% endif %}
@@ -137,141 +125,141 @@
   <div id="results">
   {% if searched %}
 
-    {# ── LINE 模式：多筆訂單 ── #}
+    {# 多筆訂單（LINE 模式） #}
     {% if orders %}
     <div class="space-y-4">
       {% for o in orders %}
-      <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-800 flex items-center justify-between">
           <div>
-            <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">訂單編號</p>
-            <p class="text-base font-bold text-gray-900 font-mono tracking-wide">{{ o.order_no }}</p>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">訂單編號</p>
+            <p class="text-base font-bold text-white font-mono tracking-wide">{{ o.order_no }}</p>
           </div>
-          {% if o.payment_status == '已付款' %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
-              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已付款
+          {% if o.payment_status == '訂金已確認' or o.payment_status == '已完成' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-900/50 text-green-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>{{ o.payment_status }}
             </span>
           {% elif o.payment_status == '待確認' %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>待確認
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-900/50 text-blue-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>待確認
             </span>
           {% else %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-              <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>待付款
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>待付款
             </span>
           {% endif %}
         </div>
         <div class="px-6 py-4 grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs text-gray-400 mb-1">出發日期</p>
-            <p class="text-sm font-semibold text-gray-900">{{ o.departure_date }}</p>
+            <p class="text-xs text-gray-500 mb-1">出發日期</p>
+            <p class="text-sm font-semibold text-gray-200">{{ o.departure_date }}</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">費用總計</p>
-            <p class="text-sm font-semibold text-gray-900">NT$ {{ "{:,}".format(o.total_amount) }}</p>
+            <p class="text-xs text-gray-500 mb-1">費用總計</p>
+            <p class="text-sm font-semibold text-gray-200">NT$ {{ "{:,}".format(o.total_amount) }}</p>
           </div>
           <div class="col-span-2">
-            <p class="text-xs text-gray-400 mb-1">同行群組</p>
+            <p class="text-xs text-gray-500 mb-1">同行群組</p>
             {% if o.group_id %}
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>已加入同行群組
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-900/40 text-purple-400 border border-purple-800/50">
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>已加入同行群組
               </span>
             {% else %}
-              <span class="text-xs text-gray-400">—</span>
+              <span class="text-xs text-gray-600">—</span>
             {% endif %}
           </div>
         </div>
-        {% if o.payment_status == '待付款' %}
-        <div class="px-6 pb-4">
-          <a href="/payment/report?order_no={{ o.order_no }}&line_user_id={{ line_user_id }}"
-             class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors">
-            前往匯款回報
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-            </svg>
+        <div class="px-6 pb-4 flex gap-2">
+          <a href="/orders/{{ o.order_no }}"
+             class="btn-primary" style="width:auto; padding: 0.5rem 1rem; font-size:0.75rem;">
+            查看訂單
           </a>
+          {% if o.payment_status == '待付款' %}
+          <a href="/payment/report?order_no={{ o.order_no }}&line_user_id={{ line_user_id }}"
+             class="btn-secondary" style="width:auto; padding: 0.5rem 1rem; font-size:0.75rem;">
+            前往匯款回報
+          </a>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
       {% endfor %}
     </div>
 
-    {# ── 單筆訂單（LINE 一筆 or 表單查詢） ── #}
+    {# 單筆訂單 #}
     {% elif order %}
-    <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-      <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <div class="px-6 py-5 border-b border-gray-800 flex items-center justify-between">
         <div>
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">訂單編號</p>
-          <p class="text-base font-bold text-gray-900 font-mono tracking-wide">{{ order.order_no }}</p>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">訂單編號</p>
+          <p class="text-base font-bold text-white font-mono tracking-wide">{{ order.order_no }}</p>
         </div>
-        {% if order.payment_status == '已付款' %}
-          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已付款
+        {% if order.payment_status == '訂金已確認' or order.payment_status == '已完成' %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-900/50 text-green-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>{{ order.payment_status }}
           </span>
         {% elif order.payment_status == '待確認' %}
-          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>待確認
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-900/50 text-blue-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>待確認
           </span>
         {% else %}
-          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>待付款
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>待付款
           </span>
         {% endif %}
       </div>
       <div class="px-6 py-5 space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs text-gray-400 mb-1">姓名</p>
-            <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+            <p class="text-xs text-gray-500 mb-1">姓名</p>
+            <p class="text-sm font-semibold text-gray-200">{{ order.contact_name }}</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">出發日期</p>
-            <p class="text-sm font-semibold text-gray-900">{{ order.departure_date }}</p>
+            <p class="text-xs text-gray-500 mb-1">出發日期</p>
+            <p class="text-sm font-semibold text-gray-200">{{ order.departure_date }}</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">乘客人數</p>
-            <p class="text-sm font-semibold text-gray-900">{{ order.passenger_count }} 人</p>
+            <p class="text-xs text-gray-500 mb-1">乘客人數</p>
+            <p class="text-sm font-semibold text-gray-200">{{ order.passenger_count }} 人</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">費用總計</p>
-            <p class="text-sm font-semibold text-gray-900">NT$ {{ "{:,}".format(order.total_amount) }}</p>
+            <p class="text-xs text-gray-500 mb-1">費用總計</p>
+            <p class="text-sm font-semibold text-gray-200">NT$ {{ "{:,}".format(order.total_amount) }}</p>
           </div>
         </div>
         {% if order.remark %}
         <div class="pt-1">
-          <p class="text-xs text-gray-400 mb-1">備註</p>
-          <p class="text-sm text-gray-600">{{ order.remark }}</p>
+          <p class="text-xs text-gray-500 mb-1">備註</p>
+          <p class="text-sm text-gray-400">{{ order.remark }}</p>
         </div>
         {% endif %}
       </div>
 
       {% if order.group_id %}
-      {% set g_orders = order.group_id and namespace(list=[]) %}
-      <div class="px-6 py-4 border-t border-gray-100 bg-blue-50">
-        <p class="text-xs font-medium text-blue-400 uppercase tracking-widest mb-3">同行群組</p>
+      <div class="px-6 py-4 border-t border-gray-800 bg-purple-950/20">
+        <p class="text-xs font-medium text-purple-400 uppercase tracking-widest mb-3">同行群組</p>
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs text-blue-500 mb-0.5">是否同行</p>
-              <p class="text-sm font-semibold text-gray-900">是</p>
+              <p class="text-xs text-gray-500 mb-0.5">是否同行</p>
+              <p class="text-sm font-semibold text-gray-200">是</p>
             </div>
             <div class="text-right">
-              <p class="text-xs text-blue-500 mb-0.5">群組成員</p>
-              <p class="text-sm font-semibold text-gray-900">{{ group_member_count }} 份訂單・{{ group_total_pax }} 人</p>
+              <p class="text-xs text-gray-500 mb-0.5">群組成員</p>
+              <p class="text-sm font-semibold text-gray-200">{{ group_member_count }} 份訂單・{{ group_total_pax }} 人</p>
             </div>
           </div>
           <div class="flex items-center justify-between gap-3 pt-1">
             <button type="button" onclick="copyGroupLink(this)"
                     data-link="{{ request.host_url }}join/{{ order.group_id }}"
-                    class="flex-1 py-2 text-xs font-medium text-blue-700 bg-white border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors">
+                    class="btn-secondary" style="padding:0.5rem 1rem; font-size:0.75rem;">
               複製邀請連結
             </button>
             <details class="flex-1">
-              <summary class="py-2 text-xs font-medium text-center text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer select-none">
+              <summary class="py-2 text-xs font-medium text-center text-gray-400 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-700 cursor-pointer select-none">
                 查看同行代碼
               </summary>
-              <div class="mt-2 px-3 py-2 bg-white border border-gray-200 rounded-xl">
-                <p class="font-mono text-xs font-bold text-gray-800 tracking-wider text-center">{{ order.group_id }}</p>
+              <div class="mt-2 px-3 py-2 bg-black border border-gray-800 rounded-xl">
+                <p class="font-mono text-xs font-bold text-white tracking-wider text-center">{{ order.group_id }}</p>
               </div>
             </details>
           </div>
@@ -280,26 +268,26 @@
       {% endif %}
 
       {% if vehicle %}
-      <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
-        <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">車輛資訊</p>
+      <div class="px-6 py-4 border-t border-gray-800">
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-widest mb-3">車輛資訊</p>
         <div class="grid grid-cols-3 gap-4">
           <div>
-            <p class="text-xs text-gray-400 mb-1">車牌號碼</p>
-            <p class="text-sm font-bold text-gray-900 font-mono">{{ vehicle.plate_number }}</p>
+            <p class="text-xs text-gray-500 mb-1">車牌號碼</p>
+            <p class="text-sm font-bold text-white font-mono">{{ vehicle.plate_number }}</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">司機姓名</p>
-            <p class="text-sm font-semibold text-gray-900">{{ vehicle.driver_name }}</p>
+            <p class="text-xs text-gray-500 mb-1">司機姓名</p>
+            <p class="text-sm font-semibold text-gray-200">{{ vehicle.driver_name }}</p>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">司機電話</p>
-            <p class="text-sm font-semibold text-gray-900">{{ vehicle.driver_phone }}</p>
+            <p class="text-xs text-gray-500 mb-1">司機電話</p>
+            <p class="text-sm font-semibold text-gray-200">{{ vehicle.driver_phone }}</p>
           </div>
         </div>
       </div>
       {% else %}
-      <div class="px-6 py-4 border-t border-gray-100">
-        <p class="text-xs text-gray-400 flex items-center gap-2">
+      <div class="px-6 py-4 border-t border-gray-800">
+        <p class="text-xs text-gray-500 flex items-center gap-2">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
@@ -308,29 +296,28 @@
       </div>
       {% endif %}
 
-      {% if order.payment_status == '待付款' %}
-      <div class="px-6 py-4 border-t border-gray-100">
-        <a href="/payment/report?order_no={{ order.order_no }}{% if line_user_id %}&line_user_id={{ line_user_id }}{% endif %}"
-           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors">
-          前往匯款回報
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-          </svg>
+      <div class="px-6 pb-5 pt-3 flex gap-2">
+        <a href="/orders/{{ order.order_no }}" class="btn-primary" style="font-size:0.8rem; padding:0.6rem 1rem;">
+          查看訂單詳情
         </a>
+        {% if order.payment_status == '待付款' %}
+        <a href="/payment/report?order_no={{ order.order_no }}{% if line_user_id %}&line_user_id={{ line_user_id }}{% endif %}"
+           class="btn-secondary" style="font-size:0.8rem; padding:0.6rem 1rem;">
+          前往匯款回報
+        </a>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
 
     {% else %}
-    <!-- Not found -->
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="w-14 h-14 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
-      <p class="text-sm font-semibold text-gray-700 mb-1">找不到符合的訂單</p>
-      <p class="text-xs text-gray-400">請確認訂單編號、手機後四碼是否正確。</p>
+      <p class="text-sm font-semibold text-gray-300 mb-1">找不到符合的訂單</p>
+      <p class="text-xs text-gray-500">請確認訂單編號、手機後四碼是否正確。</p>
     </div>
     {% endif %}
 
@@ -347,7 +334,6 @@ liff.init({ liffId: '{{ passenger_liff_id }}' })
       return liff.getProfile().then(profile => {
         const url = new URL(location.href);
         if (!url.searchParams.get('line_user_id')) {
-          // 清除手動查詢參數，改用 LINE 身分
           url.searchParams.set('line_user_id', profile.userId);
           ['order_no', 'phone4'].forEach(k => url.searchParams.delete(k));
           location.replace(url.toString());
@@ -359,22 +345,17 @@ liff.init({ liffId: '{{ passenger_liff_id }}' })
       showForm();
     }
   })
-  .catch(() => {
-    // LIFF 不可用（一般瀏覽器）→ 顯示手動查詢表單
-    showForm();
-  });
+  .catch(() => { showForm(); });
 
 function showForm() {
   document.getElementById('liff-loading').classList.add('hidden');
   document.getElementById('search-form').classList.remove('hidden');
 }
-
 function showLinePage() {
   document.getElementById('liff-loading').classList.add('hidden');
   document.getElementById('line-verified-msg').classList.remove('hidden');
 }
 
-// ── 忘記訂單編號 Modal ──
 function openLookupModal() {
   document.getElementById('lookup-modal').classList.remove('hidden');
   document.getElementById('lookup-result').classList.add('hidden');
@@ -382,7 +363,6 @@ function openLookupModal() {
   document.getElementById('lookup-phone').value = '';
   setTimeout(() => document.getElementById('lookup-name').focus(), 100);
 }
-
 function closeLookupModal() {
   document.getElementById('lookup-modal').classList.add('hidden');
 }
@@ -394,7 +374,7 @@ async function doLookup() {
   const result = document.getElementById('lookup-result');
 
   if (!name || !phone) {
-    result.innerHTML = '<p class="text-xs text-red-600">請填寫姓名與手機號碼。</p>';
+    result.innerHTML = '<p class="text-xs text-red-400">請填寫姓名與手機號碼。</p>';
     result.classList.remove('hidden');
     return;
   }
@@ -407,40 +387,40 @@ async function doLookup() {
     const data = await res.json();
 
     if (data.error) {
-      result.innerHTML = `<p class="text-xs text-red-600">${data.error}</p>`;
+      result.innerHTML = `<p class="text-xs text-red-400">${data.error}</p>`;
     } else if (!data.orders || data.orders.length === 0) {
       result.innerHTML = `
-        <div class="bg-gray-50 rounded-xl px-4 py-4 text-center">
-          <p class="text-sm font-medium text-gray-700 mb-1">查無符合資料</p>
-          <p class="text-xs text-gray-400">請確認姓名與手機號碼是否正確。</p>
+        <div class="bg-gray-800 rounded-xl px-4 py-4 text-center">
+          <p class="text-sm font-medium text-gray-300 mb-1">查無符合資料</p>
+          <p class="text-xs text-gray-500">請確認姓名與手機號碼是否正確。</p>
         </div>`;
     } else {
       const statusClass = s =>
-        s === '訂金已確認' || s === '已完成' ? 'bg-green-100 text-green-700' :
-        s === '待確認' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500';
+        s === '訂金已確認' || s === '已完成' ? 'bg-green-900/50 text-green-400' :
+        s === '待確認' ? 'bg-blue-900/50 text-blue-400' : 'bg-gray-800 text-gray-400';
 
       const rows = data.orders.map(o => `
-        <div class="border border-gray-100 rounded-xl p-4 space-y-3">
+        <div class="border border-gray-700 rounded-xl p-4 space-y-3 bg-gray-800/50">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-bold text-gray-900 font-mono">${o.order_no}</span>
+            <span class="text-sm font-bold text-white font-mono">${o.order_no}</span>
             <span class="text-xs px-2 py-0.5 rounded-full font-medium ${statusClass(o.payment_status)}">${o.payment_status}</span>
           </div>
-          <div class="flex gap-4 text-xs text-gray-500">
+          <div class="flex gap-4 text-xs text-gray-400">
             <span>${o.departure_date}</span>
             <span>${o.passenger_count} 人</span>
           </div>
           <a href="/orders/${o.order_no}"
-             class="flex items-center justify-center w-full py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+             class="flex items-center justify-center w-full py-2 bg-purple-600 text-white text-xs font-semibold rounded-xl hover:bg-purple-700 transition-colors">
             查看訂單
           </a>
         </div>`).join('');
 
       result.innerHTML = `
-        <p class="text-xs font-medium text-gray-500">找到以下訂單</p>
+        <p class="text-xs font-medium text-gray-400">找到以下訂單</p>
         ${rows}`;
     }
   } catch {
-    result.innerHTML = '<p class="text-xs text-red-600">查詢失敗，請稍後再試。</p>';
+    result.innerHTML = '<p class="text-xs text-red-400">查詢失敗，請稍後再試。</p>';
   }
 
   result.classList.remove('hidden');

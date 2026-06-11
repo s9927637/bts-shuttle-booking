@@ -2,51 +2,48 @@
 {% block title %}匯款回報 — BTS Shuttle{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-6 pt-12 pb-20">
+<div class="page-container">
 
-  <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">訂金匯款回報</h1>
-    <p class="mt-2 text-sm text-gray-500">請完成訂金匯款後填寫以下資料，我們確認後即完成預約。</p>
+    <h1 class="text-3xl font-bold text-white tracking-tight">訂金匯款回報</h1>
+    <p class="mt-2 text-sm text-gray-400">請完成訂金匯款後填寫以下資料，我們確認後即完成預約。</p>
   </div>
 
-  <!-- 訂金說明 -->
-  <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-6 shadow-sm space-y-3">
-    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest">付款方式說明</p>
-    <div class="flex items-center justify-between py-2 border-b border-gray-50">
+  <!-- 費用說明 -->
+  <div class="card-dark mb-6 space-y-3">
+    <p class="text-xs font-medium text-gray-500 uppercase tracking-widest">付款方式說明</p>
+    <div class="flex items-center justify-between py-2 border-b border-gray-800">
       <div>
-        <p class="text-sm font-medium text-gray-800">訂金（現在匯款）</p>
-        <p class="text-xs text-gray-400 mt-0.5">每人 NT$300，預約成立需先完成</p>
+        <p class="text-sm font-medium text-gray-200">訂金（現在匯款）</p>
+        <p class="text-xs text-gray-500 mt-0.5">每人 NT$300，預約成立需先完成</p>
       </div>
-      <span id="deposit_amount_display" class="text-sm font-bold text-gray-900">—</span>
+      <span id="deposit_amount_display" class="text-sm font-bold text-white">—</span>
     </div>
     <div class="flex items-center justify-between py-2">
       <div>
-        <p class="text-sm font-medium text-gray-800">尾款（搭車當日現金）</p>
-        <p class="text-xs text-gray-400 mt-0.5">每人 NT$1,700，現場交給司機</p>
+        <p class="text-sm font-medium text-gray-200">尾款（搭車當日現金）</p>
+        <p class="text-xs text-gray-500 mt-0.5">每人 NT$1,700，現場交給司機</p>
       </div>
-      <span id="balance_amount_display" class="text-sm font-bold text-gray-900">—</span>
+      <span id="balance_amount_display" class="text-sm font-bold text-white">—</span>
     </div>
   </div>
 
   <!-- Form -->
-  <form action="/payment/report" method="post" class="space-y-6">
+  <form action="/payment/report" method="post" class="space-y-5">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-
-    <!-- LINE 隱藏欄位 -->
     <input type="hidden" name="line_user_id" id="f-line-user-id" value="{{ line_user_id or '' }}" />
 
-    <div class="bg-white border border-gray-100 rounded-2xl p-6 space-y-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-gray-900">填寫匯款資料</h2>
+    <div class="card-dark space-y-5">
+      <h2 class="section-title">填寫匯款資料</h2>
 
-      <!-- 訂單編號：LINE 模式有多筆待付款訂單時顯示下拉選單 -->
+      <!-- 訂單編號 -->
       <div>
-        <label for="order_no" class="block mb-1.5 text-xs font-medium text-gray-500">
+        <label for="order_no" class="block mb-1.5 text-xs font-medium text-gray-400">
           訂單編號 <span class="text-red-400">*</span>
         </label>
         {% if line_orders and line_orders|length > 1 %}
         <select id="order_no" name="order_no" required
-                class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 font-mono">
+                class="input-dark font-mono">
           <option value="">— 選擇訂單 —</option>
           {% for o in line_orders %}
           <option value="{{ o.order_no }}" {% if prefill_order_no == o.order_no %}selected{% endif %}>
@@ -58,129 +55,119 @@
         <input type="text" id="order_no" name="order_no" required
                placeholder="BTS-KHH-000001"
                value="{{ prefill_order_no or (line_orders[0].order_no if line_orders else '') }}"
-               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono" />
+               class="input-dark font-mono" />
         {% endif %}
-        <p class="mt-1.5 text-xs text-gray-400">請填寫預約完成時取得的訂單編號</p>
+        <p class="mt-1.5 text-xs text-gray-500">請填寫預約完成時取得的訂單編號</p>
       </div>
 
       <!-- 匯款人姓名 -->
       <div>
-        <label for="payer_name" class="block mb-1.5 text-xs font-medium text-gray-500">
+        <label for="payer_name" class="block mb-1.5 text-xs font-medium text-gray-400">
           匯款人姓名 <span class="text-red-400">*</span>
         </label>
         <input type="text" id="payer_name" name="payer_name" required
                placeholder="王小明"
-               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300" />
-        <p class="mt-1.5 text-xs text-gray-400">請填寫匯款帳戶的戶名</p>
+               class="input-dark" />
+        <p class="mt-1.5 text-xs text-gray-500">請填寫匯款帳戶的戶名</p>
       </div>
 
       <!-- 帳號後五碼 -->
       <div>
-        <label for="bank_last5" class="block mb-1.5 text-xs font-medium text-gray-500">
+        <label for="bank_last5" class="block mb-1.5 text-xs font-medium text-gray-400">
           匯款帳號後五碼 <span class="text-red-400">*</span>
         </label>
         <input type="text" id="bank_last5" name="bank_last5" required
                placeholder="12345"
                maxlength="5" pattern="\d{5}"
                inputmode="numeric"
-               class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent block w-full px-4 py-2.5 placeholder-gray-300 font-mono tracking-widest" />
-        <p class="mt-1.5 text-xs text-gray-400">請填寫您匯款帳戶的後五碼，供對帳使用</p>
+               class="input-dark font-mono tracking-widest" />
+        <p class="mt-1.5 text-xs text-gray-500">請填寫您匯款帳戶的後五碼，供對帳使用</p>
       </div>
     </div>
 
     <!-- 注意事項 -->
-    <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-      <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex items-start gap-3 p-4 bg-blue-950/40 border border-blue-900/50 rounded-xl">
+      <svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
-      <p class="text-xs text-blue-700 leading-relaxed">
+      <p class="text-xs text-blue-400 leading-relaxed">
         回報後狀態將顯示為「<strong>待確認</strong>」，確認訂金後更新為「<strong>訂金已確認</strong>」。尾款於搭車當日現金交給司機，無需事先匯款。
       </p>
     </div>
 
-    <!-- Submit -->
-    <button type="submit"
-            class="w-full py-3.5 px-6 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+    <button type="submit" class="btn-primary">
       送出匯款回報
     </button>
 
-    <p class="text-center text-xs text-gray-400">
+    <p class="text-center text-xs text-gray-500">
       需要查詢訂單？
       <a href="/orders/search{% if line_user_id %}?line_user_id={{ line_user_id }}{% endif %}"
-         class="font-medium text-gray-700 hover:underline">前往訂單查詢</a>
+         class="font-medium text-purple-400 hover:text-purple-300 transition-colors">前往訂單查詢</a>
     </p>
 
   </form>
 
   {% if show_group == 'joined' %}
-  <!-- 已加入同行群組 -->
-  <div class="mt-8 bg-green-50 border border-green-100 rounded-2xl p-6 shadow-sm">
+  <div class="mt-8 bg-green-950/40 border border-green-900/50 rounded-2xl p-6">
     <div class="flex items-center gap-2 mb-2">
-      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
-      <h3 class="text-sm font-semibold text-green-800">已成功加入同行群組</h3>
+      <h3 class="text-sm font-semibold text-green-400">已成功加入同行群組</h3>
     </div>
-    <p class="text-xs text-green-700">您的訂單已與朋友的群組連結，系統將優先安排同一台車。</p>
+    <p class="text-xs text-green-500">您的訂單已與朋友的群組連結，系統將優先安排同一台車。</p>
     {% if group_orders %}
-    <div class="mt-3 pt-3 border-t border-green-100">
+    <div class="mt-3 pt-3 border-t border-green-900/50">
       <p class="text-xs text-green-600">群組共 {{ group_orders|length }} 份訂單・{{ group_orders|sum(attribute='passenger_count') }} 人</p>
     </div>
     {% endif %}
   </div>
   {% elif show_group == 'created' and group_id %}
-  <!-- 已建立同行群組邀請卡 -->
-  <div class="mt-8 bg-white border border-blue-100 rounded-2xl p-6 shadow-sm">
+  <div class="mt-8 card-dark">
     <div class="flex items-center gap-2 mb-1">
-      <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
       </svg>
-      <h3 class="text-sm font-semibold text-gray-900">已建立同行群組</h3>
+      <h3 class="text-sm font-semibold text-white">已建立同行群組</h3>
     </div>
     <p class="text-xs text-gray-500 mb-5">分享邀請連結，讓朋友的訂單與您安排同一台車。</p>
 
-    <!-- LINE 分享（主要 CTA） -->
     <button type="button" onclick="shareToLine()"
-            class="w-full py-3 px-6 bg-[#06C755] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3">
+            class="w-full py-3 px-6 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3"
+            style="background:#06C755;">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.979C23.176 14.393 24 12.458 24 10.314"/>
       </svg>
       邀請朋友同行（LINE 分享）
     </button>
 
-    <!-- 複製邀請連結 -->
     <button type="button" onclick="copyLink(this)"
-            class="w-full py-2.5 px-6 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mb-4">
-      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-      </svg>
+            class="btn-secondary mb-4">
       複製邀請連結
     </button>
 
-    <!-- 進階資訊：同行代碼 -->
     <details class="text-xs">
-      <summary class="cursor-pointer text-gray-400 hover:text-gray-600 select-none">查看同行代碼</summary>
-      <div class="mt-2 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-        <span id="group-code" class="font-mono font-bold text-gray-800 tracking-wider">{{ group_id }}</span>
+      <summary class="cursor-pointer text-gray-500 hover:text-gray-300 select-none">查看同行代碼</summary>
+      <div class="mt-2 flex items-center justify-between bg-black rounded-xl px-4 py-3">
+        <span id="group-code" class="font-mono font-bold text-white tracking-wider">{{ group_id }}</span>
         <button type="button" onclick="copyCode(this)"
-                class="text-xs text-gray-400 hover:text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                class="text-xs text-gray-500 hover:text-gray-300 px-2.5 py-1 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors">
           複製代碼
         </button>
       </div>
-      <p class="mt-1.5 text-gray-400 px-1">朋友可在預約時輸入此代碼加入您的群組。</p>
+      <p class="mt-1.5 text-gray-500 px-1">朋友可在預約時輸入此代碼加入您的群組。</p>
     </details>
 
-    <!-- 邀請連結（供 JS 使用，不顯示） -->
     <span id="invite-link" class="hidden">{{ request.host_url }}join/{{ group_id }}</span>
 
     {% if group_orders and group_orders|length > 1 %}
-    <div class="mt-4 pt-4 border-t border-gray-100">
-      <p class="text-xs text-gray-400 mb-2">目前群組成員（{{ group_orders|length }} 筆訂單）</p>
+    <div class="mt-4 pt-4 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-2">目前群組成員（{{ group_orders|length }} 筆訂單）</p>
       <div class="space-y-1.5">
         {% for o in group_orders %}
         <div class="flex items-center justify-between text-xs">
-          <span class="text-gray-700 font-medium">{{ o.contact_name }}</span>
-          <span class="text-gray-400">{{ o.passenger_count }} 人</span>
+          <span class="text-gray-300 font-medium">{{ o.contact_name }}</span>
+          <span class="text-gray-500">{{ o.passenger_count }} 人</span>
         </div>
         {% endfor %}
       </div>
@@ -193,14 +180,6 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-function copyAcct(btn) {
-  const acct = document.getElementById('acct-no').textContent.replace(/-/g, '');
-  navigator.clipboard.writeText(acct).then(() => {
-    btn.textContent = '已複製';
-    setTimeout(() => { btn.textContent = '複製'; }, 2000);
-  });
-}
-
 function copyCode(btn) {
   const code = document.getElementById('group-code').textContent.trim();
   navigator.clipboard.writeText(code).then(() => {
@@ -222,19 +201,13 @@ function shareToLine() {
   const link = document.getElementById('invite-link') ? document.getElementById('invite-link').textContent.trim() : '';
   const code = document.getElementById('group-code') ? document.getElementById('group-code').textContent.trim() : '';
   const msg = `我已完成 BTS 高雄演唱會包車預約！邀請你一起同行，點連結加入我們的包車群組：\n${link}\n\n或輸入同行代碼：${code}`;
-
   if (liff && liff.isInClient()) {
-    liff.shareTargetPicker([{
-      type: 'text',
-      text: msg,
-    }]).catch(() => {});
+    liff.shareTargetPicker([{ type: 'text', text: msg }]).catch(() => {});
   } else {
-    const encoded = encodeURIComponent(msg);
-    window.open(`https://line.me/R/msg/text/?${encoded}`, '_blank');
+    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
   }
 }
 
-// 訂金/尾款金額對照（從後端注入）
 const ORDER_MAP = {
   {% for o in line_orders %}
   "{{ o.order_no }}": { deposit: {{ o.deposit_amount }}, balance: {{ o.balance_amount }} },
@@ -254,12 +227,10 @@ function updateAmounts(orderNo) {
   }
 }
 
-// 如果是單筆訂單直接顯示
 {% if line_orders and line_orders|length == 1 %}
 updateAmounts("{{ line_orders[0].order_no }}");
 {% endif %}
 
-// 下拉選單切換時更新
 const sel = document.getElementById('order_no');
 if (sel && sel.tagName === 'SELECT') {
   sel.addEventListener('change', () => updateAmounts(sel.value));
@@ -268,7 +239,6 @@ if (sel && sel.tagName === 'SELECT') {
   updateAmounts(sel.value.trim());
 }
 
-// 若 URL 未帶 line_user_id，嘗試從 LIFF 取得後補入隱藏欄位
 liff.init({ liffId: '{{ passenger_liff_id }}' })
   .then(() => {
     if (liff.isLoggedIn()) {

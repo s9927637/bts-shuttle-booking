@@ -94,16 +94,15 @@
     {% if group_orders %}
     <div class="space-y-2">
       {% for g in group_orders %}
-      <div class="flex items-center justify-between py-2 px-3 rounded-xl border border-gray-800 text-sm
+      <div class="py-2.5 px-3 rounded-xl border border-gray-800 text-sm
                   {% if g.order_no == order.order_no %}bg-gray-800{% endif %}">
-        <div class="flex items-center gap-2">
-          <span class="text-gray-200 font-medium">{{ g.contact_name }}</span>
-          {% if g.order_no == order.order_no %}
-          <span class="text-xs text-gray-500">（本人）</span>
-          {% endif %}
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="text-xs text-gray-500">{{ g.passenger_count }} 人</span>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="font-medium text-gray-200">{{ g.contact_name }}</span>
+            {% if g.order_no == order.order_no %}
+            <span class="text-xs text-gray-500">（本人）</span>
+            {% endif %}
+          </div>
           {% if g.order_no == order.order_no %}
           <span class="text-xs px-2 py-0.5 rounded-full font-medium
             {% if g.payment_status == '訂金已確認' or g.payment_status == '已完成' %}bg-green-900/50 text-green-400
@@ -113,6 +112,7 @@
           </span>
           {% endif %}
         </div>
+        <p class="text-xs text-gray-500 mt-1">預約人數：{{ g.passenger_count }} 人</p>
       </div>
       {% endfor %}
     </div>

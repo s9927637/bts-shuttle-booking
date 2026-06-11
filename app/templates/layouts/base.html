@@ -12,6 +12,16 @@
     html, body { background-color: #000000 !important; color: #ffffff; }
     main { background-color: #000000; min-height: 100vh; }
 
+    /* ── Typography: all gray/slate text → white on dark background ── */
+    .text-gray-100, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500,
+    .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900,
+    .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500,
+    .text-slate-600, .text-slate-700 { color: #ffffff !important; }
+
+    /* ── Placeholder: white at 50% opacity ── */
+    input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.45) !important; }
+    .input-dark::placeholder { color: rgba(255,255,255,0.45) !important; }
+
     /* ── Shared Theme Classes ── */
     .page-container {
       max-width: 42rem; margin: 0 auto; padding: 3rem 1.5rem 5rem;

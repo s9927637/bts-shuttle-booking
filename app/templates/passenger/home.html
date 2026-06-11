@@ -8,6 +8,12 @@
   <style>
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
 
+    /* ── Typography: gray/slate → white on dark background ── */
+    .text-gray-100, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500,
+    .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900,
+    .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 { color: #ffffff !important; }
+    input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.45) !important; }
+
     /* ── Hero background ── */
     .hero-v2 {
       background: url('{{ url_for("static", filename="images/homepage-mobile.png") }}') center top / cover no-repeat;

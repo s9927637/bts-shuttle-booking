@@ -207,6 +207,126 @@
   </form>
 </div>
 
+{% if success_order %}
+<!-- ── 預約成功 Modal ── -->
+<div id="booking-success-modal"
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4"
+     style="background:rgba(0,0,0,0.5);">
+  <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-xl max-h-[92vh] overflow-y-auto">
+
+    <!-- Handle bar (mobile) -->
+    <div class="flex justify-center pt-3 pb-1 sm:hidden">
+      <div class="w-10 h-1 rounded-full bg-gray-200"></div>
+    </div>
+
+    <div class="px-6 pt-4 pb-8 space-y-6">
+
+      <!-- ── 區塊 1：預約成功 ── -->
+      <div>
+        <h2 class="text-lg font-bold text-gray-900 mb-4">預約成功</h2>
+        <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-500">訂單編號</span>
+            <div class="flex items-center gap-2">
+              <span id="modal-order-no" class="text-sm font-bold text-gray-900 font-mono">{{ success_order.order_no }}</span>
+              <button type="button" onclick="copyOrderNo()"
+                      class="text-xs text-gray-400 hover:text-gray-700 px-2 py-0.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors">
+                複製
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between border-t border-gray-100 pt-3">
+            <span class="text-xs text-gray-500">出發日期</span>
+            <span class="text-sm font-medium text-gray-900">{{ success_order.departure_date }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-gray-100 pt-3">
+            <span class="text-xs text-gray-500">人數</span>
+            <span class="text-sm font-medium text-gray-900">{{ success_order.passenger_count }} 人</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 區塊 2：同行群組（條件顯示） ── -->
+      {% if show_group == 'created' %}
+      <div class="border border-gray-100 rounded-xl p-4 space-y-3">
+        <h3 class="text-sm font-bold text-gray-900">同行群組已建立</h3>
+        <p class="text-xs text-gray-500 leading-relaxed">
+          邀請朋友一起搭乘，完成預約後將優先安排同車。
+        </p>
+        <div class="bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between">
+          <span id="modal-group-id" class="text-xs font-mono text-gray-700">{{ success_order.group_id }}</span>
+          <button type="button" onclick="copyGroupLink()"
+                  class="text-xs text-gray-400 hover:text-gray-700 px-2 py-0.5 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors">
+            複製連結
+          </button>
+        </div>
+        <a href="https://line.me/R/share?text={{ ('邀請你加入 BTS 演唱會同行包車群組！\n同行代碼：' ~ success_order.group_id ~ '\n請至以下連結完成預約並輸入同行代碼：\nhttps://bts-shuttle-booking.anjiatra.com/booking') | urlencode }}"
+           target="_blank"
+           class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+           style="background:#06C755;">
+          LINE 分享邀請
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- ── 區塊 3：付款資訊 ── -->
+      <div>
+        <h3 class="text-sm font-bold text-gray-900 mb-3">付款資訊</h3>
+        <div class="space-y-2 mb-4">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500">總金額</span>
+            <span class="font-bold text-gray-900">NT$ {{ "{:,}".format(success_order.total_amount) }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500">訂金（立即匯款）</span>
+            <span class="font-semibold text-gray-900">NT$ {{ "{:,}".format(success_order.deposit_amount) }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500">尾款（搭車當日現金）</span>
+            <span class="font-semibold text-gray-900">NT$ {{ "{:,}".format(success_order.balance_amount) }}</span>
+          </div>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">銀行</span>
+            <span class="text-xs font-semibold text-white">國泰世華（013）</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">帳號</span>
+            <div class="flex items-center gap-2">
+              <span id="modal-acct" class="text-xs font-bold text-white font-mono">699503672590</span>
+              <button type="button" onclick="copyAcctModal()"
+                      class="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors">
+                複製
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">戶名</span>
+            <span class="text-xs font-semibold text-white">蘇心慈</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 區塊 4：付款說明 ── -->
+      <div class="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 space-y-1.5 text-xs text-amber-700 leading-relaxed">
+        <p>請於完成預約後盡快匯款訂金保留座位。</p>
+        <p>系統確認訂金後將保留您的搭車資格。</p>
+        <p>尾款請於搭車當日現金支付給司機。</p>
+        <p>未完成訂金付款之訂單將不列入排車名單。</p>
+      </div>
+
+      <!-- ── 區塊 5：操作按鈕 ── -->
+      <button type="button" onclick="closeSuccessModal()"
+              class="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+        我知道了
+      </button>
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const PRICE   = 2000;
@@ -223,6 +343,40 @@
   }
 
   calcTotal(document.getElementById('passenger_count').value);
+
+  // ── 成功 Modal ──
+  function closeSuccessModal() {
+    const m = document.getElementById('booking-success-modal');
+    if (m) m.remove();
+  }
+
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '已複製';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+  }
+
+  function copyOrderNo() {
+    const el = document.getElementById('modal-order-no');
+    const btn = event.currentTarget;
+    if (el) copyText(el.textContent.trim(), btn);
+  }
+
+  function copyAcctModal() {
+    const btn = event.currentTarget;
+    copyText('699503672590', btn);
+  }
+
+  function copyGroupLink() {
+    const groupId = document.getElementById('modal-group-id');
+    const btn = event.currentTarget;
+    if (groupId) {
+      const link = 'https://bts-shuttle-booking.anjiatra.com/booking?friend_code=' + groupId.textContent.trim();
+      copyText(link, btn);
+    }
+  }
 
   function toggleFriendCode(val) {
     const wrap = document.getElementById('friend-code-wrap');

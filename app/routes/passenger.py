@@ -173,12 +173,16 @@ def booking_submit():
         order.order_no = _gen_order_no(order.id)
         db.session.commit()
 
-        flash(f"預約成功！您的訂單編號為 {order.order_no}，請完成訂金匯款後回報。", "success")
-        redirect_kwargs = dict(order_no=order.order_no)
-        if show_group:
-            redirect_kwargs["group_id"]   = order.group_id
-            redirect_kwargs["show_group"] = show_group
-        return redirect(url_for("passenger.payment_report", **redirect_kwargs))
+        return render_template("passenger/booking.html",
+                               price_per_person=PRICE_PER_PERSON,
+                               deposit_per_person=DEPOSIT_PER_PERSON,
+                               balance_per_person=BALANCE_PER_PERSON,
+                               departure_options=DEPARTURE_OPTIONS,
+                               passenger_liff_id=PASSENGER_LIFF_ID,
+                               prefill_friend_code=None,
+                               form={},
+                               success_order=order,
+                               show_group=show_group)
 
     except ValueError as e:
         db.session.rollback()

@@ -236,7 +236,6 @@
 
       {% if order.group_id %}
       {% set invite_link = request.host_url ~ 'join/' ~ order.group_id %}
-      {% set line_msg = '邀請你加入 BTS 演唱會同行包車群組！\n同行代碼：' ~ order.group_id ~ '\n立即預約：' ~ invite_link %}
       <div class="px-6 py-4 border-t border-gray-800 bg-purple-950/20">
         <p class="text-xs font-medium text-purple-400 uppercase tracking-widest mb-4">同行群組</p>
         <div class="space-y-2.5 text-sm mb-4">
@@ -253,19 +252,11 @@
             <span class="font-mono font-bold text-white tracking-wider">{{ order.group_id }}</span>
           </div>
         </div>
-        <div class="flex flex-col gap-2">
-          <a href="https://line.me/R/share?text={{ line_msg | urlencode }}"
-             target="_blank"
-             class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-             style="background:#06C755;">
-            LINE 分享邀請
-          </a>
-          <button type="button"
-                  onclick="copyText('{{ invite_link }}', this)"
-                  class="btn-secondary py-2.5 text-sm">
-            複製邀請連結
-          </button>
-        </div>
+        <button type="button"
+                onclick="copyText('{{ invite_link }}', this)"
+                class="btn-secondary py-2.5 text-sm w-full">
+          複製邀請連結
+        </button>
       </div>
       {% endif %}
 

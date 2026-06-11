@@ -127,18 +127,11 @@
       </div>
     </div>
 
-    <!-- 按鈕區：單欄垂直 -->
-    <div class="flex flex-col gap-2">
-      <button type="button" onclick="shareToLine()"
-              class="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style="background:#06C755;">
-        LINE 分享邀請
-      </button>
-      <button type="button" onclick="copyLink(this)"
-              class="btn-secondary py-2.5 text-sm">
-        複製邀請連結
-      </button>
-    </div>
+    <!-- 按鈕區 -->
+    <button type="button" onclick="copyLink(this)"
+            class="btn-secondary py-2.5 text-sm w-full">
+      複製邀請連結
+    </button>
 
     <span id="invite-link" class="hidden">{{ request.host_url }}join/{{ group_id }}</span>
 
@@ -178,17 +171,6 @@ function copyLink(btn) {
     btn.textContent = '已複製！';
     setTimeout(() => { btn.textContent = orig; }, 2000);
   });
-}
-
-function shareToLine() {
-  const link = document.getElementById('invite-link') ? document.getElementById('invite-link').textContent.trim() : '';
-  const code = document.getElementById('group-code') ? document.getElementById('group-code').textContent.trim() : '';
-  const msg = `我已完成 BTS 高雄演唱會包車預約！邀請你一起同行，點連結加入我們的包車群組：\n${link}\n\n或輸入同行代碼：${code}`;
-  if (liff && liff.isInClient()) {
-    liff.shareTargetPicker([{ type: 'text', text: msg }]).catch(() => {});
-  } else {
-    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(msg)}`, '_blank');
-  }
 }
 
 const ORDER_MAP = {

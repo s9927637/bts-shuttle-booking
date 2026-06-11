@@ -173,16 +173,8 @@ def booking_submit():
         order.order_no = _gen_order_no(order.id)
         db.session.commit()
 
-        return render_template("passenger/booking.html",
-                               price_per_person=PRICE_PER_PERSON,
-                               deposit_per_person=DEPOSIT_PER_PERSON,
-                               balance_per_person=BALANCE_PER_PERSON,
-                               departure_options=DEPARTURE_OPTIONS,
-                               passenger_liff_id=PASSENGER_LIFF_ID,
-                               prefill_friend_code=None,
-                               form={},
-                               success_order=order,
-                               show_group=show_group)
+        return redirect(url_for("passenger.order_detail",
+                                order_no=order.order_no, new=1))
 
     except ValueError as e:
         db.session.rollback()
@@ -204,6 +196,38 @@ def booking_submit():
                                departure_options=DEPARTURE_OPTIONS,
                                passenger_liff_id=PASSENGER_LIFF_ID,
                                form=form_data)
+
+
+# ── 訂單明細 ────────────────────────────────────────────────────────────────
+
+@passenger_bp.route("/orders/<order_no>")
+def order_detail(order_no):
+    from app.models.vehicle import Vehicle
+    from app.models.dispatch import Dispatch
+
+    order = Order.query.filter_by(order_no=order_no.upper()).first_or_404()
+
+    # 同行成員（同一 group_id 的所有訂單）
+    group_orders = []
+    if order.group_id:
+        group_orders = (Order.query
+                        .filter_by(group_id=order.group_id)
+                        .order_by(Order.created_at.asc()).all())
+
+    # 排車資訊
+    vehicle  = Vehicle.query.get(order.vehicle_id) if order.vehicle_id else None
+    dispatch = Dispatch.query.get(order.dispatch_id) if order.dispatch_id else None
+    driver   = dispatch.driver if dispatch else None
+
+    is_new = request.args.get("new") == "1"
+
+    return render_template("passenger/order_detail.html",
+                           order=order,
+                           group_orders=group_orders,
+                           vehicle=vehicle,
+                           driver=driver,
+                           is_new=is_new,
+                           passenger_liff_id=PASSENGER_LIFF_ID)
 
 
 # ── 訂單查詢 ────────────────────────────────────────────────────────────────

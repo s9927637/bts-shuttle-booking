@@ -19,6 +19,7 @@ class Order(db.Model):
     payment_status  = db.Column(db.String(20), default="待付款")
     vehicle_id   = db.Column(db.Integer, db.ForeignKey("vehicles.id"))
     dispatch_id  = db.Column(db.Integer, db.ForeignKey("dispatches.id"), nullable=True)
+    vehicle_type = db.Column(db.String(20), nullable=False, default="minibus")
     group_id     = db.Column(db.String(30), nullable=True, index=True)
     line_user_id = db.Column(db.String(50), nullable=True, index=True)
     display_name = db.Column(db.String(100), nullable=True)

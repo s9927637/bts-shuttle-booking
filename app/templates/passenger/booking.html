@@ -107,6 +107,57 @@
       </div>
     </div>
 
+    <!-- 車輛方案 -->
+    <div class="card-dark space-y-4">
+      <h2 class="section-title">車輛方案</h2>
+      <input type="hidden" name="vehicle_type" id="vehicle_type" value="minibus" />
+
+      <!-- 方案一：九座商旅車 -->
+      <label id="plan-minibus"
+             class="vehicle-plan-card block cursor-pointer rounded-xl border-2 border-purple-600 bg-purple-950/20 p-4 transition-all"
+             onclick="selectVehicle('minibus')">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 w-4 h-4 rounded-full border-2 border-purple-500 flex items-center justify-center shrink-0" id="radio-minibus">
+            <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-white">九座商旅車</p>
+            <p class="text-xs text-gray-400 mt-0.5">共乘接送・適合 1〜8 人</p>
+            <p class="text-xs text-purple-400 mt-1">NT$2,000 / 人</p>
+          </div>
+        </div>
+      </label>
+
+      <!-- 方案二：NX200 -->
+      {% if nx200_available %}
+      <label id="plan-nx200"
+             class="vehicle-plan-card block cursor-pointer rounded-xl border-2 border-gray-700 bg-gray-900/50 p-4 transition-all"
+             onclick="selectVehicle('nx200')">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0" id="radio-nx200">
+            <div class="w-2 h-2 rounded-full bg-transparent"></div>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
+            <p class="text-xs text-gray-400 mt-0.5">固定 4 人搭乘・適合親友同行包車</p>
+            <p class="text-xs text-gray-500 mt-0.5">實際安排以 NX200 車型為主</p>
+            <p class="text-xs text-purple-400 mt-1">NT$10,000 固定</p>
+          </div>
+        </div>
+      </label>
+      {% else %}
+      <div class="rounded-xl border-2 border-gray-800 bg-gray-900/30 p-4 opacity-50">
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 w-4 h-4 rounded-full border-2 border-gray-700 shrink-0"></div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-gray-500">NX200 專屬包車</p>
+            <p class="text-xs text-gray-600 mt-0.5">已售完</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
     <!-- 朋友同行 -->
     <div class="card-dark space-y-4">
       <h2 class="section-title">朋友同行 <span class="text-xs font-normal text-gray-500">（選填）</span></h2>
@@ -200,8 +251,52 @@
   const PRICE   = 2000;
   const DEPOSIT = 300;
   const BALANCE = 1700;
+  const NX200_PAX     = {{ nx200_pax }};
+  const NX200_TOTAL   = {{ nx200_total }};
+  const NX200_DEPOSIT = {{ nx200_deposit }};
+  const NX200_BALANCE = {{ nx200_balance }};
+
+  let currentVehicle = 'minibus';
+
+  function selectVehicle(type) {
+    currentVehicle = type;
+    document.getElementById('vehicle_type').value = type;
+
+    const paxInput = document.getElementById('passenger_count');
+    const minusBus = document.getElementById('plan-minibus');
+    const nx200    = document.getElementById('plan-nx200');
+    const radioMin = document.getElementById('radio-minibus');
+    const radioNx  = document.getElementById('radio-nx200');
+
+    if (type === 'nx200') {
+      // 鎖定人數為 4
+      paxInput.value    = NX200_PAX;
+      paxInput.disabled = true;
+      paxInput.style.opacity = '0.5';
+      // 卡片樣式
+      if (minusBus) { minusBus.classList.remove('border-purple-600','bg-purple-950/20'); minusBus.classList.add('border-gray-700','bg-gray-900/50'); }
+      if (nx200)    { nx200.classList.remove('border-gray-700','bg-gray-900/50');    nx200.classList.add('border-purple-600','bg-purple-950/20'); }
+      if (radioMin) { radioMin.classList.remove('border-purple-500'); radioMin.classList.add('border-gray-600'); radioMin.querySelector('div').classList.replace('bg-purple-500','bg-transparent'); }
+      if (radioNx)  { radioNx.classList.remove('border-gray-600');  radioNx.classList.add('border-purple-500');  radioNx.querySelector('div').classList.replace('bg-transparent','bg-purple-500'); }
+      // 費用
+      document.getElementById('count_display').textContent   = NX200_PAX + ' 人';
+      document.getElementById('total_display').textContent   = 'NT$ ' + NX200_TOTAL.toLocaleString();
+      document.getElementById('deposit_display').textContent = 'NT$ ' + NX200_DEPOSIT.toLocaleString();
+      document.getElementById('balance_display').textContent = 'NT$ ' + NX200_BALANCE.toLocaleString();
+      document.getElementById('total_amount').value = NX200_TOTAL;
+    } else {
+      paxInput.disabled = false;
+      paxInput.style.opacity = '';
+      if (minusBus) { minusBus.classList.add('border-purple-600','bg-purple-950/20');  minusBus.classList.remove('border-gray-700','bg-gray-900/50'); }
+      if (nx200)    { nx200.classList.add('border-gray-700','bg-gray-900/50');     nx200.classList.remove('border-purple-600','bg-purple-950/20'); }
+      if (radioMin) { radioMin.classList.add('border-purple-500'); radioMin.classList.remove('border-gray-600'); radioMin.querySelector('div').classList.replace('bg-transparent','bg-purple-500'); }
+      if (radioNx)  { radioNx.classList.add('border-gray-600');   radioNx.classList.remove('border-purple-500'); radioNx.querySelector('div').classList.replace('bg-purple-500','bg-transparent'); }
+      calcTotal(paxInput.value);
+    }
+  }
 
   function calcTotal(count) {
+    if (currentVehicle === 'nx200') return;
     const n = Math.max(1, parseInt(count) || 1);
     document.getElementById('count_display').textContent   = n + ' 人';
     document.getElementById('total_display').textContent   = 'NT$ ' + (n * PRICE).toLocaleString();

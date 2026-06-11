@@ -41,6 +41,15 @@
 </div>
 
 <div>
+  <label class="block text-xs font-medium text-gray-500 mb-1">車輛方案</label>
+  <select name="vehicle_type"
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+    <option value="minibus" {% if not order or order.vehicle_type == 'minibus' %}selected{% endif %}>九座商旅車</option>
+    <option value="nx200"   {% if order and order.vehicle_type == 'nx200' %}selected{% endif %}>NX200 專屬包車</option>
+  </select>
+</div>
+
+<div>
   <label class="block text-xs font-medium text-gray-500 mb-1">人數 <span class="text-red-400">*</span></label>
   <input name="passenger_count" type="number" min="1" required
          value="{{ order.passenger_count if order else 1 }}"
@@ -148,6 +157,7 @@
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">出發日期</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">人數</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">訂金</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">車輛</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">尾款</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">付款狀態</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">LINE</th>
@@ -164,6 +174,11 @@
           <p class="text-xs text-gray-400">{{ order.phone }}</p>
         </td>
         <td class="px-6 py-4 text-gray-600">{{ order.departure_date }}</td>
+        <td class="px-6 py-4 text-gray-600 text-xs">
+          {% if order.vehicle_type == 'nx200' %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">NX200</span>
+          {% else %}九座{% endif %}
+        </td>
         <td class="px-6 py-4 text-gray-900 font-medium">{{ order.passenger_count }} 人</td>
         <td class="px-6 py-4 text-gray-700 text-xs">NT$ {{ "{:,}".format(order.deposit_amount) }}</td>
         <td class="px-6 py-4 text-gray-700 text-xs">NT$ {{ "{:,}".format(order.balance_amount) }}</td>
@@ -207,6 +222,7 @@
                     data-remark="{{ order.remark or '' }}"
                     data-total-amount="{{ order.total_amount }}"
                     data-payment-status="{{ order.payment_status }}"
+                    data-vehicle-type="{{ order.vehicle_type or 'minibus' }}"
                     data-vehicle-id="{{ order.vehicle_id or '' }}"
                     data-line-user-id="{{ order.line_user_id or '' }}"
                     data-display-name="{{ order.display_name or '' }}"
@@ -402,6 +418,15 @@
           </div>
 
           <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">車輛方案</label>
+            <select id="edit_vehicle_type" name="vehicle_type"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+              <option value="minibus">九座商旅車</option>
+              <option value="nx200">NX200 專屬包車</option>
+            </select>
+          </div>
+
+          <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">人數 <span class="text-red-400">*</span></label>
             <input id="edit_passenger_count" name="passenger_count" type="number" min="1" required
                    oninput="calcEditTotal(this.value)"
@@ -513,6 +538,7 @@ function fillEditModal(btn) {
   document.getElementById('edit_phone').value           = d.phone;
   document.getElementById('edit_emergency_phone').value = d.emergencyPhone;
   document.getElementById('edit_departure_date').value  = d.departureDate;
+  document.getElementById('edit_vehicle_type').value    = d.vehicleType || 'minibus';
   document.getElementById('edit_passenger_count').value = d.passengerCount;
   document.getElementById('edit_companion_names').value = d.companionNames;
   document.getElementById('edit_remark').value          = d.remark;

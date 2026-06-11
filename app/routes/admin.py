@@ -166,7 +166,8 @@ def order_create():
         return guard
 
     try:
-        pc = int(request.form["passenger_count"])
+        pc           = int(request.form["passenger_count"])
+        vehicle_type = request.form.get("vehicle_type", "minibus").strip()
         order = Order(
             order_no        = _gen_order_no(),
             contact_name    = request.form["contact_name"].strip(),
@@ -180,6 +181,7 @@ def order_create():
             deposit_amount  = pc * 300,
             balance_amount  = pc * 1700,
             payment_status  = request.form.get("payment_status", "待付款"),
+            vehicle_type    = vehicle_type,
             vehicle_id      = int(request.form["vehicle_id"]) if request.form.get("vehicle_id") else None,
         )
         db.session.add(order)
@@ -211,6 +213,7 @@ def order_edit(order_id):
         order.remark          = request.form.get("remark", "").strip() or None
         order.total_amount    = int(request.form["total_amount"])
         order.payment_status  = request.form.get("payment_status", order.payment_status)
+        order.vehicle_type    = request.form.get("vehicle_type", order.vehicle_type or "minibus").strip()
         order.vehicle_id      = int(request.form["vehicle_id"]) if request.form.get("vehicle_id") else None
 
         db.session.commit()

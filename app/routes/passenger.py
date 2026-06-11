@@ -17,6 +17,22 @@ PRICE_PER_PERSON   = 2000
 DEPOSIT_PER_PERSON = 300
 BALANCE_PER_PERSON = 1700
 
+# NX200 固定定價（1 台，固定 4 人）
+NX200_PAX     = 4
+NX200_TOTAL   = 10000
+NX200_DEPOSIT = 1200
+NX200_BALANCE = 8800
+NX200_QUOTA   = 1   # 全程只允許 1 台
+
+
+def _nx200_available() -> bool:
+    """NX200 尚有名額（未被任何非取消訂單佔用）"""
+    count = Order.query.filter(
+        Order.vehicle_type == "nx200",
+        Order.payment_status != "已取消"
+    ).count()
+    return count < NX200_QUOTA
+
 DEPARTURE_OPTIONS = [
     {"value": "11/19(四)", "label": "11/19（四） 已額滿", "disabled": True},
     {"value": "11/21(六)", "label": "11/21（六） 已額滿", "disabled": True},
@@ -108,6 +124,11 @@ def booking():
                            price_per_person=PRICE_PER_PERSON,
                            deposit_per_person=DEPOSIT_PER_PERSON,
                            balance_per_person=BALANCE_PER_PERSON,
+                           nx200_pax=NX200_PAX,
+                           nx200_total=NX200_TOTAL,
+                           nx200_deposit=NX200_DEPOSIT,
+                           nx200_balance=NX200_BALANCE,
+                           nx200_available=_nx200_available(),
                            departure_options=DEPARTURE_OPTIONS,
                            passenger_liff_id=PASSENGER_LIFF_ID,
                            prefill_friend_code=friend_code,
@@ -127,16 +148,28 @@ def booking_submit():
     line_user_id = request.form.get("line_user_id", "").strip() or None
     display_name = request.form.get("display_name", "").strip() or None
 
+    vehicle_type = request.form.get("vehicle_type", "minibus").strip()
+
     try:
         # 後端驗證：禁止提交已額滿場次（即使前端 HTML 被修改）
         dep = form_data["departure_date"]
         if dep not in AVAILABLE_DATES:
             raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
 
-        passenger_count = int(form_data["passenger_count"])
-        total_amount    = passenger_count * PRICE_PER_PERSON
-        deposit_amount  = passenger_count * DEPOSIT_PER_PERSON
-        balance_amount  = passenger_count * BALANCE_PER_PERSON
+        # 車輛方案計價
+        if vehicle_type == "nx200":
+            if not _nx200_available():
+                raise ValueError("NX200 專屬包車已售完，請選擇九座商旅車方案。")
+            passenger_count = NX200_PAX
+            total_amount    = NX200_TOTAL
+            deposit_amount  = NX200_DEPOSIT
+            balance_amount  = NX200_BALANCE
+        else:
+            vehicle_type    = "minibus"
+            passenger_count = int(form_data["passenger_count"])
+            total_amount    = passenger_count * PRICE_PER_PERSON
+            deposit_amount  = passenger_count * DEPOSIT_PER_PERSON
+            balance_amount  = passenger_count * BALANCE_PER_PERSON
 
         # 同行群組邏輯
         with_friends = request.form.get("with_friends", "no")
@@ -170,6 +203,7 @@ def booking_submit():
             deposit_amount  = deposit_amount,
             balance_amount  = balance_amount,
             payment_status  = "待付款",
+            vehicle_type    = vehicle_type,
             group_id        = group_id,
             line_user_id    = line_user_id,
             display_name    = display_name,
@@ -182,23 +216,19 @@ def booking_submit():
         return redirect(url_for("passenger.order_detail",
                                 order_no=order.order_no, new=1))
 
-    except ValueError as e:
+    except (ValueError, Exception) as e:
         db.session.rollback()
-        flash(str(e), "error")
+        msg = str(e) if isinstance(e, ValueError) else f"預約失敗，請重試。（{e}）"
+        flash(msg, "error")
         return render_template("passenger/booking.html",
                                price_per_person=PRICE_PER_PERSON,
                                deposit_per_person=DEPOSIT_PER_PERSON,
                                balance_per_person=BALANCE_PER_PERSON,
-                               departure_options=DEPARTURE_OPTIONS,
-                               passenger_liff_id=PASSENGER_LIFF_ID,
-                               form=form_data)
-    except Exception as e:
-        db.session.rollback()
-        flash(f"預約失敗，請重試。（{e}）", "error")
-        return render_template("passenger/booking.html",
-                               price_per_person=PRICE_PER_PERSON,
-                               deposit_per_person=DEPOSIT_PER_PERSON,
-                               balance_per_person=BALANCE_PER_PERSON,
+                               nx200_pax=NX200_PAX,
+                               nx200_total=NX200_TOTAL,
+                               nx200_deposit=NX200_DEPOSIT,
+                               nx200_balance=NX200_BALANCE,
+                               nx200_available=_nx200_available(),
                                departure_options=DEPARTURE_OPTIONS,
                                passenger_liff_id=PASSENGER_LIFF_ID,
                                form=form_data)

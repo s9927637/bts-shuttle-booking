@@ -62,6 +62,12 @@
         <span class="text-gray-200">來回接送</span>
       </div>
       <div class="flex justify-between row-divider">
+        <span class="text-gray-500">車輛方案</span>
+        <span class="text-gray-200">
+          {% if order.vehicle_type == 'nx200' %}NX200 專屬包車{% else %}九座商旅車{% endif %}
+        </span>
+      </div>
+      <div class="flex justify-between row-divider">
         <span class="text-gray-500">人數</span>
         <span class="text-gray-200">{{ order.passenger_count }} 人</span>
       </div>

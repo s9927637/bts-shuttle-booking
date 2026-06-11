@@ -9,25 +9,6 @@
     <p class="mt-2 text-sm text-gray-400">請完成訂金匯款後填寫以下資料，我們確認後即完成預約。</p>
   </div>
 
-  <!-- 費用說明 -->
-  <div class="card-dark mb-6 space-y-3">
-    <p class="text-xs font-medium text-gray-500 uppercase tracking-widest">付款方式說明</p>
-    <div class="flex items-center justify-between py-2 border-b border-gray-800">
-      <div>
-        <p class="text-sm font-medium text-gray-200">訂金（現在匯款）</p>
-        <p class="text-xs text-gray-500 mt-0.5">每人 NT$300，預約成立需先完成</p>
-      </div>
-      <span id="deposit_amount_display" class="text-sm font-bold text-white">—</span>
-    </div>
-    <div class="flex items-center justify-between py-2">
-      <div>
-        <p class="text-sm font-medium text-gray-200">尾款（搭車當日現金）</p>
-        <p class="text-xs text-gray-500 mt-0.5">每人 NT$1,700，現場交給司機</p>
-      </div>
-      <span id="balance_amount_display" class="text-sm font-bold text-white">—</span>
-    </div>
-  </div>
-
   <!-- Form -->
   <form action="/payment/report" method="post" class="space-y-5">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

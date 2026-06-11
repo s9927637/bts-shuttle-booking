@@ -79,7 +79,11 @@
                   class="input-dark">
             <option value="">— 選擇場次 —</option>
             {% for opt in departure_options %}
-            <option value="{{ opt }}" {% if form.departure_date == opt %}selected{% endif %}>{{ opt }}</option>
+            <option value="{{ opt.value }}"
+                    {% if opt.disabled %}disabled style="color:#6b7280;"{% endif %}
+                    {% if form.departure_date == opt.value %}selected{% endif %}>
+              {{ opt.label }}
+            </option>
             {% endfor %}
           </select>
         </div>

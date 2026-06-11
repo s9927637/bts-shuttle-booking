@@ -18,8 +18,11 @@ DEPOSIT_PER_PERSON = 300
 BALANCE_PER_PERSON = 1700
 
 DEPARTURE_OPTIONS = [
-    "11/22(日)",
+    {"value": "11/19(四)", "label": "11/19（四） 已額滿", "disabled": True},
+    {"value": "11/21(六)", "label": "11/21（六） 已額滿", "disabled": True},
+    {"value": "11/22(日)", "label": "11/22（日）",       "disabled": False},
 ]
+AVAILABLE_DATES = {opt["value"] for opt in DEPARTURE_OPTIONS if not opt["disabled"]}
 
 
 def _gen_order_no(order_id: int) -> str:
@@ -125,6 +128,11 @@ def booking_submit():
     display_name = request.form.get("display_name", "").strip() or None
 
     try:
+        # 後端驗證：禁止提交已額滿場次（即使前端 HTML 被修改）
+        dep = form_data["departure_date"]
+        if dep not in AVAILABLE_DATES:
+            raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
+
         passenger_count = int(form_data["passenger_count"])
         total_amount    = passenger_count * PRICE_PER_PERSON
         deposit_amount  = passenger_count * DEPOSIT_PER_PERSON

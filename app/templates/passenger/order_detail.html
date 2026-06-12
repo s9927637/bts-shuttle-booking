@@ -233,6 +233,7 @@
 
 </div>
 
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 function copyText(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
@@ -241,5 +242,31 @@ function copyText(text, btn) {
     setTimeout(() => { btn.textContent = orig; }, 1500);
   });
 }
+
+// ── LINE 自動補綁定 ─────────────────────────────────────────────────────────
+{% if not order.line_user_id and passenger_liff_id %}
+(function () {
+  var ORDER_PHONE    = {{ '"%s"' % order.phone }};
+  var ORDER_NO       = {{ '"%s"' % order.order_no }};
+
+  liff.init({ liffId: '{{ passenger_liff_id }}' })
+    .then(function () {
+      if (!liff.isLoggedIn()) return;
+      return liff.getProfile().then(function (profile) {
+        return fetch('/api/line-bind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            line_user_id: profile.userId,
+            display_name: profile.displayName,
+            phone:    ORDER_PHONE,
+            order_no: ORDER_NO,
+          })
+        });
+      });
+    })
+    .catch(function () {});   // 靜默失敗，不影響頁面
+})();
+{% endif %}
 </script>
 {% endblock %}

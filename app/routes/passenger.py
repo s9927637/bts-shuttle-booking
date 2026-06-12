@@ -3,7 +3,7 @@ import uuid
 import random
 import string
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from app import db
 from app.models.order import Order
 from app.models.payment import Payment
@@ -505,3 +505,54 @@ def join_group_submit(group_id):
         flash(f"加入失敗：{e}", "error")
 
     return redirect(url_for("passenger.join_group", group_id=group_id))
+
+
+# ── LINE 自動補綁定 API ───────────────────────────────────────────────────────
+
+@passenger_bp.route("/api/line-bind", methods=["POST"])
+def api_line_bind():
+    """
+    LIFF 頁面取得 userId 後呼叫，以電話號碼或訂單編號比對，
+    將 line_user_id = NULL 的舊訂單自動補上。
+    不需登入，但需同時提供 line_user_id + phone（或 order_no）。
+    """
+    data = request.get_json(silent=True) or {}
+    line_user_id = (data.get("line_user_id") or "").strip()
+    phone        = (data.get("phone")        or "").strip()
+    order_no     = (data.get("order_no")     or "").strip().upper()
+    display_name = (data.get("display_name") or "").strip() or None
+
+    if not line_user_id:
+        return jsonify({"ok": False, "error": "missing line_user_id"}), 400
+
+    updated = 0
+
+    if phone:
+        # Match by phone: update all orders with the same phone that are still unbound
+        rows = Order.query.filter(
+            Order.phone == phone,
+            Order.line_user_id.is_(None)
+        ).all()
+        for o in rows:
+            o.line_user_id = line_user_id
+            if display_name and not o.display_name:
+                o.display_name = display_name
+            updated += 1
+
+    if order_no and not updated:
+        # Fallback: match by order_no
+        o = Order.query.filter_by(order_no=order_no).first()
+        if o and o.line_user_id is None:
+            o.line_user_id = line_user_id
+            if display_name and not o.display_name:
+                o.display_name = display_name
+            updated += 1
+
+    if updated:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            return jsonify({"ok": False, "error": "db error"}), 500
+
+    return jsonify({"ok": True, "updated": updated})

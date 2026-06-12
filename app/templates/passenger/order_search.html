@@ -321,15 +321,28 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
+// Server-rendered bind hints (only present when order found in form mode)
+var BIND_PHONE    = {{ ('"%s"' % order.phone) if order and not line_user_id else 'null' }};
+var BIND_ORDER_NO = {{ ('"%s"' % order.order_no) if order and not line_user_id else 'null' }};
+
 liff.init({ liffId: '{{ passenger_liff_id }}' })
   .then(() => {
     if (liff.isLoggedIn()) {
       return liff.getProfile().then(profile => {
         const url = new URL(location.href);
         if (!url.searchParams.get('line_user_id')) {
-          url.searchParams.set('line_user_id', profile.userId);
-          ['order_no', 'phone4'].forEach(k => url.searchParams.delete(k));
-          location.replace(url.toString());
+          // If we already have a matched order in form mode, auto-bind silently first
+          if (BIND_PHONE) {
+            lineBind(profile.userId, profile.displayName, BIND_PHONE, null).finally(() => {
+              url.searchParams.set('line_user_id', profile.userId);
+              ['order_no', 'phone4'].forEach(k => url.searchParams.delete(k));
+              location.replace(url.toString());
+            });
+          } else {
+            url.searchParams.set('line_user_id', profile.userId);
+            ['order_no', 'phone4'].forEach(k => url.searchParams.delete(k));
+            location.replace(url.toString());
+          }
         } else {
           showLinePage();
         }
@@ -339,6 +352,14 @@ liff.init({ liffId: '{{ passenger_liff_id }}' })
     }
   })
   .catch(() => { showForm(); });
+
+function lineBind(lineUserId, displayName, phone, orderNo) {
+  return fetch('/api/line-bind', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ line_user_id: lineUserId, display_name: displayName, phone: phone, order_no: orderNo })
+  }).catch(function(){});
+}
 
 function showForm() {
   document.getElementById('liff-loading').classList.add('hidden');

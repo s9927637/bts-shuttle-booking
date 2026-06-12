@@ -6,3 +6,5 @@ from .driver import Driver
 from .announcement import Announcement
 from .notification import Notification
 from .dispatch import Dispatch, DispatchOrder
+from .receipt import Receipt
+from .audit_log import AuditLog

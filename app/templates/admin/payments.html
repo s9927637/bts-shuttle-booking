@@ -77,6 +77,7 @@
         <th class="px-5 py-3 font-medium tracking-wider">付款金額</th>
         <th class="px-5 py-3 font-medium tracking-wider">狀態</th>
         <th class="px-5 py-3 font-medium tracking-wider">確認時間／人員</th>
+        <th class="px-5 py-3 font-medium tracking-wider">收據</th>
         <th class="px-5 py-3 font-medium tracking-wider text-right">操作</th>
       </tr>
     </thead>
@@ -168,6 +169,36 @@
           {% endif %}
         </td>
 
+        <!-- 收據 -->
+        <td class="px-5 py-4">
+          {% set can_issue = payment.status in ['訂金已確認', '已完成'] and payment.receipt_status == 'not_issued' %}
+          {% if payment.receipt_status == 'issued' %}
+            {% set issued_receipt = payment.receipts | selectattr('status', 'eq', 'active') | first %}
+            {% if issued_receipt %}
+            <div class="flex items-center gap-1.5">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">已開立</span>
+              <a href="{{ url_for('admin.receipt_pdf', receipt_id=issued_receipt.id) }}"
+                 class="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2">下載</a>
+              <a href="{{ url_for('admin.receipt_view', receipt_id=issued_receipt.id) }}"
+                 class="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2">查看</a>
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5 font-mono">{{ issued_receipt.receipt_no }}</p>
+            {% else %}
+            <span class="text-xs text-gray-300">—</span>
+            {% endif %}
+          {% elif can_issue %}
+            <button onclick="openIssueModal({{ payment.id }}, '{{ order.order_no }}')"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              開立收據
+            </button>
+          {% else %}
+            <span class="text-xs text-gray-300">—</span>
+          {% endif %}
+        </td>
+
         <!-- 操作 -->
         <td class="px-5 py-4 text-right">
           <form action="{{ url_for('admin.payment_update_status', payment_id=payment.id) }}" method="post"
@@ -189,7 +220,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="8" class="px-6 py-16 text-center">
+        <td colspan="9" class="px-6 py-16 text-center">
           <p class="text-sm text-gray-400">找不到符合條件的付款記錄</p>
         </td>
       </tr>
@@ -301,7 +332,84 @@
   </div>
 </div>
 
+<!-- ── 開立收據 Modal ─────────────────────────────────────────────────── -->
+<div id="modal-issue-receipt" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-base font-semibold text-gray-900">開立收據</h3>
+      <button onclick="document.getElementById('modal-issue-receipt').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">訂單：<span id="issue-order-no" class="font-mono font-semibold text-gray-800"></span></p>
+    <form id="form-issue-receipt" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">收據類型 <span class="text-red-500">*</span></label>
+        <select name="receipt_type"
+                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="deposit">訂金收據（DR-）</option>
+          <option value="balance">尾款收據（PR-）</option>
+          <option value="refund">退款收據（RR-）</option>
+        </select>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="document.getElementById('modal-issue-receipt').classList.add('hidden')"
+                class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors">
+          確認開立
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── 作廢收據 Modal ─────────────────────────────────────────────────── -->
+<div id="modal-void-receipt" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-base font-semibold text-gray-900">作廢收據</h3>
+      <button onclick="document.getElementById('modal-void-receipt').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="form-void-receipt" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">作廢原因 <span class="text-red-500">*</span></label>
+        <textarea name="void_reason" rows="3" required placeholder="請輸入作廢原因…"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="document.getElementById('modal-void-receipt').classList.add('hidden')"
+                class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
+          確認作廢
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+function openIssueModal(paymentId, orderNo) {
+  document.getElementById('issue-order-no').textContent = orderNo;
+  document.getElementById('form-issue-receipt').action = '/admin/payments/' + paymentId + '/issue-receipt';
+  document.getElementById('modal-issue-receipt').classList.remove('hidden');
+}
+
 async function lookupOrder(orderNo) {
   const resultEl = document.getElementById('order-lookup-result');
   const idField  = document.getElementById('order-id-field');

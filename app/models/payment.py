@@ -27,4 +27,5 @@ class Payment(db.Model):
     confirmed_at   = db.Column(db.DateTime, nullable=True)
     confirmed_by   = db.Column(db.String(100), nullable=True)
     note           = db.Column(db.Text, nullable=True)
+    receipt_status = db.Column(db.String(20), nullable=False, default="not_issued")  # not_issued / issued
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)

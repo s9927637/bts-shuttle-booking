@@ -1,0 +1,229 @@
+{% extends "layouts/admin_base.html" %}
+
+{% block title %}收據管理{% endblock %}
+{% block page_title %}收據管理{% endblock %}
+
+{% block content %}
+
+<!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+  <div class="flex items-center gap-2 flex-wrap">
+
+    <!-- Search -->
+    <form method="get" class="relative">
+      <input type="hidden" name="type"   value="{{ request.args.get('type','') }}">
+      <input type="hidden" name="status" value="{{ request.args.get('status','') }}">
+      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+        </svg>
+      </div>
+      <input type="text" name="q" value="{{ request.args.get('q','') }}"
+             class="pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent w-64"
+             placeholder="收據編號、訂單編號、姓名…" />
+    </form>
+
+    <!-- Type filter -->
+    <form method="get" id="type-form">
+      <input type="hidden" name="q"      value="{{ request.args.get('q','') }}">
+      <input type="hidden" name="status" value="{{ request.args.get('status','') }}">
+      <select name="type" onchange="document.getElementById('type-form').submit()"
+              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
+        <option value="" {% if not request.args.get('type') %}selected{% endif %}>全部類型</option>
+        <option value="deposit" {% if request.args.get('type') == 'deposit' %}selected{% endif %}>訂金收據</option>
+        <option value="balance" {% if request.args.get('type') == 'balance' %}selected{% endif %}>尾款收據</option>
+        <option value="refund"  {% if request.args.get('type') == 'refund'  %}selected{% endif %}>退款收據</option>
+      </select>
+    </form>
+
+    <!-- Status filter -->
+    <form method="get" id="status-form">
+      <input type="hidden" name="q"    value="{{ request.args.get('q','') }}">
+      <input type="hidden" name="type" value="{{ request.args.get('type','') }}">
+      <select name="status" onchange="document.getElementById('status-form').submit()"
+              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
+        <option value="" {% if not request.args.get('status') %}selected{% endif %}>全部狀態</option>
+        <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>有效</option>
+        <option value="void"   {% if request.args.get('status') == 'void'   %}selected{% endif %}>已作廢</option>
+      </select>
+    </form>
+
+  </div>
+  <span class="text-xs text-gray-400 font-medium">共 {{ total }} 筆</span>
+</div>
+
+<!-- ── Table ──────────────────────────────────────────────────────────── -->
+<div class="relative overflow-x-auto shadow-sm sm:rounded-2xl border border-gray-100">
+  <table class="w-full text-sm text-left text-gray-700 bg-white">
+    <thead class="text-xs text-gray-400 uppercase bg-gray-50 border-b border-gray-100">
+      <tr>
+        <th class="px-5 py-3 font-medium tracking-wider">收據編號</th>
+        <th class="px-5 py-3 font-medium tracking-wider">類型</th>
+        <th class="px-5 py-3 font-medium tracking-wider">訂單 / 姓名</th>
+        <th class="px-5 py-3 font-medium tracking-wider">金額</th>
+        <th class="px-5 py-3 font-medium tracking-wider">開立時間</th>
+        <th class="px-5 py-3 font-medium tracking-wider">開立人員</th>
+        <th class="px-5 py-3 font-medium tracking-wider">狀態</th>
+        <th class="px-5 py-3 font-medium tracking-wider text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for receipt, order in rows %}
+      <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors {% if receipt.status == 'void' %}opacity-60{% endif %}">
+
+        <!-- 收據編號 -->
+        <td class="px-5 py-4">
+          <a href="{{ url_for('admin.receipt_view', receipt_id=receipt.id) }}"
+             class="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">
+            {{ receipt.receipt_no }}
+          </a>
+        </td>
+
+        <!-- 類型 -->
+        <td class="px-5 py-4">
+          {% if receipt.receipt_type == 'deposit' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">訂金</span>
+          {% elif receipt.receipt_type == 'balance' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-600">尾款</span>
+          {% elif receipt.receipt_type == 'refund' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600">退款</span>
+          {% endif %}
+        </td>
+
+        <!-- 訂單 / 姓名 -->
+        <td class="px-5 py-4">
+          <p class="font-medium text-gray-900 text-sm">{{ order.contact_name }}</p>
+          <a href="/admin/orders?q={{ order.order_no }}"
+             class="font-mono text-xs text-gray-400 hover:text-gray-700 hover:underline">{{ order.order_no }}</a>
+        </td>
+
+        <!-- 金額 -->
+        <td class="px-5 py-4 text-sm font-medium text-gray-900">
+          NT$ {{ "{:,}".format(receipt.amount) }}
+        </td>
+
+        <!-- 開立時間 -->
+        <td class="px-5 py-4 text-xs text-gray-500">
+          {{ receipt.issued_at.strftime('%Y/%m/%d %H:%M') if receipt.issued_at else '—' }}
+        </td>
+
+        <!-- 開立人員 -->
+        <td class="px-5 py-4 text-xs text-gray-500">
+          {{ receipt.issued_by or '—' }}
+        </td>
+
+        <!-- 狀態 -->
+        <td class="px-5 py-4">
+          {% if receipt.status == 'void' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">已作廢</span>
+            {% if receipt.void_reason %}
+            <p class="text-xs text-gray-400 mt-0.5 max-w-[100px] truncate" title="{{ receipt.void_reason }}">{{ receipt.void_reason }}</p>
+            {% endif %}
+          {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">有效</span>
+          {% endif %}
+        </td>
+
+        <!-- 操作 -->
+        <td class="px-5 py-4 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <a href="{{ url_for('admin.receipt_pdf', receipt_id=receipt.id) }}"
+               class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              下載 PDF
+            </a>
+            {% if receipt.status == 'active' %}
+            <button onclick="openVoidModal({{ receipt.id }}, '{{ receipt.receipt_no }}')"
+                    class="px-3 py-1.5 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+              作廢
+            </button>
+            {% endif %}
+          </div>
+        </td>
+
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="px-6 py-16 text-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="text-sm text-gray-400">目前沒有收據紀錄</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Pagination ───────────────────────────────────────────────────────── -->
+{% if pages > 1 %}
+<div class="mt-4 flex items-center justify-between">
+  <p class="text-xs text-gray-400">第 {{ page }} 頁，共 {{ pages }} 頁</p>
+  <nav class="flex items-center gap-1">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&q={{ request.args.get('q','') }}&type={{ request.args.get('type','') }}&status={{ request.args.get('status','') }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">上一頁</a>
+    {% endif %}
+    {% for p in range(1, pages + 1) %}
+      {% if p == page %}
+        <span class="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg">{{ p }}</span>
+      {% else %}
+        <a href="?page={{ p }}&q={{ request.args.get('q','') }}&type={{ request.args.get('type','') }}&status={{ request.args.get('status','') }}"
+           class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page < pages %}
+    <a href="?page={{ page + 1 }}&q={{ request.args.get('q','') }}&type={{ request.args.get('type','') }}&status={{ request.args.get('status','') }}"
+       class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">下一頁</a>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}
+
+
+<!-- ── 作廢收據 Modal ───────────────────────────────────────────────────── -->
+<div id="modal-void" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-semibold text-gray-900">作廢收據</h3>
+      <button onclick="document.getElementById('modal-void').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 mb-4">作廢後將保留原始 PDF 及所有歷史紀錄，不可恢復。</p>
+    <p class="text-sm font-semibold text-gray-800 mb-4" id="void-receipt-no"></p>
+    <form id="form-void" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">作廢原因 <span class="text-red-500">*</span></label>
+        <textarea name="void_reason" rows="3" required placeholder="請輸入作廢原因（必填）…"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="document.getElementById('modal-void').classList.add('hidden')"
+                class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
+          確認作廢
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openVoidModal(receiptId, receiptNo) {
+  document.getElementById('void-receipt-no').textContent = receiptNo;
+  document.getElementById('form-void').action = '/admin/receipts/' + receiptId + '/void';
+  document.getElementById('modal-void').classList.remove('hidden');
+}
+</script>
+
+{% endblock %}

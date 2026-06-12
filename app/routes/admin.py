@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from flask import Blueprint, session, redirect, render_template, request, flash, url_for, jsonify
+from flask import Blueprint, session, redirect, render_template, request, flash, url_for, jsonify, Response
 from werkzeug.security import generate_password_hash
 from app import db
 from app.models.order import Order
@@ -10,6 +10,9 @@ from app.models.driver import Driver
 from app.models.admin import Admin
 from app.models.notification import Notification
 from app.models.announcement import Announcement
+from app.models.receipt import Receipt, RECEIPT_TYPE_PREFIX
+from app.models.audit_log import AuditLog
+from app.services.receipt_service import generate_receipt_pdf
 from sqlalchemy import func
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -440,6 +443,234 @@ def payment_create():
         flash(f"新增失敗：{e}", "error")
 
     return redirect(url_for("admin.payments"))
+
+
+# ── Receipts ───────────────────────────────────────────────────────────────
+
+def _gen_receipt_no(receipt_type: str) -> str:
+    """產生不重複收據編號，格式：DR/PR/RR-YYYYMMDD-0001"""
+    prefix = RECEIPT_TYPE_PREFIX.get(receipt_type, "DR")
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    pattern = f"{prefix}-{date_str}-%"
+    last = (
+        Receipt.query
+        .filter(Receipt.receipt_no.like(pattern))
+        .order_by(Receipt.id.desc())
+        .first()
+    )
+    seq = (int(last.receipt_no.split("-")[-1]) + 1) if last else 1
+    return f"{prefix}-{date_str}-{seq:04d}"
+
+
+def _log_audit(action: str, target_type: str, target_id: int, detail: str = None):
+    current_admin = Admin.query.get(session.get("admin_id"))
+    admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+    log = AuditLog(
+        admin_id    = session.get("admin_id"),
+        admin_name  = admin_name,
+        action      = action,
+        target_type = target_type,
+        target_id   = target_id,
+        detail      = detail,
+    )
+    db.session.add(log)
+
+
+@admin_bp.route("/receipts")
+def receipts():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    q      = request.args.get("q", "").strip()
+    rtype  = request.args.get("type", "").strip()
+    status = request.args.get("status", "").strip()
+    page   = max(1, request.args.get("page", 1, type=int))
+
+    query = db.session.query(Receipt, Order).join(Order, Receipt.order_id == Order.id)
+
+    if q:
+        query = query.filter(
+            db.or_(
+                Receipt.receipt_no.ilike(f"%{q}%"),
+                Order.order_no.ilike(f"%{q}%"),
+                Order.contact_name.ilike(f"%{q}%"),
+            )
+        )
+    if rtype:
+        query = query.filter(Receipt.receipt_type == rtype)
+    if status:
+        query = query.filter(Receipt.status == status)
+
+    total  = query.count()
+    pages  = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+    page   = min(page, pages)
+
+    rows = (
+        query.order_by(Receipt.issued_at.desc())
+        .offset((page - 1) * PER_PAGE)
+        .limit(PER_PAGE)
+        .all()
+    )
+
+    return render_template(
+        "admin/receipts.html",
+        rows=rows,
+        total=total,
+        page=page,
+        pages=pages,
+    )
+
+
+@admin_bp.route("/payments/<int:payment_id>/issue-receipt", methods=["POST"])
+def payment_issue_receipt(payment_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    payment = Payment.query.get_or_404(payment_id)
+    order   = Order.query.get_or_404(payment.order_id)
+
+    # 確認條件：payment 已確認 且 尚未開立收據
+    if payment.status not in ("訂金已確認", "已完成"):
+        flash("付款尚未確認，無法開立收據", "error")
+        return redirect(url_for("admin.payments"))
+    if payment.receipt_status == "issued":
+        flash("此付款已開立收據", "error")
+        return redirect(url_for("admin.payments"))
+
+    receipt_type = request.form.get("receipt_type", "deposit").strip()
+    if receipt_type not in ("deposit", "balance", "refund"):
+        flash("無效的收據類型", "error")
+        return redirect(url_for("admin.payments"))
+
+    try:
+        current_admin = Admin.query.get(session.get("admin_id"))
+        admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+
+        # 計算金額
+        if receipt_type == "deposit":
+            amount = payment.amount or order.deposit_amount
+        elif receipt_type == "balance":
+            amount = order.balance_amount
+        else:
+            amount = payment.amount or 0
+
+        receipt = Receipt(
+            receipt_no   = _gen_receipt_no(receipt_type),
+            receipt_type = receipt_type,
+            order_id     = order.id,
+            payment_id   = payment.id,
+            amount       = amount,
+            issued_by    = admin_name,
+            issued_at    = datetime.utcnow(),
+            status       = "active",
+        )
+        db.session.add(receipt)
+
+        payment.receipt_status = "issued"
+
+        db.session.flush()
+        _log_audit("receipt_issued", "receipt", receipt.id,
+                   f"收據 {receipt.receipt_no}，訂單 {order.order_no}")
+        db.session.commit()
+        flash(f"收據 {receipt.receipt_no} 已開立", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"開立失敗：{e}", "error")
+
+    return redirect(url_for("admin.payments"))
+
+
+@admin_bp.route("/receipts/<int:receipt_id>/pdf")
+def receipt_pdf(receipt_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    receipt = Receipt.query.get_or_404(receipt_id)
+    order   = Order.query.get_or_404(receipt.order_id)
+    payment = Payment.query.get(receipt.payment_id) if receipt.payment_id else None
+
+    try:
+        pdf_bytes = generate_receipt_pdf(receipt, order, payment)
+        _log_audit("receipt_downloaded", "receipt", receipt.id,
+                   f"下載收據 {receipt.receipt_no}")
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f"PDF 產生失敗：{e}", "error")
+        return redirect(url_for("admin.receipts"))
+
+    filename = f"receipt_{receipt.receipt_no}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": len(pdf_bytes),
+        },
+    )
+
+
+@admin_bp.route("/receipts/<int:receipt_id>")
+def receipt_view(receipt_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    receipt = Receipt.query.get_or_404(receipt_id)
+    order   = Order.query.get_or_404(receipt.order_id)
+    payment = Payment.query.get(receipt.payment_id) if receipt.payment_id else None
+
+    return render_template(
+        "admin/receipt_view.html",
+        receipt=receipt,
+        order=order,
+        payment=payment,
+    )
+
+
+@admin_bp.route("/receipts/<int:receipt_id>/void", methods=["POST"])
+def receipt_void(receipt_id):
+    guard = require_admin()
+    if guard:
+        return guard
+
+    receipt = Receipt.query.get_or_404(receipt_id)
+    if receipt.status == "void":
+        flash("此收據已是作廢狀態", "error")
+        return redirect(url_for("admin.receipts"))
+
+    void_reason = request.form.get("void_reason", "").strip()
+    if not void_reason:
+        flash("請填寫作廢原因", "error")
+        return redirect(url_for("admin.receipts"))
+
+    try:
+        current_admin = Admin.query.get(session.get("admin_id"))
+        admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+
+        receipt.status      = "void"
+        receipt.void_reason = void_reason
+        receipt.void_by     = admin_name
+        receipt.void_at     = datetime.utcnow()
+
+        # 讓付款紀錄可再次開立收據
+        if receipt.payment_id:
+            payment = Payment.query.get(receipt.payment_id)
+            if payment:
+                payment.receipt_status = "not_issued"
+
+        _log_audit("receipt_voided", "receipt", receipt.id,
+                   f"作廢收據 {receipt.receipt_no}，原因：{void_reason}")
+        db.session.commit()
+        flash(f"收據 {receipt.receipt_no} 已作廢", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"作廢失敗：{e}", "error")
+
+    return redirect(url_for("admin.receipts"))
 
 
 # ── Vehicles ───────────────────────────────────────────────────────────────

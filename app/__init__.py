@@ -19,6 +19,8 @@ from app.models.vehicle import Vehicle
 from app.models.driver import Driver
 from app.models.announcement import Announcement
 from app.models.notification import Notification
+from app.models.receipt import Receipt
+from app.models.audit_log import AuditLog
 
 def create_app():
     app = Flask(__name__)

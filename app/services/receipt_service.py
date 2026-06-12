@@ -110,7 +110,6 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
     s_amount     = style("Amount",  size=14, color=colors.HexColor("#111827"), align="RIGHT")
     s_note_head  = style("NoteH",   size=9,  color=colors.HexColor("#374151"))
     s_note_body  = style("NoteB",   size=8,  color=colors.HexColor("#6b7280"))
-    s_footer     = style("Footer",  size=7.5,color=colors.HexColor("#9ca3af"), align="CENTER")
     s_void       = style("Void",    size=28, color=colors.HexColor("#ef4444"), align="CENTER")
 
     story = []
@@ -196,14 +195,6 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
         void_at_str = receipt.void_at.strftime("%Y/%m/%d %H:%M") if receipt.void_at else "—"
         story.append(Paragraph(f"{receipt.void_reason}（{void_at_str}，由 {receipt.void_by or '—'} 操作）", s_note_body))
         story.append(Spacer(1, 6 * mm))
-
-    # ── 頁尾 ────────────────────────────────────────────────────────────────
-    story.append(Spacer(1, 10 * mm))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb")))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph("BTS 高雄演唱會來回包車服務", s_footer))
-    story.append(Paragraph("客服聯絡方式：LINE 官方帳號", s_footer))
-    story.append(Paragraph("本收據由系統自動產生，無須蓋章即可作為付款證明。", s_footer))
 
     doc.build(story)
     return buf.getvalue()

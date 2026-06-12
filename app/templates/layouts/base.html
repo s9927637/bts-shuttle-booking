@@ -54,6 +54,8 @@
     .input-dark::placeholder { color: #6b7280; }
     .input-dark:focus { border-color: #9333ea; box-shadow: 0 0 0 2px rgba(147,51,234,0.25); }
     .row-divider { border-top: 1px solid #1f2937; padding-top: 0.625rem; margin-top: 0; }
+    /* ── Navbar always black on non-home pages ── */
+    body > nav { background-color: #000000 !important; }
     .nav-item { color: #9ca3af; }
     .nav-item:hover { color: #ffffff; background: rgba(147,51,234,0.15); }
     .nav-active { color: #ffffff !important; background: #9333ea !important; }
@@ -62,7 +64,7 @@
 <body class="bg-black text-white antialiased min-h-screen flex flex-col">
 
   <!-- Navbar -->
-  <nav class="sticky top-0 z-40 bg-black" style="border-bottom:1px solid rgba(255,255,255,0.10);">
+  <nav class="sticky top-0 z-40 bg-black" style="background-color:#000000 !important; border-bottom:1px solid rgba(255,255,255,0.10);">
     <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2.5">
         <div class="w-7 h-7 bg-purple-600 rounded-lg flex items-center justify-center">
@@ -103,7 +105,7 @@
     </div>
 
     <!-- Mobile menu -->
-    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-800 bg-black">
+    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-800 bg-black" style="background-color:#000000 !important;">
       <div class="px-4 py-3 space-y-1">
         <a href="/booking" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">預約</a>
         <a href="/orders/search" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">查詢訂單</a>

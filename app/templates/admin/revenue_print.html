@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTS 收款清單</title>
+  <style>
+    * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif; box-sizing: border-box; }
+    body { background: #fff; color: #111; margin: 0; padding: 24px; font-size: 12px; }
+
+    .print-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 20px; }
+    .print-header h1 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+    .print-header p { font-size: 11px; color: #555; margin: 0; }
+    .print-header .meta { text-align: right; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #111; color: #fff; }
+    thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+    tbody tr { border-bottom: 1px solid #e5e7eb; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    td { padding: 8px 10px; vertical-align: middle; }
+
+    .check-box { width: 18px; height: 18px; border: 1.5px solid #9ca3af; border-radius: 3px; display: inline-block; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+    .badge-done    { background: #d1fae5; color: #065f46; }
+    .badge-deposit { background: #fef3c7; color: #92400e; }
+
+    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+      @page { margin: 15mm; size: A4 landscape; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Print controls (hidden in print) -->
+  <div class="no-print" style="margin-bottom:16px; display:flex; gap:8px;">
+    <button onclick="window.print()"
+            style="padding:8px 20px; background:#111; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;">
+      🖨 列印
+    </button>
+    <button onclick="window.close()"
+            style="padding:8px 20px; background:#f3f4f6; color:#374151; border:none; border-radius:8px; font-size:13px; cursor:pointer;">
+      關閉
+    </button>
+  </div>
+
+  <!-- Header -->
+  <div class="print-header">
+    <div>
+      <h1>BTS 演唱會接送 — 收款清單</h1>
+      <p>已確認訂單（訂金已確認 + 已完成）・適合現場報到使用</p>
+    </div>
+    <div class="meta">
+      <p>列印日期：{{ now.strftime('%Y/%m/%d') }}</p>
+      <p>共 {{ orders|length }} 筆</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th>姓名</th>
+        <th>電話末三碼</th>
+        <th>場次</th>
+        <th>車型</th>
+        <th>人數</th>
+        <th>付款狀態</th>
+        <th style="width:60px; text-align:center;">報到</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td style="color:#9ca3af;">{{ loop.index }}</td>
+        <td style="font-weight:600;">{{ order.contact_name }}</td>
+        <td style="font-family:monospace; letter-spacing:0.1em;">＊＊＊{{ order.phone[-3:] if order.phone|length >= 3 else order.phone }}</td>
+        <td>{{ order.departure_date }}</td>
+        <td>{% if order.vehicle_type == 'nx200' %}NX200{% else %}九座商旅車{% endif %}</td>
+        <td style="text-align:center;">{{ order.passenger_count }}</td>
+        <td>
+          {% if order.payment_status == '已完成' %}
+            <span class="badge badge-done">已完成</span>
+          {% else %}
+            <span class="badge badge-deposit">僅訂金</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center;"><span class="check-box"></span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>BTS Shuttle 後台系統・列印時間 {{ now.strftime('%Y/%m/%d %H:%M') }}</span>
+    <span>共 {{ orders|length }} 筆已確認訂單</span>
+  </div>
+
+</body>
+</html>

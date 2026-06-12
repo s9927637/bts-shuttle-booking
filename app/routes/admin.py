@@ -817,3 +817,308 @@ def notification_resend(notif_id):
         flash(f"發送失敗：{result.get('msg', '')}", "error")
 
     return redirect(url_for("admin.notifications_log"))
+
+
+# ── Revenue ────────────────────────────────────────────────────────────────
+
+def _revenue_stats():
+    """Calculate all revenue stats via aggregate queries. No per-row loops."""
+    ACTIVE = ["待付款", "待確認", "訂金已確認", "已完成"]
+
+    # ── 總覽 ───────────────────────────────────────────────────────────────
+    total_revenue = db.session.query(
+        func.coalesce(func.sum(Order.total_amount), 0)
+    ).filter(Order.payment_status.in_(ACTIVE)).scalar()
+
+    collected = (
+        db.session.query(func.coalesce(func.sum(Order.deposit_amount), 0))
+        .filter(Order.payment_status == "訂金已確認").scalar()
+        +
+        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        .filter(Order.payment_status == "已完成").scalar()
+    )
+
+    pending_revenue = total_revenue - collected
+
+    total_pax = db.session.query(
+        func.coalesce(func.sum(Order.passenger_count), 0)
+    ).filter(Order.payment_status.in_(ACTIVE)).scalar()
+
+    # ── 場次營收 ───────────────────────────────────────────────────────────
+    session_rows = db.session.query(
+        Order.departure_date,
+        func.sum(Order.passenger_count).label("pax"),
+        func.sum(Order.total_amount).label("revenue"),
+    ).filter(Order.payment_status.in_(ACTIVE)).group_by(Order.departure_date).all()
+
+    sessions = []
+    for row in sorted(session_rows, key=lambda r: r.departure_date):
+        dep = row.departure_date
+        rev = row.revenue or 0
+        pax = row.pax or 0
+        # 已收 for this date
+        c1 = db.session.query(func.coalesce(func.sum(Order.deposit_amount), 0)).filter(
+            Order.payment_status == "訂金已確認", Order.departure_date == dep).scalar()
+        c2 = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
+            Order.payment_status == "已完成", Order.departure_date == dep).scalar()
+        col = c1 + c2
+        rate = round(col / rev * 100) if rev > 0 else 0
+        sessions.append({
+            "date": dep, "pax": pax, "revenue": rev,
+            "collected": col, "pending": rev - col, "rate": rate,
+        })
+
+    # ── 收款狀態 ───────────────────────────────────────────────────────────
+    cnt_done     = db.session.query(func.count(Order.id)).filter(Order.payment_status == "已完成").scalar() or 0
+    cnt_deposit  = db.session.query(func.count(Order.id)).filter(Order.payment_status == "訂金已確認").scalar() or 0
+    cnt_unpaid   = db.session.query(func.count(Order.id)).filter(
+        Order.payment_status.in_(["待付款", "待確認"])).scalar() or 0
+    cnt_total    = cnt_done + cnt_deposit + cnt_unpaid or 1   # avoid div/0
+
+    pct_done    = round(cnt_done    / cnt_total * 100)
+    pct_deposit = round(cnt_deposit / cnt_total * 100)
+    pct_unpaid  = 100 - pct_done - pct_deposit
+
+    # ── 待收尾款 ───────────────────────────────────────────────────────────
+    unpaid_orders = (
+        Order.query
+        .filter(Order.payment_status.in_(["待付款", "待確認", "訂金已確認"]))
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+    pending_rows = []
+    for o in unpaid_orders:
+        if o.payment_status == "訂金已確認":
+            owed = o.balance_amount
+        else:
+            owed = o.total_amount
+        pending_rows.append({"order": o, "owed": owed})
+
+    pending_total = sum(r["owed"] for r in pending_rows)
+
+    # ── 車型營收排行 ───────────────────────────────────────────────────────
+    type_rows = db.session.query(
+        Order.vehicle_type,
+        func.count(Order.id).label("orders"),
+        func.sum(Order.passenger_count).label("pax"),
+        func.sum(Order.total_amount).label("revenue"),
+    ).filter(Order.payment_status.in_(ACTIVE)).group_by(Order.vehicle_type).all()
+
+    vehicle_stats = sorted(
+        [{"type": r.vehicle_type, "orders": r.orders, "pax": r.pax or 0, "revenue": r.revenue or 0}
+         for r in type_rows],
+        key=lambda x: x["revenue"], reverse=True,
+    )
+
+    # ── 車輛使用 ───────────────────────────────────────────────────────────
+    dispatched = db.session.query(func.count(Order.id)).filter(
+        Order.vehicle_id.isnot(None),
+        Order.payment_status.in_(["訂金已確認", "已完成"])
+    ).scalar() or 0
+    undispatched = db.session.query(func.count(Order.id)).filter(
+        Order.vehicle_id.is_(None),
+        Order.payment_status.in_(["訂金已確認", "已完成"])
+    ).scalar() or 0
+
+    return {
+        "total_revenue": total_revenue,
+        "collected": collected,
+        "pending_revenue": pending_revenue,
+        "total_pax": total_pax,
+        "sessions": sessions,
+        "cnt_done": cnt_done, "cnt_deposit": cnt_deposit, "cnt_unpaid": cnt_unpaid,
+        "pct_done": pct_done, "pct_deposit": pct_deposit, "pct_unpaid": pct_unpaid,
+        "pending_rows": pending_rows,
+        "pending_total": pending_total,
+        "vehicle_stats": vehicle_stats,
+        "dispatched": dispatched,
+        "undispatched": undispatched,
+    }
+
+
+@admin_bp.route("/revenue")
+def revenue():
+    guard = require_admin()
+    if guard:
+        return guard
+    stats = _revenue_stats()
+    return render_template("admin/revenue.html", **stats)
+
+
+@admin_bp.route("/revenue/export/csv")
+def revenue_export_csv():
+    guard = require_admin()
+    if guard:
+        return guard
+    import csv, io
+    from flask import Response
+    orders = Order.query.filter(
+        Order.payment_status.in_(["待付款", "待確認", "訂金已確認", "已完成"])
+    ).order_by(Order.departure_date, Order.created_at).all()
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["訂單編號", "姓名", "電話", "場次", "乘客數", "總金額", "已付款", "未付款", "付款狀態", "車型"])
+    for o in orders:
+        if o.payment_status == "已完成":
+            paid = o.total_amount; owed = 0
+        elif o.payment_status == "訂金已確認":
+            paid = o.deposit_amount; owed = o.balance_amount
+        else:
+            paid = 0; owed = o.total_amount
+        w.writerow([o.order_no, o.contact_name, o.phone, o.departure_date,
+                    o.passenger_count, o.total_amount, paid, owed, o.payment_status,
+                    "NX200 包車" if o.vehicle_type == "nx200" else "九座商旅車"])
+
+    fname = f"BTS營收報表_{datetime.utcnow().strftime('%Y-%m-%d')}.csv"
+    buf.seek(0)
+    return Response(
+        buf.getvalue().encode("utf-8-sig"),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{fname}"}
+    )
+
+
+@admin_bp.route("/revenue/export/xlsx")
+def revenue_export_xlsx():
+    guard = require_admin()
+    if guard:
+        return guard
+    import io
+    from flask import Response
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        flash("需要安裝 openpyxl：pip install openpyxl", "error")
+        return redirect(url_for("admin.revenue"))
+
+    orders = Order.query.filter(
+        Order.payment_status.in_(["待付款", "待確認", "訂金已確認", "已完成"])
+    ).order_by(Order.departure_date, Order.created_at).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "營收報表"
+
+    header_fill = PatternFill("solid", fgColor="111827")
+    header_font = Font(color="FFFFFF", bold=True, size=10)
+    thin = Side(style="thin", color="E5E7EB")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ["訂單編號", "姓名", "電話", "場次", "乘客數", "總金額", "已付款", "未付款", "付款狀態", "車型"]
+    col_widths = [22, 12, 14, 16, 8, 12, 12, 12, 12, 14]
+
+    for ci, (h, w) in enumerate(zip(headers, col_widths), start=1):
+        cell = ws.cell(row=1, column=ci, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+        ws.column_dimensions[ws.cell(row=1, column=ci).column_letter].width = w
+
+    ws.row_dimensions[1].height = 20
+
+    for ri, o in enumerate(orders, start=2):
+        if o.payment_status == "已完成":
+            paid = o.total_amount; owed = 0
+        elif o.payment_status == "訂金已確認":
+            paid = o.deposit_amount; owed = o.balance_amount
+        else:
+            paid = 0; owed = o.total_amount
+        row_data = [
+            o.order_no, o.contact_name, o.phone, o.departure_date,
+            o.passenger_count, o.total_amount, paid, owed, o.payment_status,
+            "NX200 包車" if o.vehicle_type == "nx200" else "九座商旅車"
+        ]
+        for ci, val in enumerate(row_data, start=1):
+            cell = ws.cell(row=ri, column=ci, value=val)
+            cell.border = border
+            cell.alignment = Alignment(vertical="center")
+            if ci in (6, 7, 8):
+                cell.number_format = '#,##0'
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"BTS營收報表_{datetime.utcnow().strftime('%Y-%m-%d')}.xlsx"
+    return Response(
+        buf.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{fname}"}
+    )
+
+
+@admin_bp.route("/revenue/export/unpaid-xlsx")
+def revenue_export_unpaid_xlsx():
+    guard = require_admin()
+    if guard:
+        return guard
+    import io
+    from flask import Response
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        flash("需要安裝 openpyxl", "error")
+        return redirect(url_for("admin.revenue"))
+
+    orders = Order.query.filter(
+        Order.payment_status.in_(["待付款", "待確認", "訂金已確認"])
+    ).order_by(Order.departure_date, Order.created_at).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "未付款名單"
+
+    header_fill = PatternFill("solid", fgColor="7C3AED")
+    header_font = Font(color="FFFFFF", bold=True, size=10)
+    thin = Side(style="thin", color="E5E7EB")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ["訂單編號", "姓名", "電話", "場次", "車型", "乘客數", "總金額", "已付款", "未付款", "付款狀態"]
+    col_widths = [22, 12, 14, 16, 14, 8, 12, 12, 12, 12]
+    for ci, (h, w) in enumerate(zip(headers, col_widths), start=1):
+        cell = ws.cell(row=1, column=ci, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+        ws.column_dimensions[ws.cell(row=1, column=ci).column_letter].width = w
+    ws.row_dimensions[1].height = 20
+
+    for ri, o in enumerate(orders, start=2):
+        paid = o.deposit_amount if o.payment_status == "訂金已確認" else 0
+        owed = o.balance_amount if o.payment_status == "訂金已確認" else o.total_amount
+        row_data = [
+            o.order_no, o.contact_name, o.phone, o.departure_date,
+            "NX200 包車" if o.vehicle_type == "nx200" else "九座商旅車",
+            o.passenger_count, o.total_amount, paid, owed, o.payment_status
+        ]
+        for ci, val in enumerate(row_data, start=1):
+            cell = ws.cell(row=ri, column=ci, value=val)
+            cell.border = border
+            cell.alignment = Alignment(vertical="center")
+            if ci in (7, 8, 9):
+                cell.number_format = '#,##0'
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"BTS未付款名單_{datetime.utcnow().strftime('%Y-%m-%d')}.xlsx"
+    return Response(
+        buf.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{fname}"}
+    )
+
+
+@admin_bp.route("/revenue/print")
+def revenue_print():
+    guard = require_admin()
+    if guard:
+        return guard
+    orders = Order.query.filter(
+        Order.payment_status.in_(["訂金已確認", "已完成"])
+    ).order_by(Order.departure_date, Order.contact_name).all()
+    return render_template("admin/revenue_print.html", orders=orders, now=datetime.utcnow())

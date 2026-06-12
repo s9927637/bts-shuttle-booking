@@ -96,24 +96,52 @@
       </div>
 
       <!-- Mobile hamburger -->
-      <button data-collapse-toggle="mobile-menu" type="button"
+      <button id="nav-toggle" type="button" aria-label="開啟選單"
               class="md:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Hamburger icon -->
+        <svg id="icon-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <!-- Close icon -->
+        <svg id="icon-close" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
-
-    <!-- Mobile menu -->
-    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-800 bg-black" style="background-color:#000000 !important;">
-      <div class="px-4 py-3 space-y-1">
-        <a href="/booking" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">預約</a>
-        <a href="/orders/search" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">查詢訂單</a>
-        <a href="/payment/report" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">匯款回報</a>
-        <a href="/announcements" class="block px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">最新公告</a>
-      </div>
-    </div>
   </nav>
+
+  <!-- Mobile menu overlay backdrop -->
+  <div id="nav-backdrop" class="hidden fixed inset-0 z-30 md:hidden"
+       style="background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"
+       onclick="closeNavMenu()"></div>
+
+  <!-- Mobile menu panel (fixed, below navbar) -->
+  <div id="mobile-menu"
+       class="hidden fixed left-0 right-0 z-40 md:hidden"
+       style="top:56px; background:#000000; border-bottom:1px solid rgba(255,255,255,0.10);">
+    <div class="px-4 py-3 space-y-1">
+      <a href="/booking"
+         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                {% if '/book' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+        預約
+      </a>
+      <a href="/orders/search"
+         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                {% if '/orders' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+        查詢訂單
+      </a>
+      <a href="/payment/report"
+         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                {% if '/payment' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+        匯款回報
+      </a>
+      <a href="/announcements"
+         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                {% if '/announcements' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+        最新公告
+      </a>
+    </div>
+  </div>
 
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -139,5 +167,47 @@
   </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+<script>
+  (function () {
+    var toggle   = document.getElementById('nav-toggle');
+    var menu     = document.getElementById('mobile-menu');
+    var backdrop = document.getElementById('nav-backdrop');
+    var iconOpen  = document.getElementById('icon-open');
+    var iconClose = document.getElementById('icon-close');
+    var isOpen   = false;
+
+    function openNavMenu() {
+      isOpen = true;
+      menu.classList.remove('hidden');
+      backdrop.classList.remove('hidden');
+      iconOpen.classList.add('hidden');
+      iconClose.classList.remove('hidden');
+      toggle.setAttribute('aria-label', '關閉選單');
+    }
+
+    function closeNavMenu() {
+      isOpen = false;
+      menu.classList.add('hidden');
+      backdrop.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+      toggle.setAttribute('aria-label', '開啟選單');
+    }
+
+    window.closeNavMenu = closeNavMenu;
+
+    if (toggle) {
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        isOpen ? closeNavMenu() : openNavMenu();
+      });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen) closeNavMenu();
+    });
+  })();
+</script>
 </body>
 </html>

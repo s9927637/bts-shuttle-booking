@@ -1,17 +1,18 @@
 {% extends "layouts/admin_base.html" %}
 
-{% block title %}付款管理{% endblock %}
-{% block page_title %}付款管理{% endblock %}
+{% block title %}付款紀錄中心{% endblock %}
+{% block page_title %}付款紀錄中心{% endblock %}
 
 {% block content %}
 
 <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
-<div class="flex items-center justify-between mb-6">
-  <div class="flex items-center gap-2">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+  <div class="flex items-center gap-2 flex-wrap">
 
     <!-- Search -->
     <form method="get" class="relative">
       <input type="hidden" name="status" value="{{ request.args.get('status','') }}">
+      <input type="hidden" name="source" value="{{ request.args.get('source','') }}">
       <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -19,14 +20,15 @@
       </div>
       <input type="text" name="q" value="{{ request.args.get('q','') }}"
              class="pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent w-64"
-             placeholder="訂單編號、匯款人、帳號後五碼…" />
+             placeholder="訂單編號、姓名、帳號後五碼…" />
     </form>
 
     <!-- Status filter -->
     <form method="get" id="filter-form">
       <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+      <input type="hidden" name="source" value="{{ request.args.get('source','') }}">
       <select name="status" onchange="document.getElementById('filter-form').submit()"
-              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
         <option value="" {% if not request.args.get('status') %}selected{% endif %}>全部狀態</option>
         {% for s in statuses %}
         <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s }}</option>
@@ -34,53 +36,104 @@
       </select>
     </form>
 
+    <!-- Source filter -->
+    <form method="get" id="source-form">
+      <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+      <input type="hidden" name="status" value="{{ request.args.get('status','') }}">
+      <select name="source" onchange="document.getElementById('source-form').submit()"
+              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
+        <option value="" {% if not request.args.get('source') %}selected{% endif %}>全部來源</option>
+        <option value="bank_transfer_report" {% if request.args.get('source') == 'bank_transfer_report' %}selected{% endif %}>匯款回報</option>
+        <option value="admin_confirmed" {% if request.args.get('source') == 'admin_confirmed' %}selected{% endif %}>後台確認</option>
+        <option value="legacy_customer" {% if request.args.get('source') == 'legacy_customer' %}selected{% endif %}>舊客戶補單</option>
+        <option value="cash" {% if request.args.get('source') == 'cash' %}selected{% endif %}>現金付款</option>
+      </select>
+    </form>
+
   </div>
 
-  <span class="text-xs text-gray-400 font-medium">共 {{ total }} 筆</span>
+  <div class="flex items-center gap-3">
+    <span class="text-xs text-gray-400 font-medium">共 {{ total }} 筆</span>
+    <!-- 新增付款紀錄 -->
+    <button onclick="document.getElementById('modal-create').classList.remove('hidden')"
+            class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      新增紀錄
+    </button>
+  </div>
 </div>
 
-<!-- ── Flowbite Table ───────────────────────────────────────────────────── -->
+<!-- ── Table ──────────────────────────────────────────────────────────── -->
 <div class="relative overflow-x-auto shadow-sm sm:rounded-2xl border border-gray-100">
   <table class="w-full text-sm text-left text-gray-700 bg-white">
     <thead class="text-xs text-gray-400 uppercase bg-gray-50 border-b border-gray-100">
       <tr>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">訂單編號</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">匯款人</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">帳號後五碼</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">訂金金額</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">狀態</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">建立時間</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider text-right">更新狀態</th>
+        <th class="px-5 py-3 font-medium tracking-wider">訂單</th>
+        <th class="px-5 py-3 font-medium tracking-wider">付款來源</th>
+        <th class="px-5 py-3 font-medium tracking-wider">匯款資訊</th>
+        <th class="px-5 py-3 font-medium tracking-wider">付款金額</th>
+        <th class="px-5 py-3 font-medium tracking-wider">狀態</th>
+        <th class="px-5 py-3 font-medium tracking-wider">確認時間／人員</th>
+        <th class="px-5 py-3 font-medium tracking-wider text-right">操作</th>
       </tr>
     </thead>
     <tbody>
       {% for payment, order in rows %}
       <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
 
-        <!-- 訂單編號 -->
-        <td class="px-6 py-4">
+        <!-- 訂單 -->
+        <td class="px-5 py-4">
           <a href="/admin/orders?q={{ order.order_no }}"
              class="font-mono text-xs text-gray-500 hover:text-gray-900 hover:underline transition-colors">
             {{ order.order_no }}
           </a>
-          <p class="text-xs text-gray-400 mt-0.5">{{ order.contact_name }}</p>
+          <p class="text-xs text-gray-500 font-medium mt-0.5">{{ order.contact_name }}</p>
         </td>
 
-        <!-- 匯款人 -->
-        <td class="px-6 py-4 font-medium text-gray-900">{{ payment.payer_name }}</td>
-
-        <!-- 帳號後五碼 -->
-        <td class="px-6 py-4 font-mono font-semibold text-gray-900 tracking-widest">
-          ＊＊＊{{ payment.bank_last5 }}
+        <!-- 付款來源 -->
+        <td class="px-5 py-4">
+          {% if payment.payment_source == 'bank_transfer_report' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">匯款回報</span>
+          {% elif payment.payment_source == 'admin_confirmed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-600">後台確認</span>
+          {% elif payment.payment_source == 'legacy_customer' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600">舊客戶補單</span>
+          {% elif payment.payment_source == 'cash' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600">現金付款</span>
+          {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{{ payment.payment_source }}</span>
+          {% endif %}
+          {% if payment.note %}
+          <p class="text-xs text-gray-400 mt-0.5 max-w-[120px] truncate" title="{{ payment.note }}">{{ payment.note }}</p>
+          {% endif %}
         </td>
 
-        <!-- 訂金金額 -->
-        <td class="px-6 py-4 text-gray-900 font-medium text-xs">
-          NT$ {{ "{:,}".format(order.deposit_amount) }}
+        <!-- 匯款資訊 -->
+        <td class="px-5 py-4">
+          {% if payment.payer_name %}
+          <p class="text-xs text-gray-700">{{ payment.payer_name }}</p>
+          {% endif %}
+          {% if payment.bank_last5 %}
+          <p class="font-mono text-xs text-gray-500 tracking-widest">＊＊＊{{ payment.bank_last5 }}</p>
+          {% endif %}
+          {% if not payment.payer_name and not payment.bank_last5 %}
+          <span class="text-xs text-gray-300">—</span>
+          {% endif %}
+        </td>
+
+        <!-- 付款金額 -->
+        <td class="px-5 py-4 text-xs font-medium text-gray-800">
+          {% if payment.amount %}
+            NT$ {{ "{:,}".format(payment.amount) }}
+          {% else %}
+            <span class="text-gray-300">—</span>
+          {% endif %}
         </td>
 
         <!-- 狀態 badge -->
-        <td class="px-6 py-4">
+        <td class="px-5 py-4">
           {% if payment.status == '訂金已確認' %}
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">訂金已確認</span>
           {% elif payment.status == '待確認' %}
@@ -90,26 +143,35 @@
           {% else %}
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{{ payment.status }}</span>
           {% endif %}
+          <p class="text-xs text-gray-400 mt-0.5">{{ payment.created_at.strftime('%m/%d %H:%M') if payment.created_at else '' }}</p>
         </td>
 
-        <!-- 建立時間 -->
-        <td class="px-6 py-4 text-xs text-gray-400">
-          {{ payment.created_at.strftime('%Y/%m/%d %H:%M') if payment.created_at else '—' }}
+        <!-- 確認時間／人員 -->
+        <td class="px-5 py-4 text-xs text-gray-500">
+          {% if payment.confirmed_at %}
+          <p>{{ payment.confirmed_at.strftime('%Y/%m/%d %H:%M') }}</p>
+          {% endif %}
+          {% if payment.confirmed_by %}
+          <p class="text-gray-400">{{ payment.confirmed_by }}</p>
+          {% endif %}
+          {% if not payment.confirmed_at and not payment.confirmed_by %}
+          <span class="text-gray-300">—</span>
+          {% endif %}
         </td>
 
-        <!-- 更新狀態 inline form -->
-        <td class="px-6 py-4 text-right">
+        <!-- 操作 -->
+        <td class="px-5 py-4 text-right">
           <form action="{{ url_for('admin.payment_update_status', payment_id=payment.id) }}" method="post"
                 class="flex items-center justify-end gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <select name="status"
-                    class="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+                    class="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
               {% for s in statuses %}
               <option value="{{ s }}" {% if payment.status == s %}selected{% endif %}>{{ s }}</option>
               {% endfor %}
             </select>
             <button type="submit"
-                    class="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors focus:outline-none">
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors">
               確認
             </button>
           </form>
@@ -133,23 +195,126 @@
   <p class="text-xs text-gray-400">第 {{ page }} 頁，共 {{ pages }} 頁</p>
   <nav class="flex items-center gap-1">
     {% if page > 1 %}
-    <a href="?page={{ page - 1 }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}"
+    <a href="?page={{ page - 1 }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}&source={{ request.args.get('source','') }}"
        class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">上一頁</a>
     {% endif %}
     {% for p in range(1, pages + 1) %}
       {% if p == page %}
         <span class="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg">{{ p }}</span>
       {% else %}
-        <a href="?page={{ p }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}"
+        <a href="?page={{ p }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}&source={{ request.args.get('source','') }}"
            class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">{{ p }}</a>
       {% endif %}
     {% endfor %}
     {% if page < pages %}
-    <a href="?page={{ page + 1 }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}"
+    <a href="?page={{ page + 1 }}&q={{ request.args.get('q','') }}&status={{ request.args.get('status','') }}&source={{ request.args.get('source','') }}"
        class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">下一頁</a>
     {% endif %}
   </nav>
 </div>
 {% endif %}
+
+
+<!-- ── 新增付款紀錄 Modal ──────────────────────────────────────────────── -->
+<div id="modal-create" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-base font-semibold text-gray-900">新增付款紀錄</h3>
+      <button onclick="document.getElementById('modal-create').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form action="{{ url_for('admin.payment_create') }}" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <!-- 訂單編號 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">訂單編號 <span class="text-red-500">*</span></label>
+        <input type="text" name="order_no_lookup" id="order-no-lookup"
+               placeholder="輸入訂單編號查詢"
+               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+               onblur="lookupOrder(this.value)" />
+        <input type="hidden" name="order_id" id="order-id-field" />
+        <p id="order-lookup-result" class="text-xs mt-1 text-gray-400"></p>
+      </div>
+
+      <!-- 付款來源 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">付款來源 <span class="text-red-500">*</span></label>
+        <select name="payment_source"
+                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900">
+          <option value="admin_confirmed">後台確認</option>
+          <option value="bank_transfer_report">匯款回報</option>
+          <option value="legacy_customer">舊客戶補單</option>
+          <option value="cash">現金付款</option>
+        </select>
+      </div>
+
+      <!-- 付款金額 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">付款金額（NT$）</label>
+        <input type="number" name="amount" placeholder="例：300"
+               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900" />
+      </div>
+
+      <!-- 付款狀態 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">付款狀態</label>
+        <select name="status"
+                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900">
+          <option value="訂金已確認">訂金已確認</option>
+          <option value="待確認">待確認</option>
+          <option value="已退款">已退款</option>
+        </select>
+      </div>
+
+      <!-- 備註 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">備註</label>
+        <textarea name="note" rows="2" placeholder="選填說明…"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="document.getElementById('modal-create').classList.add('hidden')"
+                class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+          新增
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+async function lookupOrder(orderNo) {
+  const resultEl = document.getElementById('order-lookup-result');
+  const idField  = document.getElementById('order-id-field');
+  if (!orderNo.trim()) return;
+  resultEl.textContent = '查詢中…';
+  try {
+    const res = await fetch(`/admin/api/order-lookup?q=${encodeURIComponent(orderNo.trim())}`);
+    const data = await res.json();
+    if (data.found) {
+      idField.value = data.id;
+      resultEl.textContent = `✓ ${data.contact_name}（${data.departure_date}，${data.passenger_count} 人）`;
+      resultEl.className = 'text-xs mt-1 text-green-600';
+    } else {
+      idField.value = '';
+      resultEl.textContent = '找不到此訂單';
+      resultEl.className = 'text-xs mt-1 text-red-500';
+    }
+  } catch(e) {
+    resultEl.textContent = '查詢失敗';
+    resultEl.className = 'text-xs mt-1 text-red-500';
+  }
+}
+</script>
 
 {% endblock %}

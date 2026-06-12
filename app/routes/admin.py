@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from flask import Blueprint, session, redirect, render_template, request, flash, url_for
+from flask import Blueprint, session, redirect, render_template, request, flash, url_for, jsonify
 from werkzeug.security import generate_password_hash
 from app import db
 from app.models.order import Order
@@ -262,6 +262,7 @@ def payments():
 
     q      = request.args.get("q", "").strip()
     status = request.args.get("status", "").strip()
+    source = request.args.get("source", "").strip()
     page   = max(1, request.args.get("page", 1, type=int))
 
     query = db.session.query(Payment, Order).join(Order, Payment.order_id == Order.id)
@@ -270,12 +271,15 @@ def payments():
         query = query.filter(
             db.or_(
                 Order.order_no.ilike(f"%{q}%"),
+                Order.contact_name.ilike(f"%{q}%"),
                 Payment.payer_name.ilike(f"%{q}%"),
                 Payment.bank_last5.ilike(f"%{q}%"),
             )
         )
     if status:
         query = query.filter(Payment.status == status)
+    if source:
+        query = query.filter(Payment.payment_source == source)
 
     total  = query.count()
     pages  = max(1, (total + PER_PAGE - 1) // PER_PAGE)
@@ -312,8 +316,13 @@ def payment_update_status(payment_id):
         return redirect(url_for("admin.payments"))
 
     try:
+        current_admin = Admin.query.get(session.get("admin_id"))
+        admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
         payment.status = new_status
         if new_status == "訂金已確認":
+            payment.confirmed_at = datetime.utcnow()
+            payment.confirmed_by = admin_name
+            payment.payment_source = "admin_confirmed"
             order = Order.query.get(payment.order_id)
             if order:
                 order.payment_status = "訂金已確認"
@@ -327,6 +336,73 @@ def payment_update_status(payment_id):
                             q=request.args.get("q", ""),
                             status=request.args.get("status", ""),
                             page=request.args.get("page", 1)))
+
+
+@admin_bp.route("/api/order-lookup")
+def api_order_lookup():
+    guard = require_admin()
+    if guard:
+        return jsonify({"found": False})
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"found": False})
+    order = Order.query.filter(
+        db.or_(Order.order_no.ilike(f"%{q}%"), Order.contact_name.ilike(f"%{q}%"))
+    ).first()
+    if order:
+        return jsonify({
+            "found": True,
+            "id": order.id,
+            "order_no": order.order_no,
+            "contact_name": order.contact_name,
+            "departure_date": order.departure_date,
+            "passenger_count": order.passenger_count,
+        })
+    return jsonify({"found": False})
+
+
+@admin_bp.route("/payments/create", methods=["POST"])
+def payment_create():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    order_id = request.form.get("order_id", type=int)
+    order = Order.query.get(order_id) if order_id else None
+    if not order:
+        flash("找不到訂單", "error")
+        return redirect(url_for("admin.payments"))
+
+    try:
+        current_admin = Admin.query.get(session.get("admin_id"))
+        admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+        source = request.form.get("payment_source", "admin_confirmed").strip()
+        status = request.form.get("status", "訂金已確認").strip()
+        amount_raw = request.form.get("amount", "").strip()
+        amount = int(amount_raw) if amount_raw else None
+        note = request.form.get("note", "").strip() or None
+
+        payment = Payment(
+            order_id       = order_id,
+            payer_name     = order.contact_name,
+            payment_source = source,
+            amount         = amount,
+            status         = status,
+            note           = note,
+        )
+        if status == "訂金已確認":
+            payment.confirmed_at = datetime.utcnow()
+            payment.confirmed_by = admin_name
+            order.payment_status = "訂金已確認"
+
+        db.session.add(payment)
+        db.session.commit()
+        flash(f"付款紀錄已新增（訂單 {order.order_no}）", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"新增失敗：{e}", "error")
+
+    return redirect(url_for("admin.payments"))
 
 
 # ── Vehicles ───────────────────────────────────────────────────────────────

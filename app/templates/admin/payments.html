@@ -70,7 +70,8 @@
   <table class="w-full text-sm text-left text-gray-700 bg-white">
     <thead class="text-xs text-gray-400 uppercase bg-gray-50 border-b border-gray-100">
       <tr>
-        <th class="px-5 py-3 font-medium tracking-wider">訂單</th>
+        <th class="px-5 py-3 font-medium tracking-wider">訂單編號</th>
+        <th class="px-5 py-3 font-medium tracking-wider">姓名</th>
         <th class="px-5 py-3 font-medium tracking-wider">付款來源</th>
         <th class="px-5 py-3 font-medium tracking-wider">匯款資訊</th>
         <th class="px-5 py-3 font-medium tracking-wider">付款金額</th>
@@ -83,13 +84,17 @@
       {% for payment, order in rows %}
       <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
 
-        <!-- 訂單 -->
+        <!-- 訂單編號 -->
         <td class="px-5 py-4">
           <a href="/admin/orders?q={{ order.order_no }}"
              class="font-mono text-xs text-gray-500 hover:text-gray-900 hover:underline transition-colors">
             {{ order.order_no }}
           </a>
-          <p class="text-xs text-gray-500 font-medium mt-0.5">{{ order.contact_name }}</p>
+        </td>
+
+        <!-- 姓名 -->
+        <td class="px-5 py-4 text-sm font-medium text-gray-900">
+          {{ order.contact_name }}
         </td>
 
         <!-- 付款來源 -->
@@ -127,6 +132,10 @@
         <td class="px-5 py-4 text-xs font-medium text-gray-800">
           {% if payment.amount %}
             NT$ {{ "{:,}".format(payment.amount) }}
+          {% elif payment.status == '訂金已確認' %}
+            NT$ {{ "{:,}".format(order.deposit_amount) }}
+          {% elif payment.status == '已完成' %}
+            NT$ {{ "{:,}".format(order.total_amount) }}
           {% else %}
             <span class="text-gray-300">—</span>
           {% endif %}
@@ -180,7 +189,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="7" class="px-6 py-16 text-center">
+        <td colspan="8" class="px-6 py-16 text-center">
           <p class="text-sm text-gray-400">找不到符合條件的付款記錄</p>
         </td>
       </tr>

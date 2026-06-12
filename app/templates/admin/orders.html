@@ -156,8 +156,8 @@
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">姓名</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">出發日期</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">人數</th>
-        <th scope="col" class="px-6 py-3 font-medium tracking-wider">訂金</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">車輛</th>
+        <th scope="col" class="px-6 py-3 font-medium tracking-wider">訂金</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">尾款</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">付款狀態</th>
         <th scope="col" class="px-6 py-3 font-medium tracking-wider">LINE</th>
@@ -174,12 +174,14 @@
           <p class="text-xs text-gray-400">{{ order.phone }}</p>
         </td>
         <td class="px-6 py-4 text-gray-600">{{ order.departure_date }}</td>
-        <td class="px-6 py-4 text-gray-600 text-xs">
-          {% if order.vehicle_type == 'nx200' %}
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">NX200</span>
-          {% else %}九座{% endif %}
-        </td>
         <td class="px-6 py-4 text-gray-900 font-medium">{{ order.passenger_count }} 人</td>
+        <td class="px-6 py-4 text-xs">
+          {% if order.vehicle_type == 'nx200' %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">NX200 專屬包車</span>
+          {% else %}
+          <span class="text-gray-600">九座商旅車</span>
+          {% endif %}
+        </td>
         <td class="px-6 py-4 text-gray-700 text-xs">NT$ {{ "{:,}".format(order.deposit_amount) }}</td>
         <td class="px-6 py-4 text-gray-700 text-xs">NT$ {{ "{:,}".format(order.balance_amount) }}</td>
         <td class="px-6 py-4">
@@ -199,9 +201,7 @@
               <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已綁定
             </span>
           {% else %}
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">
-              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>未綁定
-            </span>
+            <span class="text-xs text-gray-300">—</span>
           {% endif %}
         </td>
         <td class="px-6 py-4 text-xs text-gray-400">
@@ -290,7 +290,7 @@
 
       {% else %}
       <tr>
-        <td colspan="9" class="px-6 py-16 text-center">
+        <td colspan="11" class="px-6 py-16 text-center">
           <p class="text-sm text-gray-400">找不到符合條件的訂單</p>
         </td>
       </tr>

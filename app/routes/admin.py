@@ -168,6 +168,7 @@ def order_create():
     try:
         pc           = int(request.form["passenger_count"])
         vehicle_type = request.form.get("vehicle_type", "minibus").strip()
+        payment_status = request.form.get("payment_status", "待付款")
         order = Order(
             order_no        = _gen_order_no(),
             contact_name    = request.form["contact_name"].strip(),
@@ -180,11 +181,28 @@ def order_create():
             total_amount    = pc * 2000,
             deposit_amount  = pc * 300,
             balance_amount  = pc * 1700,
-            payment_status  = request.form.get("payment_status", "待付款"),
+            payment_status  = payment_status,
             vehicle_type    = vehicle_type,
             vehicle_id      = int(request.form["vehicle_id"]) if request.form.get("vehicle_id") else None,
         )
         db.session.add(order)
+        db.session.flush()  # 取得 order.id
+
+        # 若建立時已設為已確認，同步建立 Payment 紀錄
+        if payment_status in ("訂金已確認", "已完成"):
+            current_admin = Admin.query.get(session.get("admin_id"))
+            admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+            payment = Payment(
+                order_id       = order.id,
+                payer_name     = order.contact_name,
+                payment_source = "admin_confirmed",
+                status         = payment_status,
+                confirmed_at   = datetime.utcnow(),
+                confirmed_by   = admin_name,
+                note           = "後台建立訂單時自動建立",
+            )
+            db.session.add(payment)
+
         db.session.commit()
         flash("訂單已新增", "success")
     except Exception as e:
@@ -204,6 +222,7 @@ def order_edit(order_id):
 
     order = Order.query.get_or_404(order_id)
     try:
+        old_status = order.payment_status
         order.contact_name    = request.form["contact_name"].strip()
         order.phone           = request.form["phone"].strip()
         order.emergency_phone = request.form.get("emergency_phone", "").strip() or None
@@ -212,9 +231,27 @@ def order_edit(order_id):
         order.companion_names = request.form.get("companion_names", "").strip() or None
         order.remark          = request.form.get("remark", "").strip() or None
         order.total_amount    = int(request.form["total_amount"])
-        order.payment_status  = request.form.get("payment_status", order.payment_status)
+        new_status            = request.form.get("payment_status", order.payment_status)
+        order.payment_status  = new_status
         order.vehicle_type    = request.form.get("vehicle_type", order.vehicle_type or "minibus").strip()
         order.vehicle_id      = int(request.form["vehicle_id"]) if request.form.get("vehicle_id") else None
+
+        # 若付款狀態改為已確認，且該訂單尚無任何 Payment 紀錄，自動建立
+        if (new_status in ("訂金已確認", "已完成")
+                and new_status != old_status
+                and not Payment.query.filter_by(order_id=order.id).first()):
+            current_admin = Admin.query.get(session.get("admin_id"))
+            admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+            payment = Payment(
+                order_id       = order.id,
+                payer_name     = order.contact_name,
+                payment_source = "admin_confirmed",
+                status         = new_status,
+                confirmed_at   = datetime.utcnow(),
+                confirmed_by   = admin_name,
+                note           = "訂單管理手動確認",
+            )
+            db.session.add(payment)
 
         db.session.commit()
         flash("訂單已更新", "success")

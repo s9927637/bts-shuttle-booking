@@ -192,21 +192,23 @@ def booking_submit():
             group_id = _gen_group_id()
 
         order = Order(
-            order_no        = "TEMP",
-            contact_name    = form_data["contact_name"],
-            phone           = form_data["phone"],
-            emergency_phone = form_data["emergency_phone"] or None,
-            departure_date  = form_data["departure_date"],
-            passenger_count = passenger_count,
-            remark          = form_data["remark"] or None,
-            total_amount    = total_amount,
-            deposit_amount  = deposit_amount,
-            balance_amount  = balance_amount,
-            payment_status  = "待付款",
-            vehicle_type    = vehicle_type,
-            group_id        = group_id,
-            line_user_id    = line_user_id,
-            display_name    = display_name,
+            order_no          = "TEMP",
+            contact_name      = form_data["contact_name"],
+            phone             = form_data["phone"],
+            emergency_phone   = form_data["emergency_phone"] or None,
+            departure_date    = form_data["departure_date"],
+            passenger_count   = passenger_count,
+            remark            = form_data["remark"] or None,
+            total_amount      = total_amount,
+            deposit_amount    = deposit_amount,
+            balance_amount    = balance_amount,
+            payment_status    = "待付款",
+            vehicle_type      = vehicle_type,
+            group_id          = group_id,
+            line_user_id      = line_user_id,
+            display_name      = display_name,
+            terms_accepted_at = datetime.utcnow(),
+            terms_version     = "v1.0",
         )
         db.session.add(order)
         db.session.flush()                       # 取得 id，尚未 commit

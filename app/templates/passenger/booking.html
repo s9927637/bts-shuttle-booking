@@ -246,11 +246,117 @@
       </ul>
     </div>
 
-    <button type="submit" class="btn-primary">
+    <!-- ── 服務條款同意區塊 ──────────────────────────────────────────── -->
+    <div id="terms-block" class="flex items-center gap-3 py-1 transition-all duration-200">
+      <button type="button" id="terms-checkbox"
+              onclick="toggleTerms()"
+              aria-checked="false" role="checkbox"
+              style="width:20px;height:20px;min-width:20px;border-radius:5px;border:2px solid #4b5563;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;">
+        <svg id="terms-check-icon" class="hidden" style="width:12px;height:12px;" fill="none" stroke="#a855f7" stroke-width="3" viewBox="0 0 12 12">
+          <polyline points="1.5,6 4.5,9 10.5,3"/>
+        </svg>
+      </button>
+      <p class="text-xs text-gray-400 leading-relaxed">
+        我已閱讀並同意
+        <button type="button" onclick="openTermsModal()"
+                class="text-purple-400 underline underline-offset-2 hover:text-purple-300 transition-colors">
+          《服務條款與訂購須知》
+        </button>
+      </p>
+    </div>
+
+    <button type="button" onclick="submitBooking()" class="btn-primary">
       確認送出預約
     </button>
 
   </form>
+</div>
+
+<!-- ── 條款 Modal ──────────────────────────────────────────────────────────── -->
+<div id="terms-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;"
+     onclick="handleModalBackdropClick(event)">
+  <div style="background:#111827;border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;"
+       onclick="event.stopPropagation()">
+
+    <!-- Modal 標題列 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid #1f2937;flex-shrink:0;">
+      <h2 style="font-size:15px;font-weight:600;color:#f9fafb;margin:0;">服務條款與訂購須知</h2>
+      <button type="button" onclick="closeTermsModal()"
+              style="color:#6b7280;background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;">
+        <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal 內容（可捲動） -->
+    <div style="overflow-y:auto;padding:20px;flex:1;" id="terms-scroll">
+      <div style="color:#d1d5db;font-size:13px;line-height:1.75;space-y:12px;">
+
+        <h3 style="color:#f3f4f6;font-size:14px;font-weight:600;margin:0 0 12px;">訂金與退費規則</h3>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">一、訂金說明</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">每位乘客需支付訂金 NT$300 作為座位保留費用。</li>
+          <li style="margin-bottom:6px;">完成訂金付款後，即視為預約成立。</li>
+          <li style="margin-bottom:6px;">尾款於乘車當日以現金支付予司機。</li>
+          <li style="margin-bottom:6px;">訂金支付完成後，系統將保留預約名額，並依訂單資料進行車輛及座位安排。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">二、乘客取消訂單</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">因乘客個人因素取消訂單者，應主動聯繫客服辦理取消作業。</li>
+          <li style="margin-bottom:6px;">於出發日前 14 日（含）以前提出取消申請者，可申請退還已支付之訂金。</li>
+          <li style="margin-bottom:6px;">於出發日前 13 日內至出發當日提出取消申請者，已支付之訂金恕不退還。</li>
+          <li style="margin-bottom:6px;">退款所產生之匯款手續費、金流服務費或其他相關費用，將由退款金額中扣除後退還。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">三、未成團退款</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">若未達最低出車人數，本單位保留取消出車之權利。</li>
+          <li style="margin-bottom:6px;">因未成團而取消出車時，已支付之訂金將全額退還。</li>
+          <li style="margin-bottom:6px;">未成團退款不收取任何行政手續費或作業費用。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">四、活動取消退款</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">若演唱會主辦單位公告取消活動，已支付之訂金將全額退還。</li>
+          <li style="margin-bottom:6px;">活動取消退款不收取任何行政手續費或作業費用。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">五、退款作業</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">符合退款條件者，退款將退回乘客指定之銀行帳戶。</li>
+          <li style="margin-bottom:6px;">乘客應於收到退款通知後提供正確退款資料，以利退款作業進行。</li>
+          <li style="margin-bottom:6px;">退款將於收到完整退款資料後 14 個工作天內辦理完成。</li>
+          <li style="margin-bottom:6px;">因乘客提供錯誤帳戶資料、資料不完整或其他可歸責於乘客之因素，致退款延遲或失敗者，本單位不負相關責任。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">六、其他事項</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">本單位保留車型、座位配置、集合地點及發車安排調整之權利。</li>
+          <li style="margin-bottom:6px;">如遇天災、交通管制、政府公告停班停課、重大事故或其他不可抗力因素，本單位保留延期、變更或取消服務之權利。</li>
+          <li style="margin-bottom:6px;">完成預約並支付訂金後，即視為已閱讀、理解並同意本規則之全部內容。</li>
+          <li style="margin-bottom:6px;">本單位保留對本規則之最終解釋及調整權利。</li>
+        </ol>
+
+      </div>
+    </div>
+
+    <!-- Modal 底部按鈕 -->
+    <div style="padding:14px 20px;border-top:1px solid #1f2937;flex-shrink:0;">
+      <button type="button" onclick="acceptTermsFromModal()"
+              style="width:100%;padding:12px;border-radius:12px;background:#7c3aed;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+        完成
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div id="terms-toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10000;background:#1f2937;border:1px solid #ef4444;color:#fca5a5;padding:12px 20px;border-radius:12px;font-size:13px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+  請先閱讀並同意《服務條款與訂購須知》
 </div>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -320,6 +426,84 @@
   }
 
   calcTotal(document.getElementById('passenger_count').value);
+
+  // ── 服務條款邏輯 ──────────────────────────────────────────────────────────
+  let _termsAccepted = false;
+
+  function toggleTerms() {
+    _termsAccepted = !_termsAccepted;
+    const btn  = document.getElementById('terms-checkbox');
+    const icon = document.getElementById('terms-check-icon');
+    const block = document.getElementById('terms-block');
+    if (_termsAccepted) {
+      btn.style.borderColor   = '#a855f7';
+      btn.style.background    = 'rgba(168,85,247,0.15)';
+      icon.classList.remove('hidden');
+      block.style.outline = 'none';
+    } else {
+      btn.style.borderColor   = '#4b5563';
+      btn.style.background    = 'transparent';
+      icon.classList.add('hidden');
+    }
+  }
+
+  function openTermsModal() {
+    const m = document.getElementById('terms-modal');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // 捲回頂部
+    document.getElementById('terms-scroll').scrollTop = 0;
+  }
+
+  function closeTermsModal() {
+    document.getElementById('terms-modal').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function handleModalBackdropClick(e) {
+    if (e.target === document.getElementById('terms-modal')) closeTermsModal();
+  }
+
+  function acceptTermsFromModal() {
+    closeTermsModal();
+    if (!_termsAccepted) toggleTerms();
+  }
+
+  // Esc 關閉 Modal
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeTermsModal();
+  });
+
+  function _showToast() {
+    const t = document.getElementById('terms-toast');
+    t.style.display = 'block';
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() {
+      t.style.opacity = '0';
+      setTimeout(function() { t.style.display = 'none'; }, 300);
+    }, 2800);
+  }
+
+  function submitBooking() {
+    if (!_termsAccepted) {
+      // 顯示 Toast
+      _showToast();
+      // 捲動至條款區塊
+      const block = document.getElementById('terms-block');
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 紅色邊框提示
+      block.style.outline = '1.5px solid #ef4444';
+      block.style.borderRadius = '8px';
+      block.style.padding = '8px';
+      setTimeout(function() {
+        block.style.outline = '';
+        block.style.padding = '';
+      }, 2500);
+      return;
+    }
+    document.querySelector('form').submit();
+  }
 
   function toggleFriendCode(val) {
     const wrap = document.getElementById('friend-code-wrap');

@@ -30,42 +30,6 @@
     <input type="hidden" name="line_user_id" id="f-line-user-id" />
     <input type="hidden" name="display_name"  id="f-display-name" />
 
-    <!-- 聯絡資料 -->
-    <div class="card-dark space-y-5">
-      <h2 class="section-title">聯絡資料</h2>
-
-      <div>
-        <label for="contact_name" class="block mb-1.5 text-xs font-medium text-gray-400">
-          姓名 <span class="text-red-400">*</span>
-        </label>
-        <input type="text" id="contact_name" name="contact_name" required
-               placeholder="王小明"
-               value="{{ form.contact_name or '' }}"
-               class="input-dark" />
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label for="phone" class="block mb-1.5 text-xs font-medium text-gray-400">
-            手機 <span class="text-red-400">*</span>
-          </label>
-          <input type="tel" id="phone" name="phone" required
-                 placeholder="0912-345-678"
-                 value="{{ form.phone or '' }}"
-                 class="input-dark" />
-        </div>
-        <div>
-          <label for="emergency_phone" class="block mb-1.5 text-xs font-medium text-gray-400">
-            緊急聯絡電話
-          </label>
-          <input type="tel" id="emergency_phone" name="emergency_phone"
-                 placeholder="0987-654-321"
-                 value="{{ form.emergency_phone or '' }}"
-                 class="input-dark" />
-        </div>
-      </div>
-    </div>
-
     <!-- 行程資料 -->
     <div class="card-dark space-y-5">
       <h2 class="section-title">行程資料</h2>
@@ -185,6 +149,42 @@
         <p class="text-xs text-purple-300 leading-relaxed">
           預約完成後，系統將產生您的專屬邀請連結。<br>將連結分享給朋友，朋友完成預約後將優先安排同車。
         </p>
+      </div>
+    </div>
+
+    <!-- 聯絡資料 -->
+    <div class="card-dark space-y-5">
+      <h2 class="section-title">聯絡資料</h2>
+
+      <div>
+        <label for="contact_name" class="block mb-1.5 text-xs font-medium text-gray-400">
+          姓名 <span class="text-red-400">*</span>
+        </label>
+        <input type="text" id="contact_name" name="contact_name" required
+               placeholder="王小明"
+               value="{{ form.contact_name or '' }}"
+               class="input-dark" />
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="phone" class="block mb-1.5 text-xs font-medium text-gray-400">
+            手機 <span class="text-red-400">*</span>
+          </label>
+          <input type="tel" id="phone" name="phone" required
+                 placeholder="0912-345-678"
+                 value="{{ form.phone or '' }}"
+                 class="input-dark" />
+        </div>
+        <div>
+          <label for="emergency_phone" class="block mb-1.5 text-xs font-medium text-gray-400">
+            緊急聯絡電話
+          </label>
+          <input type="tel" id="emergency_phone" name="emergency_phone"
+                 placeholder="0987-654-321"
+                 value="{{ form.emergency_phone or '' }}"
+                 class="input-dark" />
+        </div>
       </div>
     </div>
 

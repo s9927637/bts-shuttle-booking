@@ -21,6 +21,7 @@ from app.models.announcement import Announcement
 from app.models.notification import Notification
 from app.models.receipt import Receipt
 from app.models.audit_log import AuditLog
+from app.models.coupon import Coupon
 
 def create_app():
     app = Flask(__name__)

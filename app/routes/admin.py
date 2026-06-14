@@ -12,6 +12,7 @@ from app.models.notification import Notification
 from app.models.announcement import Announcement
 from app.models.receipt import Receipt, RECEIPT_TYPE_PREFIX
 from app.models.audit_log import AuditLog
+from app.models.coupon import Coupon
 from app.services.receipt_service import generate_receipt_pdf
 from sqlalchemy import func
 
@@ -1188,11 +1189,20 @@ def _revenue_stats():
         Order.payment_status.in_(["訂金已確認", "已完成"])
     ).scalar() or 0
 
+    # ── 折扣統計 ───────────────────────────────────────────────────────────
+    total_discount = db.session.query(
+        func.coalesce(func.sum(Order.discount_amount), 0)
+    ).filter(Order.payment_status.in_(ACTIVE)).scalar()
+
+    actual_revenue = total_revenue - total_discount
+
     return {
         "total_revenue": total_revenue,
         "collected": collected,
         "pending_revenue": pending_revenue,
         "total_pax": total_pax,
+        "total_discount": total_discount,
+        "actual_revenue": actual_revenue,
         "sessions": sessions,
         "cnt_done": cnt_done, "cnt_deposit": cnt_deposit, "cnt_unpaid": cnt_unpaid,
         "pct_done": pct_done, "pct_deposit": pct_deposit, "pct_unpaid": pct_unpaid,
@@ -1209,8 +1219,93 @@ def revenue():
     guard = require_admin()
     if guard:
         return guard
+    tab = request.args.get("tab", "overview")
     stats = _revenue_stats()
-    return render_template("admin/revenue.html", **stats)
+    coupons = Coupon.query.order_by(Coupon.created_at.desc()).all()
+    return render_template("admin/revenue.html", tab=tab, coupons=coupons, **stats)
+
+
+# ── Coupon CRUD ────────────────────────────────────────────────────────────
+
+@admin_bp.route("/coupons/create", methods=["POST"])
+def coupon_create():
+    guard = require_admin()
+    if guard:
+        return guard
+    try:
+        from datetime import date as _date
+        code           = request.form["code"].strip().upper()
+        name           = request.form["name"].strip()
+        discount_type  = request.form["discount_type"].strip()
+        discount_value = int(request.form["discount_value"])
+        max_uses_raw   = request.form.get("max_uses", "").strip()
+        max_uses       = int(max_uses_raw) if max_uses_raw else None
+        is_active      = request.form.get("is_active") == "1"
+        start_raw      = request.form.get("start_date", "").strip()
+        end_raw        = request.form.get("end_date", "").strip()
+        start_date     = _date.fromisoformat(start_raw) if start_raw else None
+        end_date       = _date.fromisoformat(end_raw)   if end_raw   else None
+
+        if Coupon.query.filter_by(code=code).first():
+            flash(f"折扣碼 {code} 已存在", "error")
+            return redirect(url_for("admin.revenue", tab="coupons"))
+
+        c = Coupon(
+            code=code, name=name,
+            discount_type=discount_type, discount_value=discount_value,
+            start_date=start_date, end_date=end_date,
+            max_uses=max_uses, is_active=is_active,
+        )
+        db.session.add(c)
+        db.session.commit()
+        flash(f"折扣碼 {code} 已建立", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"建立失敗：{e}", "error")
+    return redirect(url_for("admin.revenue", tab="coupons"))
+
+
+@admin_bp.route("/coupons/<int:coupon_id>/edit", methods=["POST"])
+def coupon_edit(coupon_id):
+    guard = require_admin()
+    if guard:
+        return guard
+    c = Coupon.query.get_or_404(coupon_id)
+    try:
+        from datetime import date as _date
+        c.name           = request.form["name"].strip()
+        c.discount_type  = request.form["discount_type"].strip()
+        c.discount_value = int(request.form["discount_value"])
+        max_uses_raw     = request.form.get("max_uses", "").strip()
+        c.max_uses       = int(max_uses_raw) if max_uses_raw else None
+        c.is_active      = request.form.get("is_active") == "1"
+        start_raw        = request.form.get("start_date", "").strip()
+        end_raw          = request.form.get("end_date", "").strip()
+        c.start_date     = _date.fromisoformat(start_raw) if start_raw else None
+        c.end_date       = _date.fromisoformat(end_raw)   if end_raw   else None
+        db.session.commit()
+        flash(f"折扣碼 {c.code} 已更新", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"更新失敗：{e}", "error")
+    return redirect(url_for("admin.revenue", tab="coupons"))
+
+
+@admin_bp.route("/coupons/<int:coupon_id>/toggle", methods=["POST"])
+def coupon_toggle(coupon_id):
+    guard = require_admin()
+    if guard:
+        return guard
+    c = Coupon.query.get_or_404(coupon_id)
+    try:
+        c.is_active = not c.is_active
+        db.session.commit()
+        state = "啟用" if c.is_active else "停用"
+        flash(f"折扣碼 {c.code} 已{state}", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"操作失敗：{e}", "error")
+    return redirect(url_for("admin.revenue", tab="coupons"))
 
 
 @admin_bp.route("/revenue/export/csv")

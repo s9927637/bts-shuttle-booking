@@ -171,6 +171,19 @@ def booking_submit():
             deposit_amount  = passenger_count * DEPOSIT_PER_PERSON
             balance_amount  = passenger_count * BALANCE_PER_PERSON
 
+        # 折扣碼套用
+        from app.models.coupon import Coupon
+        coupon_code_input = request.form.get("coupon_code", "").strip().upper()
+        discount_amount   = 0
+        applied_coupon    = None
+        if coupon_code_input:
+            coupon = Coupon.query.filter_by(code=coupon_code_input).first()
+            if coupon and coupon.is_valid_now:
+                discount_amount = coupon.calc_discount(total_amount)
+                total_amount    = max(0, total_amount - discount_amount)
+                balance_amount  = max(0, total_amount - deposit_amount)
+                applied_coupon  = coupon
+
         # 同行群組邏輯
         with_friends = request.form.get("with_friends", "no")
         friend_code  = request.form.get("friend_code", "").strip() or None
@@ -209,7 +222,11 @@ def booking_submit():
             display_name      = display_name,
             terms_accepted_at = datetime.utcnow(),
             terms_version     = "v1.0",
+            coupon_code       = applied_coupon.code if applied_coupon else None,
+            discount_amount   = discount_amount,
         )
+        if applied_coupon:
+            applied_coupon.use_count += 1
         db.session.add(order)
         db.session.flush()                       # 取得 id，尚未 commit
         order.order_no = _gen_order_no(order.id)
@@ -558,3 +575,40 @@ def api_line_bind():
             return jsonify({"ok": False, "error": "db error"}), 500
 
     return jsonify({"ok": True, "updated": updated})
+
+
+# ── 折扣碼驗證 API ─────────────────────────────────────────────────────────
+
+@passenger_bp.route("/api/coupon/validate")
+def api_coupon_validate():
+    from app.models.coupon import Coupon
+    code       = request.args.get("code", "").strip().upper()
+    vehicle    = request.args.get("vehicle", "minibus")
+    pax        = max(1, request.args.get("pax", 1, type=int))
+
+    if not code:
+        return jsonify({"valid": False, "message": "請輸入折扣碼"})
+
+    coupon = Coupon.query.filter_by(code=code).first()
+    if not coupon:
+        return jsonify({"valid": False, "message": "折扣碼無效"})
+    if not coupon.is_valid_now:
+        return jsonify({"valid": False, "message": "折扣碼已過期或已達使用上限"})
+
+    # 計算原始總金額
+    if vehicle == "nx200":
+        total = NX200_TOTAL
+    else:
+        total = pax * PRICE_PER_PERSON
+
+    discount = coupon.calc_discount(total)
+
+    return jsonify({
+        "valid":          True,
+        "code":           coupon.code,
+        "name":           coupon.name,
+        "discount_type":  coupon.discount_type,
+        "discount_value": coupon.discount_value,
+        "discount_amount": discount,
+        "message":        f"已套用折扣碼 {coupon.code}，折扣 NT${discount:,}",
+    })

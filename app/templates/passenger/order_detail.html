@@ -145,10 +145,25 @@
     </div>
 
     <div class="space-y-2 text-sm">
+      {% if order.coupon_code and order.discount_amount %}
+      <div class="flex justify-between">
+        <span class="text-gray-500">原始金額</span>
+        <span class="font-medium text-gray-400 line-through">NT$ {{ "{:,}".format(order.total_amount + order.discount_amount) }}</span>
+      </div>
+      <div class="flex justify-between border-t border-gray-800 pt-2">
+        <span class="text-green-400">折扣碼 {{ order.coupon_code }}</span>
+        <span class="font-medium text-green-400">−NT$ {{ "{:,}".format(order.discount_amount) }}</span>
+      </div>
+      <div class="flex justify-between border-t border-gray-800 pt-2">
+        <span class="text-gray-500">實付總金額</span>
+        <span class="font-bold text-white">NT$ {{ "{:,}".format(order.total_amount) }}</span>
+      </div>
+      {% else %}
       <div class="flex justify-between">
         <span class="text-gray-500">總金額</span>
         <span class="font-bold text-white">NT$ {{ "{:,}".format(order.total_amount) }}</span>
       </div>
+      {% endif %}
       <div class="flex justify-between border-t border-gray-800 pt-2">
         <span class="text-gray-500">訂金（匯款）</span>
         <span class="font-medium text-gray-300">NT$ {{ "{:,}".format(order.deposit_amount) }}</span>

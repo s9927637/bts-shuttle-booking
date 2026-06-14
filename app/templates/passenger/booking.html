@@ -188,6 +188,24 @@
       </div>
     </div>
 
+    <!-- 折扣碼 -->
+    <div class="card-dark space-y-3">
+      <h2 class="section-title">折扣碼 <span class="text-xs font-normal text-gray-500">（選填）</span></h2>
+      <div class="flex gap-2">
+        <input type="text" id="coupon_input" placeholder="請輸入折扣碼"
+               class="input-dark flex-1 uppercase" autocomplete="off" autocorrect="off"
+               oninput="this.value=this.value.toUpperCase()" />
+        <button type="button" onclick="applyCoupon()"
+                class="px-4 py-2 text-sm font-medium text-white rounded-xl transition-colors"
+                style="background:#374151;white-space:nowrap;"
+                onmouseover="this.style.background='#4b5563'" onmouseout="this.style.background='#374151'">
+          套用
+        </button>
+      </div>
+      <div id="coupon-result" class="hidden text-xs leading-relaxed"></div>
+      <input type="hidden" name="coupon_code" id="coupon_code_field" value="" />
+    </div>
+
     <!-- 費用 -->
     <div class="card-dark">
       <h2 class="section-title mb-4">費用明細</h2>
@@ -199,6 +217,11 @@
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-400">人數</span>
           <span id="count_display" class="font-medium text-gray-300">1 人</span>
+        </div>
+        <!-- 折扣列（動態顯示） -->
+        <div id="discount-row" class="hidden flex items-center justify-between text-sm">
+          <span class="text-green-400">折扣優惠</span>
+          <span id="discount_display" class="font-medium text-green-400">−NT$ 0</span>
         </div>
         <div class="border-t border-gray-800 pt-3 mt-3 flex items-center justify-between">
           <span class="text-sm font-semibold text-white">總金額</span>
@@ -394,11 +417,8 @@
       paxInput.style.opacity = '0.5';
       // 費用
       document.getElementById('price_per_person_display').textContent = 'NT$ ' + Math.round(NX200_TOTAL / NX200_PAX).toLocaleString();
-      document.getElementById('count_display').textContent   = NX200_PAX + ' 人';
-      document.getElementById('total_display').textContent   = 'NT$ ' + NX200_TOTAL.toLocaleString();
-      document.getElementById('deposit_display').textContent = 'NT$ ' + NX200_DEPOSIT.toLocaleString();
-      document.getElementById('balance_display').textContent = 'NT$ ' + NX200_BALANCE.toLocaleString();
-      document.getElementById('total_amount').value = NX200_TOTAL;
+      document.getElementById('count_display').textContent = NX200_PAX + ' 人';
+      _applyDiscountDisplay(NX200_TOTAL, NX200_DEPOSIT, NX200_BALANCE);
     } else {
       // 卡片邊框
       if (cardMinibus) { cardMinibus.classList.add('border-purple-600','bg-purple-950/20');  cardMinibus.classList.remove('border-gray-700','bg-gray-900/50'); }
@@ -415,17 +435,83 @@
     }
   }
 
+  function _applyDiscountDisplay(rawTotal, rawDeposit, rawBalance) {
+    const disc = Math.min(_appliedDiscount, rawTotal);
+    const finalTotal   = Math.max(0, rawTotal - disc);
+    const finalBalance = Math.max(0, rawBalance - disc);
+    document.getElementById('total_display').textContent   = 'NT$ ' + finalTotal.toLocaleString();
+    document.getElementById('deposit_display').textContent = 'NT$ ' + rawDeposit.toLocaleString();
+    document.getElementById('balance_display').textContent = 'NT$ ' + finalBalance.toLocaleString();
+    document.getElementById('total_amount').value = finalTotal;
+    if (disc > 0) {
+      document.getElementById('discount_display').textContent = '−NT$ ' + disc.toLocaleString();
+      document.getElementById('discount-row').style.display = 'flex';
+      document.getElementById('discount-row').classList.remove('hidden');
+    } else {
+      document.getElementById('discount-row').classList.add('hidden');
+    }
+  }
+
   function calcTotal(count) {
     if (currentVehicle === 'nx200') return;
     const n = Math.max(1, parseInt(count) || 1);
-    document.getElementById('count_display').textContent   = n + ' 人';
-    document.getElementById('total_display').textContent   = 'NT$ ' + (n * PRICE).toLocaleString();
-    document.getElementById('deposit_display').textContent = 'NT$ ' + (n * DEPOSIT).toLocaleString();
-    document.getElementById('balance_display').textContent = 'NT$ ' + (n * BALANCE).toLocaleString();
-    document.getElementById('total_amount').value = n * PRICE;
+    document.getElementById('count_display').textContent = n + ' 人';
+    _applyDiscountDisplay(n * PRICE, n * DEPOSIT, n * BALANCE);
   }
 
   calcTotal(document.getElementById('passenger_count').value);
+
+  // ── 折扣碼邏輯 ────────────────────────────────────────────────────────────
+  let _appliedDiscount = 0;
+
+  async function applyCoupon() {
+    const code = document.getElementById('coupon_input').value.trim().toUpperCase();
+    const resultEl = document.getElementById('coupon-result');
+    const codeField = document.getElementById('coupon_code_field');
+
+    if (!code) {
+      _appliedDiscount = 0;
+      codeField.value = '';
+      resultEl.className = 'hidden text-xs leading-relaxed';
+      document.getElementById('discount-row').classList.add('hidden');
+      calcTotal(document.getElementById('passenger_count').value);
+      return;
+    }
+
+    resultEl.className = 'text-xs leading-relaxed text-gray-400';
+    resultEl.textContent = '驗證中…';
+    resultEl.classList.remove('hidden');
+
+    try {
+      const pax = parseInt(document.getElementById('passenger_count').value) || 1;
+      const res = await fetch(`/api/coupon/validate?code=${encodeURIComponent(code)}&vehicle=${encodeURIComponent(currentVehicle)}&pax=${pax}`);
+      const data = await res.json();
+
+      if (data.valid) {
+        _appliedDiscount = data.discount_amount;
+        codeField.value = data.code;
+        resultEl.className = 'text-xs leading-relaxed text-green-400';
+        resultEl.textContent = '✓ ' + data.message;
+        document.getElementById('discount-row').classList.remove('hidden');
+        document.getElementById('discount-row').style.display = 'flex';
+      } else {
+        _appliedDiscount = 0;
+        codeField.value = '';
+        resultEl.className = 'text-xs leading-relaxed text-red-400';
+        resultEl.textContent = '✗ ' + data.message;
+        document.getElementById('discount-row').classList.add('hidden');
+      }
+      calcTotal(document.getElementById('passenger_count').value);
+    } catch(e) {
+      resultEl.className = 'text-xs leading-relaxed text-red-400';
+      resultEl.textContent = '✗ 驗證失敗，請稍後再試';
+    }
+  }
+
+  // Enter 鍵觸發套用
+  document.getElementById('coupon_input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); }
+  });
 
   // ── 服務條款邏輯 ──────────────────────────────────────────────────────────
   let _termsAccepted = false;

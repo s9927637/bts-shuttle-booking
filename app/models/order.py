@@ -21,6 +21,8 @@ class Order(db.Model):
     dispatch_id  = db.Column(db.Integer, db.ForeignKey("dispatches.id"), nullable=True)
     vehicle_type = db.Column(db.String(20), nullable=False, default="minibus")
     group_id     = db.Column(db.String(30), nullable=True, index=True)
+    coupon_code       = db.Column(db.String(30), nullable=True)
+    discount_amount   = db.Column(db.Integer, nullable=False, default=0)
     line_user_id      = db.Column(db.String(50), nullable=True, index=True)
     display_name      = db.Column(db.String(100), nullable=True)
     terms_accepted_at = db.Column(db.DateTime, nullable=True)

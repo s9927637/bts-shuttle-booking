@@ -393,6 +393,8 @@
   const NX200_BALANCE = {{ nx200_balance }};
 
   let currentVehicle = 'minibus';
+  let _appliedDiscount = 0;
+  let _termsAccepted = false;
 
   function selectVehicle(type) {
     currentVehicle = type;
@@ -462,7 +464,6 @@
   calcTotal(document.getElementById('passenger_count').value);
 
   // ── 折扣碼邏輯 ────────────────────────────────────────────────────────────
-  let _appliedDiscount = 0;
 
   async function applyCoupon() {
     const code = document.getElementById('coupon_input').value.trim().toUpperCase();
@@ -514,7 +515,6 @@
   });
 
   // ── 服務條款邏輯 ──────────────────────────────────────────────────────────
-  let _termsAccepted = false;
 
   function toggleTerms() {
     _termsAccepted = !_termsAccepted;

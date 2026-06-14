@@ -25,6 +25,12 @@
     <p class="text-sm text-green-400">已透過 LINE 登入：<span id="line-display-name" class="font-semibold"></span></p>
   </div>
 
+  <!-- 驗證錯誤摘要（Mobile 頂部） -->
+  <div id="validation-summary" style="display:none;" class="mb-4 px-4 py-3 bg-red-950/60 border border-red-700/60 rounded-xl">
+    <p class="text-xs font-semibold text-red-400 mb-1">請修正以下問題後再送出：</p>
+    <ul id="validation-summary-list" class="list-disc list-inside text-xs text-red-300 space-y-0.5"></ul>
+  </div>
+
   <form action="/booking" method="post" class="space-y-5">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="line_user_id" id="f-line-user-id" />
@@ -571,23 +577,81 @@
     }, 2800);
   }
 
+  // ── 表單驗證 ──────────────────────────────────────────────────────────────
+
+  function _setFieldError(el, msg) {
+    if (!el) return;
+    el.style.outline = '2px solid #ef4444';
+    el.style.outlineOffset = '2px';
+    // 2.5 秒後自動清除紅框
+    setTimeout(function() {
+      el.style.outline = '';
+      el.style.outlineOffset = '';
+    }, 2500);
+  }
+
+  function _clearFieldError(el) {
+    if (!el) return;
+    el.style.outline = '';
+    el.style.outlineOffset = '';
+  }
+
   function submitBooking() {
+    const errors = [];   // [{msg, el}]
+
+    // 1. 搭乘日期
+    const dateEl = document.getElementById('departure_date');
+    if (!dateEl || !dateEl.value) {
+      errors.push({ msg: '請選擇搭乘日期', el: dateEl });
+    }
+
+    // 2. 車輛方案（hidden input 預設已是 minibus，實際上一定有值，但保留檢查）
+    const vehicleEl = document.getElementById('vehicle_type');
+    if (!vehicleEl || !vehicleEl.value) {
+      errors.push({ msg: '請選擇車輛方案', el: document.getElementById('plan-minibus') });
+    }
+
+    // 3. 姓名
+    const nameEl = document.getElementById('contact_name');
+    if (!nameEl || !nameEl.value.trim()) {
+      errors.push({ msg: '請輸入聯絡人姓名', el: nameEl });
+    }
+
+    // 4. 電話
+    const phoneEl = document.getElementById('phone');
+    if (!phoneEl || !phoneEl.value.trim()) {
+      errors.push({ msg: '請輸入聯絡電話', el: phoneEl });
+    }
+
+    // 5. 服務條款
     if (!_termsAccepted) {
-      // 顯示 Toast
-      _showToast();
-      // 捲動至條款區塊
-      const block = document.getElementById('terms-block');
-      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // 紅色邊框提示
-      block.style.outline = '1.5px solid #ef4444';
-      block.style.borderRadius = '8px';
-      block.style.padding = '8px';
-      setTimeout(function() {
-        block.style.outline = '';
-        block.style.padding = '';
-      }, 2500);
+      errors.push({ msg: '請先閱讀並同意《服務條款與訂購須知》', el: document.getElementById('terms-block') });
+    }
+
+    if (errors.length > 0) {
+      // 紅框標示所有錯誤欄位
+      errors.forEach(function(e) { _setFieldError(e.el, e.msg); });
+
+      // 更新頂部錯誤摘要
+      const summary = document.getElementById('validation-summary');
+      const summaryList = document.getElementById('validation-summary-list');
+      summaryList.innerHTML = errors.map(function(e) {
+        return '<li>' + e.msg + '</li>';
+      }).join('');
+      summary.style.display = 'block';
+
+      // 捲動至第一個錯誤欄位（或摘要）
+      const firstTarget = errors[0].el || summary;
+      const scrollTarget = (window.innerWidth < 768) ? summary : firstTarget;
+      scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // 條款專屬 toast
+      if (!_termsAccepted) _showToast();
       return;
     }
+
+    // 清除摘要（以防重試後成功送出）
+    document.getElementById('validation-summary').style.display = 'none';
     document.querySelector('form').submit();
   }
 

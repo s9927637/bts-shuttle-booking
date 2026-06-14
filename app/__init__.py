@@ -52,4 +52,19 @@ def create_app():
     app.register_blueprint(dispatch_bp)
     app.register_blueprint(driver_bp)
 
+    import logging
+    from flask import render_template as _rt
+
+    logging.basicConfig(level=logging.ERROR)
+
+    @app.errorhandler(500)
+    def internal_error(exc):
+        app.logger.error("未捕捉的系統錯誤: %s", exc, exc_info=True)
+        db.session.rollback()
+        return _rt("errors/500.html"), 500
+
+    @app.errorhandler(404)
+    def not_found(exc):
+        return _rt("errors/404.html"), 404
+
     return app

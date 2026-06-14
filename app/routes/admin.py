@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, session, redirect, render_template, request, flash, url_for, jsonify, Response
 from werkzeug.security import generate_password_hash
 from app import db
+from app.utils.error_handler import friendly_error
 from app.models.order import Order
 from app.models.vehicle import Vehicle
 from app.models.payment import Payment
@@ -211,7 +212,7 @@ def order_create():
         flash("訂單已新增", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"新增失敗：{e}", "error")
+        flash(friendly_error(e, "新增失敗"), "error")
 
     return redirect(url_for("admin.orders"))
 
@@ -261,7 +262,7 @@ def order_edit(order_id):
         flash("訂單已更新", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.orders",
                             q=request.args.get("q", ""),
@@ -285,7 +286,7 @@ def order_delete(order_id):
         flash("訂單已刪除", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"刪除失敗：{e}", "error")
+        flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.orders"))
 
@@ -371,7 +372,7 @@ def payment_update_status(payment_id):
         flash("付款狀態已更新", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.payments",
                             q=request.args.get("q", ""),
@@ -441,7 +442,7 @@ def payment_create():
         flash(f"付款紀錄已新增（訂單 {order.order_no}）", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"新增失敗：{e}", "error")
+        flash(friendly_error(e, "新增失敗"), "error")
 
     return redirect(url_for("admin.payments"))
 
@@ -578,7 +579,7 @@ def payment_issue_receipt(payment_id):
         flash(f"收據 {receipt.receipt_no} 已開立", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"開立失敗：{e}", "error")
+        flash(friendly_error(e, "開立失敗"), "error")
 
     return redirect(url_for("admin.payments"))
 
@@ -600,7 +601,7 @@ def receipt_pdf(receipt_id):
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        flash(f"PDF 產生失敗：{e}", "error")
+        flash(friendly_error(e, "PDF 產生失敗"), "error")
         return redirect(url_for("admin.receipts"))
 
     filename = f"receipt_{receipt.receipt_no}.pdf"
@@ -669,7 +670,7 @@ def receipt_void(receipt_id):
         flash(f"收據 {receipt.receipt_no} 已作廢", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"作廢失敗：{e}", "error")
+        flash(friendly_error(e, "作廢失敗"), "error")
 
     return redirect(url_for("admin.receipts"))
 
@@ -715,7 +716,7 @@ def vehicle_create():
         flash("車輛已新增", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"新增失敗：{e}", "error")
+        flash(friendly_error(e, "新增失敗"), "error")
 
     return redirect(url_for("admin.vehicles"))
 
@@ -736,7 +737,7 @@ def vehicle_edit(vehicle_id):
         flash("車輛已更新", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.vehicles", q=request.args.get("q", "")))
 
@@ -754,7 +755,7 @@ def vehicle_delete(vehicle_id):
         flash("車輛已刪除", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"刪除失敗：{e}", "error")
+        flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.vehicles"))
 
@@ -806,7 +807,7 @@ def driver_create():
         flash("司機已新增", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"新增失敗：{e}", "error")
+        flash(friendly_error(e, "新增失敗"), "error")
 
     return redirect(url_for("admin.drivers"))
 
@@ -827,7 +828,7 @@ def driver_edit(driver_id):
         flash("司機資料已更新", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.drivers", q=request.args.get("q", "")))
 
@@ -845,7 +846,7 @@ def driver_delete(driver_id):
         flash("司機已刪除", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"刪除失敗：{e}", "error")
+        flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.drivers"))
 
@@ -888,7 +889,7 @@ def admin_create():
         flash(f"管理員「{username}」已建立。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"建立失敗：{e}", "error")
+        flash(friendly_error(e, "建立失敗"), "error")
 
     return redirect(url_for("admin.admins"))
 
@@ -911,7 +912,7 @@ def admin_update(admin_id):
         flash(f"管理員「{a.username}」已更新。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.admins"))
 
@@ -934,7 +935,7 @@ def admin_delete(admin_id):
         flash(f"管理員「{a.username}」已刪除。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"刪除失敗：{e}", "error")
+        flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.admins"))
 
@@ -996,7 +997,7 @@ def announcement_create():
         flash("公告已建立。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"建立失敗：{e}", "error")
+        flash(friendly_error(e, "建立失敗"), "error")
 
     return redirect(url_for("admin.announcements"))
 
@@ -1027,7 +1028,7 @@ def announcement_update(ann_id):
         flash("公告已更新。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
 
     return redirect(url_for("admin.announcements"))
 
@@ -1045,7 +1046,7 @@ def announcement_delete(ann_id):
         flash("公告已刪除。", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"刪除失敗：{e}", "error")
+        flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.announcements"))
 
@@ -1261,7 +1262,7 @@ def coupon_create():
         flash(f"折扣碼 {code} 已建立", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"建立失敗：{e}", "error")
+        flash(friendly_error(e, "建立失敗"), "error")
     return redirect(url_for("admin.revenue", tab="coupons"))
 
 
@@ -1287,7 +1288,7 @@ def coupon_edit(coupon_id):
         flash(f"折扣碼 {c.code} 已更新", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"更新失敗：{e}", "error")
+        flash(friendly_error(e, "更新失敗"), "error")
     return redirect(url_for("admin.revenue", tab="coupons"))
 
 
@@ -1304,7 +1305,7 @@ def coupon_toggle(coupon_id):
         flash(f"折扣碼 {c.code} 已{state}", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"操作失敗：{e}", "error")
+        flash(friendly_error(e, "操作失敗"), "error")
     return redirect(url_for("admin.revenue", tab="coupons"))
 
 

@@ -5,6 +5,7 @@ import string
 from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from app import db
+from app.utils.error_handler import friendly_error
 from app.models.order import Order
 from app.models.payment import Payment
 from app.models.announcement import Announcement
@@ -469,7 +470,7 @@ def payment_report_submit():
 
     except Exception as e:
         db.session.rollback()
-        flash(f"回報失敗，請重試。（{e}）", "error")
+        flash(friendly_error(e, "匯款回報"), "error")
         return redirect(url_for("passenger.payment_report", order_no=order_no))
 
 
@@ -521,7 +522,7 @@ def join_group_submit(group_id):
         flash(f"已成功加入同行群組！", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"加入失敗：{e}", "error")
+        flash(friendly_error(e, "加入同行群組"), "error")
 
     return redirect(url_for("passenger.join_group", group_id=group_id))
 
@@ -542,7 +543,7 @@ def api_line_bind():
     display_name = (data.get("display_name") or "").strip() or None
 
     if not line_user_id:
-        return jsonify({"ok": False, "error": "missing line_user_id"}), 400
+        return jsonify({"ok": False, "error": "缺少必要的識別資訊，請重新操作。"}), 400
 
     updated = 0
 
@@ -572,7 +573,7 @@ def api_line_bind():
             db.session.commit()
         except Exception:
             db.session.rollback()
-            return jsonify({"ok": False, "error": "db error"}), 500
+            return jsonify({"ok": False, "error": "系統暫時無法處理，請稍後再試。"}), 500
 
     return jsonify({"ok": True, "updated": updated})
 

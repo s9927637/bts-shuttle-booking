@@ -9,6 +9,12 @@ from app.utils.error_handler import friendly_error
 from app.models.order import Order
 from app.models.payment import Payment
 from app.models.announcement import Announcement
+from app.services.line_notification import (
+    notify_new_order,
+    notify_nx200_booked,
+    notify_payment_report,
+    check_and_notify_group_formed,
+)
 
 PASSENGER_LIFF_ID = os.environ.get("PASSENGER_LIFF_ID", "")
 
@@ -231,7 +237,25 @@ def booking_submit():
         db.session.add(order)
         db.session.flush()                       # 取得 id，尚未 commit
         order.order_no = _gen_order_no(order.id)
+
+        # 成團前計算（不含本訂單，以九座商旅車為準）
+        if vehicle_type == "minibus":
+            from sqlalchemy import func as _func
+            prev_pax = db.session.query(_func.sum(Order.passenger_count)).filter(
+                Order.departure_date == order.departure_date,
+                Order.vehicle_type == "minibus",
+                Order.payment_status.in_(["待付款", "待確認", "訂金已確認", "已完成"]),
+                Order.id != order.id,
+            ).scalar() or 0
+
         db.session.commit()
+
+        # LINE 通知（commit 成功後送出，失敗不影響主流程）
+        notify_new_order(order)
+        if vehicle_type == "nx200":
+            notify_nx200_booked(order)
+        else:
+            check_and_notify_group_formed(order, prev_pax)
 
         return redirect(url_for("passenger.order_detail",
                                 order_no=order.order_no, new=1))
@@ -464,6 +488,8 @@ def payment_report_submit():
         order.payment_status = "待確認"
         db.session.add(payment)
         db.session.commit()
+
+        notify_payment_report(order, payment)
 
         flash("匯款資料已送出，我們將盡快確認並通知您。", "success")
         return redirect(url_for("passenger.order_lookup", q=order_no))

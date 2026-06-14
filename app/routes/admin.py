@@ -4,6 +4,10 @@ from flask import Blueprint, session, redirect, render_template, request, flash,
 from werkzeug.security import generate_password_hash
 from app import db
 from app.utils.error_handler import friendly_error
+from app.services.line_notification import (
+    notify_deposit_confirmed,
+    notify_order_cancelled,
+)
 from app.models.order import Order
 from app.models.vehicle import Vehicle
 from app.models.payment import Payment
@@ -259,6 +263,10 @@ def order_edit(order_id):
             db.session.add(payment)
 
         db.session.commit()
+        if new_status == "訂金已確認" and new_status != old_status:
+            current_admin = Admin.query.get(session.get("admin_id"))
+            admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
+            notify_deposit_confirmed(order, admin_name)
         flash("訂單已更新", "success")
     except Exception as e:
         db.session.rollback()
@@ -279,10 +287,22 @@ def order_delete(order_id):
         return guard
 
     order = Order.query.get_or_404(order_id)
+    # 刪除前先暫存通知所需資料（刪除後 order 物件失效）
+    _cancel_snapshot = {
+        "order_no": order.order_no,
+        "contact_name": order.contact_name,
+        "passenger_count": order.passenger_count,
+    }
     try:
         Payment.query.filter_by(order_id=order_id).delete()
         db.session.delete(order)
         db.session.commit()
+        # 建立臨時物件傳入通知函式
+        class _Snap:
+            pass
+        snap = _Snap()
+        snap.__dict__.update(_cancel_snapshot)
+        notify_order_cancelled(snap)
         flash("訂單已刪除", "success")
     except Exception as e:
         db.session.rollback()
@@ -361,14 +381,17 @@ def payment_update_status(payment_id):
         current_admin = Admin.query.get(session.get("admin_id"))
         admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
         payment.status = new_status
+        confirmed_order = None
         if new_status == "訂金已確認":
             payment.confirmed_at = datetime.utcnow()
             payment.confirmed_by = admin_name
             payment.payment_source = "admin_confirmed"
-            order = Order.query.get(payment.order_id)
-            if order:
-                order.payment_status = "訂金已確認"
+            confirmed_order = Order.query.get(payment.order_id)
+            if confirmed_order:
+                confirmed_order.payment_status = "訂金已確認"
         db.session.commit()
+        if confirmed_order:
+            notify_deposit_confirmed(confirmed_order, admin_name)
         flash("付款狀態已更新", "success")
     except Exception as e:
         db.session.rollback()
@@ -439,6 +462,8 @@ def payment_create():
 
         db.session.add(payment)
         db.session.commit()
+        if status == "訂金已確認":
+            notify_deposit_confirmed(order, admin_name)
         flash(f"付款紀錄已新增（訂單 {order.order_no}）", "success")
     except Exception as e:
         db.session.rollback()

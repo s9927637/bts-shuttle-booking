@@ -695,7 +695,11 @@ def vehicles():
         )
 
     vehicles_list = query.order_by(Vehicle.plate_number).all()
-    return render_template("admin/vehicles.html", vehicles=vehicles_list, total=len(vehicles_list))
+    drivers_list  = Driver.query.order_by(Driver.name).all()
+    return render_template("admin/vehicles.html",
+                           vehicles=vehicles_list,
+                           drivers=drivers_list,
+                           total=len(vehicles_list))
 
 
 @admin_bp.route("/vehicles/create", methods=["POST"])
@@ -705,11 +709,13 @@ def vehicle_create():
         return guard
 
     try:
+        driver_id = request.form.get("driver_id") or None
         v = Vehicle(
             plate_number = request.form["plate_number"].strip(),
-            driver_name  = request.form["driver_name"].strip(),
-            driver_phone = request.form["driver_phone"].strip(),
+            name         = request.form.get("name", "").strip() or None,
+            vehicle_type = request.form.get("vehicle_type", "").strip() or None,
             seat_limit   = int(request.form.get("seat_limit", 8)),
+            driver_id    = int(driver_id) if driver_id else None,
         )
         db.session.add(v)
         db.session.commit()
@@ -729,10 +735,12 @@ def vehicle_edit(vehicle_id):
 
     v = Vehicle.query.get_or_404(vehicle_id)
     try:
+        driver_id      = request.form.get("driver_id") or None
         v.plate_number = request.form["plate_number"].strip()
-        v.driver_name  = request.form["driver_name"].strip()
-        v.driver_phone = request.form["driver_phone"].strip()
+        v.name         = request.form.get("name", "").strip() or None
+        v.vehicle_type = request.form.get("vehicle_type", "").strip() or None
         v.seat_limit   = int(request.form.get("seat_limit", v.seat_limit))
+        v.driver_id    = int(driver_id) if driver_id else None
         db.session.commit()
         flash("車輛已更新", "success")
     except Exception as e:
@@ -782,11 +790,13 @@ def drivers():
             )
         )
 
-    drivers_list = query.order_by(Driver.name).all()
+    drivers_list  = query.order_by(Driver.name).all()
+    vehicles_list = Vehicle.query.order_by(Vehicle.plate_number).all()
     return render_template("admin/drivers.html",
                            drivers=drivers_list,
                            total=len(drivers_list),
-                           bind_statuses=BIND_STATUSES)
+                           bind_statuses=BIND_STATUSES,
+                           vehicles=vehicles_list)
 
 
 @admin_bp.route("/drivers/create", methods=["POST"])
@@ -803,6 +813,12 @@ def driver_create():
             bind_status  = request.form.get("bind_status", "未綁定"),
         )
         db.session.add(d)
+        db.session.flush()  # 取得 d.id
+        vehicle_assign = request.form.get("vehicle_assign") or None
+        if vehicle_assign:
+            veh = Vehicle.query.get(int(vehicle_assign))
+            if veh:
+                veh.driver_id = d.id
         db.session.commit()
         flash("司機已新增", "success")
     except Exception as e:

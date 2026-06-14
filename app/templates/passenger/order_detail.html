@@ -213,7 +213,7 @@
 
   {# ── 區塊 4：排車資訊 ── #}
   <div class="card-dark space-y-3">
-    <h2 class="section-title">排車資訊</h2>
+    <h2 class="section-title">{% if not vehicle %}出車安排說明{% else %}排車資訊{% endif %}</h2>
 
     {% if vehicle %}
     <div class="space-y-2.5 text-sm">
@@ -242,7 +242,10 @@
       </div>
     </div>
     {% else %}
-    <p class="text-sm text-gray-500">尚未排車，確認訂金後將優先安排。</p>
+    <p class="text-sm text-gray-400 leading-relaxed">
+      完成訂金確認後，系統將依訂單順序安排車輛與座位。<br>
+      實際車號、司機資訊與集合地點，將於活動前通知。
+    </p>
     {% endif %}
   </div>
 

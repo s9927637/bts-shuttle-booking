@@ -1,0 +1,93 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}活動統計{% endblock %}
+{% block page_title %}活動統計{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">各活動的訂單與收款概況。</p>
+    <a href="{{ url_for('event_page.ep_list') }}"
+       class="text-sm text-purple-600 hover:underline">← 活動列表</a>
+  </div>
+
+  {% if not stats %}
+  <div class="bg-white border border-gray-200 rounded-xl py-16 text-center shadow-sm">
+    <p class="text-gray-400 text-sm">尚無活動資料。</p>
+    <a href="{{ url_for('event_page.ep_create') }}"
+       class="inline-block mt-2 text-sm text-purple-600 hover:underline">建立第一個活動 →</a>
+  </div>
+  {% else %}
+
+  <!-- 彙總卡片 -->
+  {% set total_all = stats | sum(attribute='total_orders') %}
+  {% set paid_all  = stats | sum(attribute='paid_orders') %}
+  {% set dep_all   = stats | sum(attribute='deposit_total') %}
+  {% set rev_all   = stats | sum(attribute='revenue_total') %}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">總訂單數</p>
+      <p class="text-2xl font-bold text-gray-900">{{ total_all }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">已付款訂單</p>
+      <p class="text-2xl font-bold text-green-600">{{ paid_all }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">訂金總額</p>
+      <p class="text-2xl font-bold text-purple-600">NT${{ '{:,}'.format(dep_all) }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">完成總營收</p>
+      <p class="text-2xl font-bold text-gray-900">NT${{ '{:,}'.format(rev_all) }}</p>
+    </div>
+  </div>
+
+  <!-- 活動明細表 -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-700">各活動明細</h3>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">訂單數</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">付款數</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">未付款</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">訂金總額</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">完成營收</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for row in stats | sort(attribute='total_orders', reverse=True) %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-800">{{ row.ep.title }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ row.ep.event_date or '—' }} · {{ row.ep.departure_city or '—' }}</p>
+          </td>
+          <td class="px-4 py-3 text-gray-600">{{ row.ep.artist_name }}</td>
+          <td class="px-4 py-3 text-center font-semibold text-gray-800">{{ row.total_orders }}</td>
+          <td class="px-4 py-3 text-center text-green-600 font-semibold">{{ row.paid_orders }}</td>
+          <td class="px-4 py-3 text-center {% if row.unpaid_orders > 0 %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">
+            {{ row.unpaid_orders }}
+          </td>
+          <td class="px-4 py-3 text-right text-purple-600 font-semibold">NT${{ '{:,}'.format(row.deposit_total) }}</td>
+          <td class="px-4 py-3 text-right text-gray-700 font-semibold">NT${{ '{:,}'.format(row.revenue_total) }}</td>
+          <td class="px-4 py-3 text-right space-x-3 whitespace-nowrap">
+            <a href="{{ url_for('event_page.event_detail', ep_id=row.ep.id) }}"
+               class="text-xs text-blue-500 hover:underline">詳細</a>
+            <a href="{{ url_for('admin.orders') }}?event_filter={{ row.ep.id }}"
+               class="text-xs text-purple-600 hover:underline">訂單</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

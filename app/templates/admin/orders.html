@@ -123,13 +123,25 @@
 
     <form method="get" id="filter-form">
       <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
-      <select name="status" onchange="document.getElementById('filter-form').submit()"
-              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
-        <option value="" {% if not request.args.get('status') %}selected{% endif %}>全部狀態</option>
-        {% for s in payment_statuses %}
-        <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-      </select>
+      <div class="flex gap-2 flex-wrap">
+        <select name="status" onchange="document.getElementById('filter-form').submit()"
+                class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+          <option value="" {% if not request.args.get('status') %}selected{% endif %}>全部狀態</option>
+          {% for s in payment_statuses %}
+          <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <select name="event_filter" onchange="document.getElementById('filter-form').submit()"
+                class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+          <option value="" {% if not event_filter %}selected{% endif %}>全部活動</option>
+          <option value="bts" {% if event_filter == 'bts' %}selected{% endif %}>BTS</option>
+          {% for ep in event_pages %}
+          <option value="{{ ep.id }}" {% if event_filter == ep.id|string %}selected{% endif %}>
+            {{ ep.artist_name }} — {{ ep.title[:20] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
     </form>
 
   </div>

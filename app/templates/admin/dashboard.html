@@ -184,4 +184,43 @@
   </div>
 </div>
 
+<!-- ── 熱門活動排行 ── -->
+{% if hot_events %}
+<div class="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-gray-900">熱門活動排行</h2>
+    <a href="{{ url_for('event_page.event_statistics') }}"
+       class="text-xs text-purple-600 hover:underline">查看完整統計 →</a>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-left">排名</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-left">活動名稱</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">訂單數</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">已付款</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for row in hot_events %}
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-6 py-3 text-gray-400 font-bold">{{ loop.index }}</td>
+        <td class="px-6 py-3">
+          <p class="font-medium text-gray-900">{{ row.ep.title }}</p>
+          <p class="text-xs text-gray-400">{{ row.ep.artist_name }}{% if row.ep.event_date %} · {{ row.ep.event_date }}{% endif %}</p>
+        </td>
+        <td class="px-6 py-3 text-center font-semibold text-gray-800">{{ row.order_count }}</td>
+        <td class="px-6 py-3 text-center text-green-600 font-semibold">{{ row.paid_count }}</td>
+        <td class="px-6 py-3 text-right">
+          <a href="{{ url_for('event_page.event_detail', ep_id=row.ep.id) }}"
+             class="text-xs text-purple-600 hover:underline">詳細 →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 {% endblock %}

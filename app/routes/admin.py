@@ -90,6 +90,24 @@ def dashboard():
 
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
 
+    # 熱門活動排行（依訂單數排序，最多 5 筆）
+    from app.models.event_page import EventPage
+    event_pages_all = EventPage.query.filter(EventPage.deleted_at.is_(None)).all()
+    hot_events = sorted(
+        [
+            {
+                "ep":           ep,
+                "order_count":  ep.orders.count(),
+                "paid_count":   ep.orders.filter(
+                    Order.payment_status.in_(["訂金已確認", "已完成"])
+                ).count(),
+            }
+            for ep in event_pages_all
+        ],
+        key=lambda x: x["order_count"],
+        reverse=True,
+    )[:5]
+
     return render_template(
         "admin/dashboard.html",
         stats={
@@ -114,6 +132,7 @@ def dashboard():
             "monthly_announcements":      monthly_announcements,
         },
         recent_orders=recent_orders,
+        hot_events=hot_events,
     )
 
 
@@ -125,9 +144,12 @@ def orders():
     if guard:
         return guard
 
-    q      = request.args.get("q", "").strip()
-    status = request.args.get("status", "").strip()
-    page   = max(1, request.args.get("page", 1, type=int))
+    from app.models.event_page import EventPage
+
+    q         = request.args.get("q", "").strip()
+    status    = request.args.get("status", "").strip()
+    event_filter = request.args.get("event_filter", "").strip()  # "bts" | "<ep_id>" | ""
+    page      = max(1, request.args.get("page", 1, type=int))
 
     query = Order.query
     if q:
@@ -141,6 +163,11 @@ def orders():
     if status:
         query = query.filter(Order.payment_status == status)
 
+    if event_filter == "bts":
+        query = query.filter(Order.event_page_id.is_(None))
+    elif event_filter and event_filter.isdigit():
+        query = query.filter(Order.event_page_id == int(event_filter))
+
     total  = query.count()
     pages  = max(1, (total + PER_PAGE - 1) // PER_PAGE)
     page   = min(page, pages)
@@ -151,7 +178,8 @@ def orders():
         .limit(PER_PAGE)
         .all()
     )
-    vehicles = Vehicle.query.order_by(Vehicle.plate_number).all()
+    vehicles    = Vehicle.query.order_by(Vehicle.plate_number).all()
+    event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.created_at.desc()).all()
 
     return render_template(
         "admin/orders.html",
@@ -163,6 +191,8 @@ def orders():
         departure_options=DEPARTURE_OPTIONS,
         price_per_person=PRICE_PER_PERSON,
         vehicles=vehicles,
+        event_pages=event_pages,
+        event_filter=event_filter,
     )
 
 

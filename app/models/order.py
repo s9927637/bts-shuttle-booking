@@ -28,3 +28,16 @@ class Order(db.Model):
     terms_accepted_at = db.Column(db.DateTime, nullable=True)
     terms_version     = db.Column(db.String(10), nullable=True)
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 活動頁串接（NULL = 原 BTS 訂單，不影響既有資料）
+    event_page_id = db.Column(
+        db.Integer,
+        db.ForeignKey("event_pages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    event_page = db.relationship(
+        "EventPage",
+        foreign_keys=[event_page_id],
+        backref=db.backref("orders", lazy="dynamic"),
+    )

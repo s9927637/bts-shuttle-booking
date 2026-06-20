@@ -35,6 +35,22 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="line_user_id" id="f-line-user-id" />
     <input type="hidden" name="display_name"  id="f-display-name" />
+    {% if event_page %}
+    <input type="hidden" name="event_page_id" value="{{ event_page.id }}" />
+    {% endif %}
+
+    <!-- 活動模式 banner -->
+    {% if event_page %}
+    <div class="flex items-start gap-3 px-4 py-3.5 bg-purple-950/40 border border-purple-700/50 rounded-xl">
+      <svg class="w-4 h-4 text-purple-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+      </svg>
+      <div>
+        <p class="text-sm font-semibold text-purple-300">{{ event_page.title }}</p>
+        <p class="text-xs text-purple-400 mt-0.5">{{ event_page.artist_name }}{% if event_page.event_date %} · {{ event_page.event_date }}{% endif %}{% if event_page.departure_city %} · 出發地：{{ event_page.departure_city }}{% endif %}</p>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- 行程資料 -->
     <div class="card-dark space-y-5">
@@ -42,9 +58,20 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label for="departure_date" class="block mb-1.5 text-xs font-medium text-gray-400">
+          <label class="block mb-1.5 text-xs font-medium text-gray-400">
             出發日期 <span class="text-red-400">*</span>
           </label>
+          {% if event_page %}
+          {# 活動模式：鎖定日期，使用者不可修改 #}
+          <input type="hidden" name="departure_date" value="{{ event_page.event_date or '' }}" />
+          <div class="input-dark flex items-center gap-2 cursor-not-allowed opacity-70">
+            <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-sm text-white">{{ event_page.event_date or '依活動日期' }}</span>
+            <span class="ml-auto text-xs text-gray-500">已鎖定</span>
+          </div>
+          {% else %}
           <select id="departure_date" name="departure_date" required
                   class="input-dark">
             <option value="">— 選擇場次 —</option>
@@ -56,6 +83,7 @@
             </option>
             {% endfor %}
           </select>
+          {% endif %}
         </div>
 
         <div>
@@ -160,32 +188,34 @@
         <div>
           <p class="text-sm font-semibold text-white">九座商旅車</p>
           <p class="text-xs text-gray-400 mt-0.5">共乘接送・適合 1〜8 人</p>
-          <p class="text-xs text-purple-300 mt-1">NT$2,000 / 人</p>
+          <p class="text-xs text-purple-300 mt-1">NT${{ '{:,}'.format(price_per_person) }} / 人</p>
         </div>
       </label>
 
-      <!-- 方案二：NX200 -->
-      {% if nx200_available %}
-      <label id="plan-nx200"
-             class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
-             onclick="selectVehicle('nx200')">
-        <div class="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0" id="radio-nx200">
-          <div class="w-2 h-2 rounded-full bg-transparent"></div>
+      <!-- 方案二：NX200（活動模式不提供） -->
+      {% if not event_page %}
+        {% if nx200_available %}
+        <label id="plan-nx200"
+               class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
+               onclick="selectVehicle('nx200')">
+          <div class="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0" id="radio-nx200">
+            <div class="w-2 h-2 rounded-full bg-transparent"></div>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
+            <p class="text-xs text-gray-400 mt-0.5">固定 4 人搭乘</p>
+            <p class="text-xs text-purple-300 mt-1">NT$10,000 固定</p>
+          </div>
+        </label>
+        {% else %}
+        <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-800 bg-gray-900/20 opacity-40 cursor-not-allowed">
+          <div class="w-4 h-4 rounded-full border-2 border-gray-700 shrink-0"></div>
+          <div>
+            <p class="text-sm font-semibold text-gray-600">NX200 專屬包車</p>
+            <p class="text-xs text-gray-700 mt-0.5">已售完</p>
+          </div>
         </div>
-        <div>
-          <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
-          <p class="text-xs text-gray-400 mt-0.5">固定 4 人搭乘</p>
-          <p class="text-xs text-purple-300 mt-1">NT$10,000 固定</p>
-        </div>
-      </label>
-      {% else %}
-      <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-800 bg-gray-900/20 opacity-40 cursor-not-allowed">
-        <div class="w-4 h-4 rounded-full border-2 border-gray-700 shrink-0"></div>
-        <div>
-          <p class="text-sm font-semibold text-gray-600">NX200 專屬包車</p>
-          <p class="text-xs text-gray-700 mt-0.5">已售完</p>
-        </div>
-      </div>
+        {% endif %}
       {% endif %}
     </div>
 
@@ -385,9 +415,9 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-  const PRICE   = 2000;
-  const DEPOSIT = 300;
-  const BALANCE = 1700;
+  const PRICE   = {{ price_per_person }};
+  const DEPOSIT = {{ deposit_per_person }};
+  const BALANCE = {{ balance_per_person }};
   const NX200_PAX     = {{ nx200_pax }};
   const NX200_TOTAL   = {{ nx200_total }};
   const NX200_DEPOSIT = {{ nx200_deposit }};

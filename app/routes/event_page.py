@@ -7,7 +7,7 @@
 import re
 from datetime import datetime
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 
 from app import db
 from app.models.event_page import EventPage
@@ -213,7 +213,134 @@ def event_show(slug):
     if not ep:
         abort(404)
     if ep.status != "已發布":
-        # 非發布狀態：後台管理員可預覽，一般訪客看 404
         if not session.get("admin_id"):
             abort(404)
     return render_template("passenger/event_template.html", ep=ep)
+
+
+# ── 後台：活動統計頁 /admin/events/statistics ────────────────────────────────
+
+@event_page_bp.route("/admin/events/statistics")
+def event_statistics():
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    from app.models.order import Order
+    from sqlalchemy import func
+
+    event_pages = (
+        EventPage.query
+        .filter(EventPage.deleted_at.is_(None))
+        .order_by(EventPage.created_at.desc())
+        .all()
+    )
+
+    stats = []
+    for ep in event_pages:
+        orders = ep.orders.all()
+        total_orders   = len(orders)
+        paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+        unpaid_orders  = total_orders - paid_orders
+        deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+        revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
+        stats.append({
+            "ep":            ep,
+            "total_orders":  total_orders,
+            "paid_orders":   paid_orders,
+            "unpaid_orders": unpaid_orders,
+            "deposit_total": deposit_total,
+            "revenue_total": revenue_total,
+        })
+
+    return render_template("admin/event_pages/statistics.html", stats=stats)
+
+
+# ── 後台：活動詳細頁 /admin/events/<id> ──────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>")
+def event_detail(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    from app.models.order import Order
+
+    ep = EventPage.query.get_or_404(ep_id)
+    orders = ep.orders.order_by(Order.created_at.desc()).all()
+
+    total_orders   = len(orders)
+    paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+    deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+    revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
+
+    return render_template(
+        "admin/event_pages/detail.html",
+        ep=ep,
+        orders=orders,
+        total_orders=total_orders,
+        paid_orders=paid_orders,
+        deposit_total=deposit_total,
+        revenue_total=revenue_total,
+    )
+
+
+# ── API：活動訂單列表 GET /api/events/<id>/orders ────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/orders")
+def api_event_orders(ep_id):
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    from app.models.order import Order
+
+    ep = EventPage.query.get_or_404(ep_id)
+    orders = ep.orders.order_by(Order.created_at.desc()).all()
+    return jsonify({
+        "event_id":    ep.id,
+        "event_title": ep.title,
+        "orders": [
+            {
+                "id":             o.id,
+                "order_no":       o.order_no,
+                "contact_name":   o.contact_name,
+                "phone":          o.phone,
+                "departure_date": o.departure_date,
+                "passenger_count": o.passenger_count,
+                "total_amount":   o.total_amount,
+                "deposit_amount": o.deposit_amount,
+                "payment_status": o.payment_status,
+                "created_at":     o.created_at.isoformat() if o.created_at else None,
+            }
+            for o in orders
+        ],
+    })
+
+
+# ── API：活動統計 GET /api/events/<id>/statistics ────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/statistics")
+def api_event_statistics(ep_id):
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    from app.models.order import Order
+
+    ep = EventPage.query.get_or_404(ep_id)
+    orders = ep.orders.all()
+
+    total_orders   = len(orders)
+    paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+    deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
+    revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
+
+    return jsonify({
+        "event_id":      ep.id,
+        "event_title":   ep.title,
+        "artist_name":   ep.artist_name,
+        "total_orders":  total_orders,
+        "paid_orders":   paid_orders,
+        "unpaid_orders": total_orders - paid_orders,
+        "deposit_total": deposit_total,
+        "revenue_total": revenue_total,
+    })

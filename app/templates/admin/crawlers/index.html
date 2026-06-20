@@ -6,21 +6,44 @@
 <div class="max-w-6xl mx-auto space-y-6">
 
   <!-- ── 執行區 ── -->
-  <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-    <h3 class="text-sm font-semibold text-gray-700 mb-4">手動執行爬蟲</h3>
+  <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+    <h3 class="text-sm font-semibold text-gray-700">手動執行爬蟲</h3>
+
+    <!-- 快速執行按鈕 -->
     <div class="flex flex-wrap gap-3 items-center">
-      <select id="source-select"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
-        {% for src in sources %}
-        <option value="{{ src }}">{{ src }}</option>
-        {% endfor %}
-      </select>
-      <button id="run-btn" onclick="runCrawler()"
-              class="px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50">
-        ▶ 執行爬蟲
+      <button onclick="runDedicated('kktix', this)"
+              class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+        ▶ 執行 KKTIX
       </button>
-      <span id="run-status" class="text-sm text-gray-500"></span>
+      <button onclick="runDedicated('tixcraft', this)"
+              class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+        ▶ 執行 TixCraft
+      </button>
+      <button onclick="runAll(this)"
+              class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+        ▶ 全部執行
+      </button>
+      <span class="text-xs text-gray-400 ml-2">約 30–60 秒，請耐心等候</span>
     </div>
+
+    <!-- 進階：自訂來源（含 mock 測試） -->
+    <details class="text-sm">
+      <summary class="text-gray-400 cursor-pointer hover:text-gray-600 select-none">進階選項（含 Mock 測試）</summary>
+      <div class="mt-3 flex flex-wrap gap-3 items-center">
+        <select id="source-select"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+          {% for src in sources %}
+          <option value="{{ src }}">{{ src }}</option>
+          {% endfor %}
+        </select>
+        <button id="run-btn" onclick="runCrawler()"
+                class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition-colors">
+          ▶ 執行選取來源
+        </button>
+      </div>
+    </details>
+
+    <div id="run-status" class="text-sm text-gray-500 min-h-[20px]"></div>
   </div>
 
   <!-- ── 統計小卡 ── -->
@@ -136,39 +159,94 @@
 <script>
 const csrfToken = "{{ csrf_token() }}";
 
+function _setStatus(msg, cls) {
+  const el = document.getElementById('run-status');
+  el.textContent = msg;
+  el.className = 'text-sm ' + (cls || 'text-gray-500');
+}
+
+function _lockAllBtns(lock) {
+  document.querySelectorAll('.crawler-btn').forEach(b => { b.disabled = lock; });
+}
+
+// 專用按鈕（kktix / tixcraft）
+async function runDedicated(source, btn) {
+  _lockAllBtns(true);
+  _setStatus(`${source} 執行中，請稍候...`, 'text-gray-500');
+  try {
+    const res = await fetch(`/api/crawlers/${source}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _setStatus(
+        `✓ ${source} 完成 #${data.job_id}｜新增 ${data.created} 更新 ${data.updated} 錯誤 ${data.errors}`,
+        'text-green-600',
+      );
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      _setStatus(`✗ ${source} 錯誤：${data.error || data.message || res.status}`, 'text-red-500');
+    }
+  } catch (e) {
+    _setStatus(`✗ 網路錯誤：${e.message}`, 'text-red-500');
+  } finally {
+    _lockAllBtns(false);
+  }
+}
+
+// 全部執行
+async function runAll(btn) {
+  _lockAllBtns(true);
+  _setStatus('全部執行中（KKTIX + TixCraft），請稍候 60 秒...', 'text-gray-500');
+  try {
+    const res = await fetch('/api/crawlers/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _setStatus(
+        `✓ 全部完成｜共新增 ${data.total_created} 更新 ${data.total_updated}`,
+        'text-green-600',
+      );
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      _setStatus(`✗ 錯誤：${data.error || res.status}`, 'text-red-500');
+    }
+  } catch (e) {
+    _setStatus(`✗ 網路錯誤：${e.message}`, 'text-red-500');
+  } finally {
+    _lockAllBtns(false);
+  }
+}
+
+// 自訂來源（進階選項，含 mock）
 async function runCrawler() {
   const btn = document.getElementById('run-btn');
-  const statusEl = document.getElementById('run-status');
   const source = document.getElementById('source-select').value;
-
-  btn.disabled = true;
-  statusEl.textContent = '執行中...';
-
+  _lockAllBtns(true);
+  _setStatus(`${source} 執行中...`, 'text-gray-500');
   try {
     const res = await fetch('/api/crawlers/run', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-      },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
       body: JSON.stringify({ source }),
     });
     const data = await res.json();
-
     if (res.ok) {
-      statusEl.textContent =
-        `✓ 完成 #${data.job_id}｜新增 ${data.created} 更新 ${data.updated} 錯誤 ${data.errors}`;
-      statusEl.className = 'text-sm text-green-600';
+      _setStatus(
+        `✓ 完成 #${data.job_id}｜新增 ${data.created} 更新 ${data.updated} 錯誤 ${data.errors}`,
+        'text-green-600',
+      );
       setTimeout(() => location.reload(), 1200);
     } else {
-      statusEl.textContent = `✗ 錯誤：${data.error || res.status}`;
-      statusEl.className = 'text-sm text-red-500';
+      _setStatus(`✗ 錯誤：${data.error || res.status}`, 'text-red-500');
     }
   } catch (e) {
-    statusEl.textContent = `✗ 網路錯誤：${e.message}`;
-    statusEl.className = 'text-sm text-red-500';
+    _setStatus(`✗ 網路錯誤：${e.message}`, 'text-red-500');
   } finally {
-    btn.disabled = false;
+    _lockAllBtns(false);
   }
 }
 

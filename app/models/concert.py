@@ -19,6 +19,7 @@ class Concert(db.Model):
     crawler_hash      = db.Column(db.String(64),  nullable=True, unique=True, index=True)
     scheduler_enabled = db.Column(db.Boolean,     nullable=True, default=False)
     last_success_at   = db.Column(db.DateTime,    nullable=True)
+    source_url        = db.Column(db.String(500), nullable=True)
 
     metrics      = db.relationship("ConcertMetrics",      back_populates="concert", uselist=False, cascade="all, delete-orphan")
     opportunities = db.relationship("ConcertOpportunity", back_populates="concert", cascade="all, delete-orphan")

@@ -14,6 +14,7 @@ from app import db
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_log import CrawlLog
 from app.services.crawlers import REGISTRY
+from app.services.crawlers.crawler_manager import run_kktix, run_tixcraft, run_all
 
 crawler_bp = Blueprint("crawler", __name__)
 
@@ -145,3 +146,51 @@ def api_crawler_logs(job_id):
         }
         for l in logs
     ])
+
+
+# ── API: 執行 KKTIX 爬蟲 ─────────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/kktix", methods=["POST"])
+def api_crawler_kktix():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+    try:
+        result = run_kktix()
+        return jsonify(result), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 500
+
+
+# ── API: 執行 TixCraft 爬蟲 ──────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/tixcraft", methods=["POST"])
+def api_crawler_tixcraft():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+    try:
+        result = run_tixcraft()
+        return jsonify(result), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 500
+
+
+# ── API: 全部執行 ─────────────────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/run-all", methods=["POST"])
+def api_crawler_run_all():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+    try:
+        results = run_all()
+        total_created = sum(r.get("created", 0) for r in results)
+        total_updated = sum(r.get("updated", 0) for r in results)
+        return jsonify({
+            "results":       results,
+            "total_created": total_created,
+            "total_updated": total_updated,
+        }), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 500

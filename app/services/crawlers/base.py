@@ -72,6 +72,8 @@ class BaseCrawler(ABC):
                     existing.concert_date = rec.get("concert_date", existing.concert_date)
                     existing.city         = rec.get("city",   existing.city)
                     existing.venue        = rec.get("venue",  existing.venue)
+                    if rec.get("source_url"):
+                        existing.source_url = rec["source_url"]
                     existing.updated_at   = datetime.utcnow()
                     updated += 1
                     self._log("INFO", f"[UPDATE] {rec.get('artist')} — {rec.get('name')}")
@@ -82,6 +84,7 @@ class BaseCrawler(ABC):
                         concert_date = rec.get("concert_date"),
                         city         = rec.get("city"),
                         venue        = rec.get("venue"),
+                        source_url   = rec.get("source_url"),
                         status       = rec.get("status", "評估中"),
                         crawler_hash = h,
                         created_at   = datetime.utcnow(),

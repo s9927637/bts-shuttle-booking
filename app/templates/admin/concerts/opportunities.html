@@ -1,0 +1,101 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}商機分析{% endblock %}
+{% block page_title %}商機分析{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <p class="text-sm text-gray-500">依商機分數排序，分析各演唱會的乘客潛力與預估營收。（Mock Data）</p>
+
+  {% if analysis %}
+  <!-- 摘要卡片 -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">演唱會總數</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ analysis|length }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">最高商機分數</p>
+      <p class="text-2xl font-bold text-purple-600 mt-1">{{ '%.1f'|format(analysis[0].opportunity_score) }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">預估總乘客</p>
+      <p class="text-2xl font-bold text-blue-600 mt-1">{{ analysis|sum(attribute='est_passengers') }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">預估總營收</p>
+      <p class="text-2xl font-bold text-green-600 mt-1">NT${{ '{:,}'.format(analysis|sum(attribute='est_revenue')) }}</p>
+    </div>
+  </div>
+
+  <!-- 分析列表 -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">排名</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人 / 演唱會</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">日期</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">人氣分數</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">商機分數</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">預估乘客</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">預估營收</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for row in analysis %}
+        {% set rank = loop.index %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3">
+            {% if rank == 1 %}
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400 text-white text-xs font-bold">1</span>
+            {% elif rank == 2 %}
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-400 text-white text-xs font-bold">2</span>
+            {% elif rank == 3 %}
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-400 text-white text-xs font-bold">3</span>
+            {% else %}
+              <span class="text-gray-400 text-xs font-medium px-1.5">{{ rank }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-800">{{ row.concert.artist }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ row.concert.name }}</p>
+          </td>
+          <td class="px-4 py-3 text-gray-600 text-xs">
+            {{ row.concert.concert_date.strftime('%Y-%m-%d') if row.concert.concert_date else '—' }}
+            {% if row.concert.city %}<br><span class="text-gray-400">{{ row.concert.city }}</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-purple-500 rounded-full" style="width:{{ (row.popularity_score / 10 * 100)|int }}%"></div>
+              </div>
+              <span class="text-xs font-semibold text-gray-700">{{ '%.1f'|format(row.popularity_score) }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full" style="width:{{ (row.opportunity_score / 10 * 100)|int }}%"></div>
+              </div>
+              <span class="text-xs font-semibold text-gray-700">{{ '%.1f'|format(row.opportunity_score) }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-right font-medium text-blue-600">{{ row.est_passengers }} 人</td>
+          <td class="px-4 py-3 text-right font-medium text-green-600">NT${{ '{:,}'.format(row.est_revenue) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-gray-400 text-right">※ 以上資料為 Mock Data，僅供參考。實際數據請依市場調查更新。</p>
+
+  {% else %}
+  <div class="bg-white rounded-xl border border-gray-200 py-16 text-center shadow-sm">
+    <p class="text-gray-400 text-sm">尚無演唱會資料，請先至「演唱會列表」新增。</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

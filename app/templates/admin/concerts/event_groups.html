@@ -1,0 +1,145 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}開團管理{% endblock %}
+{% block page_title %}開團管理{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">從演唱會建立活動群組，僅建立活動資料，不產生訂單。</p>
+    <button onclick="document.getElementById('modal-create').classList.remove('hidden')"
+            class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+      ＋ 建立活動群組
+    </button>
+  </div>
+
+  <!-- 列表 -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    {% if groups %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">演唱會</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">出發日期</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">車型</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">座位</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">單價</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for g in groups %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ g.group_name }}</td>
+          <td class="px-4 py-3 text-gray-600 text-xs">
+            <p class="font-medium text-gray-700">{{ g.concert.artist }}</p>
+            <p class="text-gray-400 mt-0.5">{{ g.concert.name }}</p>
+          </td>
+          <td class="px-4 py-3 text-gray-600">{{ g.departure_date.strftime('%Y-%m-%d') if g.departure_date else '—' }}</td>
+          <td class="px-4 py-3 text-gray-600">{{ '九座商旅車' if g.vehicle_type == 'minibus' else 'NX200 包車' }}</td>
+          <td class="px-4 py-3 text-right text-gray-600">{{ g.seat_limit }}</td>
+          <td class="px-4 py-3 text-right text-gray-600">NT${{ '{:,}'.format(g.price_per_person) }}</td>
+          <td class="px-4 py-3">
+            {% set color = {'確認開放':'green','草稿':'gray','已結束':'gray','取消':'red'}.get(g.status, 'gray') %}
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full
+              {% if color == 'green' %}bg-green-100 text-green-700
+              {% elif color == 'red' %}bg-red-100 text-red-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ g.status }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="{{ url_for('concert.event_group_delete', group_id=g.id) }}"
+                  onsubmit="return confirm('確定刪除「{{ g.group_name }}」？')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="text-xs text-red-500 hover:underline">刪除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center">
+      <p class="text-gray-400 text-sm">尚無活動群組。</p>
+      <p class="text-gray-300 text-xs mt-1">點擊右上角「＋ 建立活動群組」開始建立。</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 建立 Modal -->
+<div id="modal-create" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
+    <h3 class="text-base font-semibold text-gray-800 mb-4">建立活動群組</h3>
+    <form method="post" action="{{ url_for('concert.event_group_create') }}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">演唱會 <span class="text-red-400">*</span></label>
+        <select name="concert_id" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+          <option value="">— 選擇演唱會 —</option>
+          {% for c in concerts %}
+          <option value="{{ c.id }}">{{ c.artist }} ─ {{ c.name }}{% if c.concert_date %} ({{ c.concert_date.strftime('%Y-%m-%d') }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">活動名稱 <span class="text-red-400">*</span></label>
+        <input type="text" name="group_name" required placeholder="例：BTS 2026 台北場 第一梯"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">出發日期</label>
+          <input type="date" name="departure_date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">車型</label>
+          <select name="vehicle_type" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+            <option value="minibus">九座商旅車</option>
+            <option value="nx200">NX200 包車</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">座位數</label>
+          <input type="number" name="seat_limit" value="8" min="1" max="50"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">單價 (NT$)</label>
+          <input type="number" name="price_per_person" value="2000" min="0"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">狀態</label>
+          <select name="status" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+            {% for s in ['草稿','確認開放','已結束','取消'] %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
+        <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none"></textarea>
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <button type="button" onclick="document.getElementById('modal-create').classList.add('hidden')"
+                class="px-4 py-2 text-sm text-gray-500 hover:text-gray-800">取消</button>
+        <button type="submit"
+                class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">建立</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}活動列表{% endblock %}
+{% block page_title %}活動管理{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+
+  <!-- 頂部操作列 -->
+  <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+    <form method="get" class="flex gap-2 flex-1">
+      <input type="text" name="q" value="{{ q }}"
+             placeholder="搜尋活動名稱或藝人…"
+             class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 transition-colors">
+        搜尋
+      </button>
+      {% if q %}
+      <a href="{{ url_for('event_page.ep_list') }}"
+         class="px-4 py-2 text-sm text-gray-500 hover:text-gray-800 rounded-lg border border-gray-300 transition-colors">
+        清除
+      </a>
+      {% endif %}
+    </form>
+    <a href="{{ url_for('event_page.ep_create') }}"
+       class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+      ＋ 建立活動
+    </a>
+  </div>
+
+  <!-- 統計小卡 -->
+  <div class="grid grid-cols-3 gap-4">
+    {% set total     = pages|length %}
+    {% set published = pages|selectattr('status','equalto','已發布')|list|length %}
+    {% set draft     = pages|rejectattr('status','equalto','已發布')|list|length %}
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">活動總數</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ total }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">已發布</p>
+      <p class="text-2xl font-bold text-green-600 mt-1">{{ published }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">草稿 / 其他</p>
+      <p class="text-2xl font-bold text-gray-400 mt-1">{{ draft }}</p>
+    </div>
+  </div>
+
+  <!-- 列表 -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    {% if pages %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">日期 / 城市</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">票價</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">前台網址</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for p in pages %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-800">{{ p.title }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ p.event_name }}</p>
+          </td>
+          <td class="px-4 py-3 text-gray-700">{{ p.artist_name }}</td>
+          <td class="px-4 py-3 text-xs text-gray-600">
+            {{ p.event_date or '—' }}
+            {% if p.departure_city %}<br><span class="text-gray-400">出發：{{ p.departure_city }}</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-gray-700">
+            NT${{ '{:,}'.format(p.price or 0) }}<br>
+            <span class="text-xs text-gray-400">訂金 NT${{ '{:,}'.format(p.deposit or 0) }}</span>
+          </td>
+          <td class="px-4 py-3">
+            {% if p.status == '已發布' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">已發布</span>
+            {% elif p.status == '草稿' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">草稿</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">{{ p.status }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <a href="/events/{{ p.slug }}" target="_blank"
+               class="text-xs text-purple-500 hover:underline font-mono">/events/{{ p.slug }}</a>
+          </td>
+          <td class="px-4 py-3 text-right space-x-3">
+            <a href="{{ url_for('event_page.ep_edit', ep_id=p.id) }}"
+               class="text-xs text-blue-600 hover:underline">編輯</a>
+            <form method="post" action="{{ url_for('event_page.ep_delete', ep_id=p.id) }}"
+                  class="inline" onsubmit="return confirm('確定刪除「{{ p.title }}」？刪除後可至資料庫還原。')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="text-xs text-red-500 hover:underline">刪除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center">
+      <p class="text-gray-400 text-sm">尚無活動資料。</p>
+      <a href="{{ url_for('event_page.ep_create') }}"
+         class="inline-block mt-3 text-sm text-purple-600 hover:underline">建立第一個活動 →</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}{{ '編輯活動' if mode == 'edit' else '建立活動' }}{% endblock %}
+{% block page_title %}{{ '編輯活動' if mode == 'edit' else '建立活動' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <div class="mb-5">
+    <a href="{{ url_for('event_page.ep_list') }}"
+       class="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      返回活動列表
+    </a>
+  </div>
+
+  <form method="post"
+        action="{{ url_for('event_page.ep_edit', ep_id=page.id) if mode == 'edit' else url_for('event_page.ep_create') }}"
+        class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <!-- ── 基本資訊 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">基本資訊</h3>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">藝人名稱 <span class="text-red-400">*</span></label>
+          <input type="text" name="artist_name" required
+                 value="{{ page.artist_name if page else '' }}"
+                 placeholder="例：BTS、藤井風、BLACKPINK"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          <p class="text-xs text-gray-400 mt-1">用於自動產生 URL slug（英文效果最佳）</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">狀態</label>
+          <select name="status"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+            {% for s in ['草稿', '已發布', '已結束', '取消'] %}
+            <option value="{{ s }}" {% if page and page.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">活動名稱 <span class="text-red-400">*</span></label>
+        <input type="text" name="event_name" required
+               value="{{ page.event_name if page else '' }}"
+               placeholder="例：BTS WORLD TOUR 'MAP OF THE SOUL' — KOREA"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">頁面標題</label>
+        <input type="text" name="title"
+               value="{{ page.title if page else '' }}"
+               placeholder="留空則自動產生，例：BTS 高雄演唱會包車預約"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">活動日期</label>
+          <input type="text" name="event_date"
+                 value="{{ page.event_date if page else '' }}"
+                 placeholder="例：11/19・11/21・11/22"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          <p class="text-xs text-gray-400 mt-1">可輸入多場次文字</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">出發城市</label>
+          <input type="text" name="departure_city"
+                 value="{{ page.departure_city if page else '' }}"
+                 placeholder="例：高雄、台北"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          <p class="text-xs text-gray-400 mt-1">用於自動產生 slug（高雄→kaohsiung）</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 定價 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">定價</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">票價（NT$）</label>
+          <input type="number" name="price" min="0"
+                 value="{{ page.price if page else 2000 }}"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">訂金（NT$）</label>
+          <input type="number" name="deposit" min="0"
+                 value="{{ page.deposit if page else 300 }}"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 視覺 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">主視覺</h3>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">封面圖片 URL</label>
+        <input type="url" name="cover_image"
+               value="{{ page.cover_image if page else '' }}"
+               placeholder="https://..."
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        {% if page and page.cover_image %}
+        <div class="mt-2">
+          <img src="{{ page.cover_image }}" alt="封面預覽"
+               class="h-24 rounded-lg object-cover border border-gray-200" />
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── 活動介紹 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">活動介紹</h3>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">描述</label>
+        <textarea name="description" rows="5"
+                  placeholder="活動說明、包車服務說明等..."
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y">{{ page.description if page else '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ── FAQ ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">常見問題（FAQ）</h3>
+      <div>
+        <textarea name="faq_content" rows="8"
+                  placeholder="Q: 集合地點在哪？&#10;A: 台北車站&#10;&#10;Q: 包含來回嗎？&#10;A: 是的..."
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y font-mono">{{ page.faq_content if page else '' }}</textarea>
+        <p class="text-xs text-gray-400 mt-1">格式：每行 Q: 問題 / A: 答案，前台自動解析顯示</p>
+      </div>
+    </div>
+
+    <!-- ── 訂購須知 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">訂購須知</h3>
+      <div>
+        <textarea name="terms_content" rows="6"
+                  placeholder="1. 預約後請於 48 小時內完成訂金匯款...&#10;2. ..."
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y">{{ page.terms_content if page else '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- ── 關聯（選填） ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">關聯設定（選填）</h3>
+      <p class="text-xs text-gray-400">預留欄位，供未來接入演唱會資料中心與開團管理系統使用。</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">演唱會</label>
+          <select name="concert_id"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+            <option value="">— 不關聯 —</option>
+            {% for c in concerts %}
+            <option value="{{ c.id }}" {% if page and page.concert_id == c.id %}selected{% endif %}>
+              {{ c.artist }} ─ {{ c.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">開團群組</label>
+          <select name="event_group_id"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+            <option value="">— 不關聯 —</option>
+            {% for g in event_groups %}
+            <option value="{{ g.id }}" {% if page and page.event_group_id == g.id %}selected{% endif %}>
+              {{ g.group_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {% if mode == 'edit' and page %}
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-gray-500 space-y-1">
+      <p>Slug：<span class="font-mono text-gray-700">{{ page.slug }}</span>
+         → <a href="/events/{{ page.slug }}" target="_blank"
+              class="text-purple-500 hover:underline">/events/{{ page.slug }}</a></p>
+      <p>建立：{{ page.created_at.strftime('%Y-%m-%d %H:%M') if page.created_at else '—' }}</p>
+      <p>更新：{{ page.updated_at.strftime('%Y-%m-%d %H:%M') if page.updated_at else '—' }}</p>
+    </div>
+    {% endif %}
+
+    <!-- 操作按鈕 -->
+    <div class="flex gap-3 justify-end">
+      <a href="{{ url_for('event_page.ep_list') }}"
+         class="px-5 py-2.5 text-sm text-gray-500 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors">
+        取消
+      </a>
+      <button type="submit"
+              class="px-5 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+        {{ '儲存變更' if mode == 'edit' else '建立活動' }}
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

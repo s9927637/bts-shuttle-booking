@@ -184,42 +184,94 @@
   </div>
 </div>
 
-<!-- ── 熱門活動排行 ── -->
-{% if hot_events %}
-<div class="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-  <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-    <h2 class="text-sm font-semibold text-gray-900">熱門活動排行</h2>
-    <a href="{{ url_for('event_page.event_statistics') }}"
-       class="text-xs text-purple-600 hover:underline">查看完整統計 →</a>
+{% if hot_events or revenue_events %}
+<div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- ── 活動排行榜（訂單數）── -->
+  {% if hot_events %}
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900">活動排行榜</h2>
+      <a href="{{ url_for('event_page.event_statistics') }}"
+         class="text-xs text-purple-600 hover:underline">完整統計 →</a>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-left">#</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-left">活動</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-center">訂單</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-center">成團率</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-right"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for row in hot_events %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 text-gray-400 font-bold text-sm">{{ loop.index }}</td>
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-900 text-xs">{{ row.ep.title }}</p>
+            <p class="text-xs text-gray-400">{{ row.ep.artist_name }}</p>
+          </td>
+          <td class="px-4 py-3 text-center font-semibold text-gray-800">{{ row.m.booking_count }}</td>
+          <td class="px-4 py-3 text-center text-xs font-semibold
+            {% if row.m.completion_rate >= 70 %}text-green-600{% elif row.m.completion_rate >= 40 %}text-amber-600{% else %}text-gray-400{% endif %}">
+            {{ row.m.completion_rate }}%
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{{ url_for('event_page.event_detail', ep_id=row.ep.id) }}"
+               class="text-xs text-purple-600 hover:underline">→</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-left">排名</th>
-        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-left">活動名稱</th>
-        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">訂單數</th>
-        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">已付款</th>
-        <th class="px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-right">操作</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-50">
-      {% for row in hot_events %}
-      <tr class="hover:bg-gray-50 transition-colors">
-        <td class="px-6 py-3 text-gray-400 font-bold">{{ loop.index }}</td>
-        <td class="px-6 py-3">
-          <p class="font-medium text-gray-900">{{ row.ep.title }}</p>
-          <p class="text-xs text-gray-400">{{ row.ep.artist_name }}{% if row.ep.event_date %} · {{ row.ep.event_date }}{% endif %}</p>
-        </td>
-        <td class="px-6 py-3 text-center font-semibold text-gray-800">{{ row.order_count }}</td>
-        <td class="px-6 py-3 text-center text-green-600 font-semibold">{{ row.paid_count }}</td>
-        <td class="px-6 py-3 text-right">
-          <a href="{{ url_for('event_page.event_detail', ep_id=row.ep.id) }}"
-             class="text-xs text-purple-600 hover:underline">詳細 →</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% endif %}
+
+  <!-- ── 營收排行榜（revenue_amount）── -->
+  {% if revenue_events %}
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900">營收排行榜</h2>
+      <a href="{{ url_for('event_page.event_statistics') }}"
+         class="text-xs text-purple-600 hover:underline">完整統計 →</a>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-left">#</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-left">活動</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-right">訂金收入</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-right">完成營收</th>
+          <th class="px-4 py-2.5 text-xs font-medium text-gray-400 text-right"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for row in revenue_events %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 text-gray-400 font-bold text-sm">{{ loop.index }}</td>
+          <td class="px-4 py-3">
+            <p class="font-medium text-gray-900 text-xs">{{ row.ep.title }}</p>
+            <p class="text-xs text-gray-400">{{ row.ep.artist_name }}</p>
+          </td>
+          <td class="px-4 py-3 text-right text-xs text-purple-600 font-semibold">
+            NT${{ '{:,}'.format(row.m.deposit_amount) }}
+          </td>
+          <td class="px-4 py-3 text-right text-xs font-bold text-gray-800">
+            NT${{ '{:,}'.format(row.m.revenue_amount) }}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{{ url_for('event_page.event_detail', ep_id=row.ep.id) }}"
+               class="text-xs text-purple-600 hover:underline">→</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
 </div>
 {% endif %}
 

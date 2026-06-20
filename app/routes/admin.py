@@ -90,21 +90,23 @@ def dashboard():
 
     recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
 
-    # 熱門活動排行（依訂單數排序，最多 5 筆）
+    # 熱門活動排行 + 營收排行（從 event_metrics 讀取，效率高）
     from app.models.event_page import EventPage
-    event_pages_all = EventPage.query.filter(EventPage.deleted_at.is_(None)).all()
+    from app.models.event_metrics import EventMetrics
+    metrics_all = (
+        EventMetrics.query
+        .join(EventPage, EventMetrics.event_page_id == EventPage.id)
+        .filter(EventPage.deleted_at.is_(None))
+        .all()
+    )
     hot_events = sorted(
-        [
-            {
-                "ep":           ep,
-                "order_count":  ep.orders.count(),
-                "paid_count":   ep.orders.filter(
-                    Order.payment_status.in_(["訂金已確認", "已完成"])
-                ).count(),
-            }
-            for ep in event_pages_all
-        ],
-        key=lambda x: x["order_count"],
+        [{"ep": m.event_page, "m": m} for m in metrics_all],
+        key=lambda x: x["m"].booking_count,
+        reverse=True,
+    )[:5]
+    revenue_events = sorted(
+        [{"ep": m.event_page, "m": m} for m in metrics_all],
+        key=lambda x: x["m"].revenue_amount,
         reverse=True,
     )[:5]
 
@@ -133,6 +135,7 @@ def dashboard():
         },
         recent_orders=recent_orders,
         hot_events=hot_events,
+        revenue_events=revenue_events,
     )
 
 
@@ -243,6 +246,14 @@ def order_create():
             db.session.add(payment)
 
         db.session.commit()
+        # 活動統計更新
+        if order.event_page_id:
+            try:
+                from app.services.event_metrics_service import refresh_metrics
+                refresh_metrics(order.event_page_id)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         flash("訂單已新增", "success")
     except Exception as e:
         db.session.rollback()
@@ -297,6 +308,14 @@ def order_edit(order_id):
             current_admin = Admin.query.get(session.get("admin_id"))
             admin_name = (current_admin.display_name or current_admin.username) if current_admin else "管理員"
             notify_deposit_confirmed(order, admin_name)
+        # 活動統計更新
+        if order.event_page_id:
+            try:
+                from app.services.event_metrics_service import refresh_metrics
+                refresh_metrics(order.event_page_id)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         flash("訂單已更新", "success")
     except Exception as e:
         db.session.rollback()
@@ -422,6 +441,14 @@ def payment_update_status(payment_id):
         db.session.commit()
         if confirmed_order:
             notify_deposit_confirmed(confirmed_order, admin_name)
+            # 活動統計更新
+            if confirmed_order.event_page_id:
+                try:
+                    from app.services.event_metrics_service import refresh_metrics
+                    refresh_metrics(confirmed_order.event_page_id)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
         flash("付款狀態已更新", "success")
     except Exception as e:
         db.session.rollback()

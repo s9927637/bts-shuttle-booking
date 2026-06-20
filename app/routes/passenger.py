@@ -285,6 +285,15 @@ def booking_submit():
 
         db.session.commit()
 
+        # 活動統計更新（失敗不影響主流程）
+        if order.event_page_id:
+            try:
+                from app.services.event_metrics_service import refresh_metrics
+                refresh_metrics(order.event_page_id)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
         # LINE 通知（commit 成功後送出，失敗不影響主流程）
         notify_new_order(order)
         if vehicle_type == "nx200":

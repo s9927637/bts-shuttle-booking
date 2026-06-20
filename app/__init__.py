@@ -24,6 +24,7 @@ from app.models.audit_log import AuditLog
 from app.models.coupon import Coupon
 from app.models.concert import Concert, ConcertMetrics, ConcertOpportunity, EventGroup
 from app.models.event_page import EventPage
+from app.models.event_metrics import EventMetrics
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_log import CrawlLog
 

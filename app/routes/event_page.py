@@ -215,6 +215,10 @@ def event_show(slug):
     if ep.status != "已發布":
         if not session.get("admin_id"):
             abort(404)
+    # 計頁數（僅已發布的前台訪問，管理員預覽不計）
+    if ep.status == "已發布" and not session.get("admin_id"):
+        from app.services.event_metrics_service import increment_page_views
+        increment_page_views(ep.id)
     return render_template("passenger/event_template.html", ep=ep)
 
 
@@ -226,8 +230,8 @@ def event_statistics():
     if guard:
         return guard
 
-    from app.models.order import Order
-    from sqlalchemy import func
+    from app.models.event_metrics import EventMetrics
+    from app.services.event_metrics_service import backfill_event_metrics
 
     event_pages = (
         EventPage.query
@@ -236,22 +240,17 @@ def event_statistics():
         .all()
     )
 
+    # 確保所有活動都有 metrics 列
+    ep_ids_with_metrics = {m.event_page_id for m in EventMetrics.query.all()}
+    needs_backfill = any(ep.id not in ep_ids_with_metrics for ep in event_pages)
+    if needs_backfill:
+        backfill_event_metrics()
+
+    # 重新查詢（backfill 後 metrics 可能剛建立）
     stats = []
     for ep in event_pages:
-        orders = ep.orders.all()
-        total_orders   = len(orders)
-        paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-        unpaid_orders  = total_orders - paid_orders
-        deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-        revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
-        stats.append({
-            "ep":            ep,
-            "total_orders":  total_orders,
-            "paid_orders":   paid_orders,
-            "unpaid_orders": unpaid_orders,
-            "deposit_total": deposit_total,
-            "revenue_total": revenue_total,
-        })
+        m = ep.metrics  # relationship backref
+        stats.append({"ep": ep, "m": m})
 
     return render_template("admin/event_pages/statistics.html", stats=stats)
 
@@ -265,23 +264,24 @@ def event_detail(ep_id):
         return guard
 
     from app.models.order import Order
+    from app.models.event_metrics import EventMetrics
+    from app.services.event_metrics_service import refresh_metrics
 
     ep = EventPage.query.get_or_404(ep_id)
     orders = ep.orders.order_by(Order.created_at.desc()).all()
 
-    total_orders   = len(orders)
-    paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-    deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-    revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
+    # 確保 metrics 存在並為最新
+    m = ep.metrics
+    if m is None:
+        refresh_metrics(ep.id)
+        db.session.commit()
+        m = ep.metrics
 
     return render_template(
         "admin/event_pages/detail.html",
         ep=ep,
         orders=orders,
-        total_orders=total_orders,
-        paid_orders=paid_orders,
-        deposit_total=deposit_total,
-        revenue_total=revenue_total,
+        m=m,
     )
 
 
@@ -317,30 +317,69 @@ def api_event_orders(ep_id):
     })
 
 
-# ── API：活動統計 GET /api/events/<id>/statistics ────────────────────────────
+# ── API：單一活動統計 GET /api/events/<id>/statistics ───────────────────────
 
 @event_page_bp.route("/api/events/<int:ep_id>/statistics")
 def api_event_statistics(ep_id):
     if not session.get("admin_id"):
         return jsonify({"error": "未登入"}), 401
 
-    from app.models.order import Order
+    from app.models.event_metrics import EventMetrics
+    from app.services.event_metrics_service import refresh_metrics
 
     ep = EventPage.query.get_or_404(ep_id)
-    orders = ep.orders.all()
-
-    total_orders   = len(orders)
-    paid_orders    = sum(1 for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-    deposit_total  = sum(o.deposit_amount for o in orders if o.payment_status in ("訂金已確認", "已完成"))
-    revenue_total  = sum(o.total_amount   for o in orders if o.payment_status == "已完成")
+    m  = ep.metrics
+    if m is None:
+        refresh_metrics(ep.id)
+        db.session.commit()
+        m = ep.metrics
 
     return jsonify({
-        "event_id":      ep.id,
-        "event_title":   ep.title,
-        "artist_name":   ep.artist_name,
-        "total_orders":  total_orders,
-        "paid_orders":   paid_orders,
-        "unpaid_orders": total_orders - paid_orders,
-        "deposit_total": deposit_total,
-        "revenue_total": revenue_total,
+        "event_id":       ep.id,
+        "event_title":    ep.title,
+        "artist_name":    ep.artist_name,
+        "bookings":       m.booking_count   if m else 0,
+        "paid":           m.paid_count      if m else 0,
+        "unpaid":         m.unpaid_count    if m else 0,
+        "cancelled":      m.cancelled_count if m else 0,
+        "passengers":     m.passenger_count if m else 0,
+        "deposit_total":  m.deposit_amount  if m else 0,
+        "revenue":        m.revenue_amount  if m else 0,
+        "completion_rate": float(m.completion_rate) if m else 0,
+        "page_views":     m.page_views      if m else 0,
     })
+
+
+# ── API：全部活動統計 GET /api/events/statistics ─────────────────────────────
+
+@event_page_bp.route("/api/events/statistics")
+def api_events_statistics_all():
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    from app.models.event_metrics import EventMetrics
+
+    event_pages = (
+        EventPage.query
+        .filter(EventPage.deleted_at.is_(None))
+        .order_by(EventPage.created_at.desc())
+        .all()
+    )
+
+    result = []
+    for ep in event_pages:
+        m = ep.metrics
+        result.append({
+            "event_id":       ep.id,
+            "event_title":    ep.title,
+            "artist_name":    ep.artist_name,
+            "slug":           ep.slug,
+            "bookings":       m.booking_count   if m else 0,
+            "paid":           m.paid_count      if m else 0,
+            "passengers":     m.passenger_count if m else 0,
+            "revenue":        m.revenue_amount  if m else 0,
+            "completion_rate": float(m.completion_rate) if m else 0,
+            "page_views":     m.page_views      if m else 0,
+        })
+
+    return jsonify({"events": result, "total": len(result)})

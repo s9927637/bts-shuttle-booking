@@ -47,30 +47,84 @@
     </div>
   </div>
 
-  <!-- 統計卡片 -->
+  <!-- 統計區塊（來自 event_metrics）-->
+  {% if m %}
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">總瀏覽數</p>
+      <p class="text-2xl font-bold text-gray-700">{{ m.page_views }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <p class="text-xs text-gray-400 mb-1">總訂單數</p>
-      <p class="text-2xl font-bold text-gray-900">{{ total_orders }}</p>
+      <p class="text-2xl font-bold text-gray-900">{{ m.booking_count }}</p>
     </div>
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <p class="text-xs text-gray-400 mb-1">已付款</p>
-      <p class="text-2xl font-bold text-green-600">{{ paid_orders }}</p>
+      <p class="text-2xl font-bold text-green-600">{{ m.paid_count }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">乘客數</p>
+      <p class="text-2xl font-bold text-gray-800">{{ m.passenger_count }}</p>
     </div>
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <p class="text-xs text-gray-400 mb-1">訂金總額</p>
-      <p class="text-2xl font-bold text-purple-600">NT${{ '{:,}'.format(deposit_total) }}</p>
+      <p class="text-2xl font-bold text-purple-600">NT${{ '{:,}'.format(m.deposit_amount) }}</p>
     </div>
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <p class="text-xs text-gray-400 mb-1">完成營收</p>
-      <p class="text-2xl font-bold text-gray-900">NT${{ '{:,}'.format(revenue_total) }}</p>
+      <p class="text-2xl font-bold text-gray-900">NT${{ '{:,}'.format(m.revenue_amount) }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">成團率（付款率）</p>
+      <p class="text-2xl font-bold {% if m.completion_rate >= 70 %}text-green-600{% elif m.completion_rate >= 40 %}text-amber-600{% else %}text-red-500{% endif %}">
+        {{ m.completion_rate }}%
+      </p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">平均客單價</p>
+      <p class="text-2xl font-bold text-gray-800">
+        {% if m.avg_order_value > 0 %}NT${{ '{:,}'.format(m.avg_order_value) }}{% else %}—{% endif %}
+      </p>
     </div>
   </div>
+
+  <!-- 轉換分析小卡 -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-700 mb-4">轉換分析</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div>
+        <p class="text-xs text-gray-400 mb-1">瀏覽→訂單轉換率</p>
+        {% if m.page_views > 0 %}
+        {% set browse_conv = (m.booking_count / m.page_views * 100) | round(1) %}
+        <p class="text-lg font-bold text-gray-800">{{ browse_conv }}%</p>
+        <p class="text-xs text-gray-400 mt-0.5">{{ m.booking_count }} 訂單 / {{ m.page_views }} 瀏覽</p>
+        {% else %}
+        <p class="text-lg font-bold text-gray-300">—</p>
+        <p class="text-xs text-gray-400 mt-0.5">尚無瀏覽數據</p>
+        {% endif %}
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 mb-1">訂單→付款轉換率</p>
+        <p class="text-lg font-bold {% if m.completion_rate >= 70 %}text-green-600{% elif m.completion_rate >= 40 %}text-amber-600{% else %}text-red-500{% endif %}">
+          {{ m.completion_rate }}%
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">{{ m.paid_count }} 已付 / {{ m.booking_count }} 訂單</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 mb-1">未付款訂單</p>
+        <p class="text-lg font-bold {% if m.unpaid_count > 0 %}text-amber-600{% else %}text-gray-300{% endif %}">
+          {{ m.unpaid_count }}
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">{% if m.cancelled_count > 0 %}已取消 {{ m.cancelled_count }} 筆{% else %}無取消訂單{% endif %}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- 訂單列表 -->
   <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
     <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-      <h3 class="text-sm font-semibold text-gray-700">訂單列表（{{ total_orders }} 筆）</h3>
+      <h3 class="text-sm font-semibold text-gray-700">訂單列表（{{ orders|length }} 筆）</h3>
       <a href="{{ url_for('admin.orders') }}?event_filter={{ ep.id }}"
          class="text-xs text-purple-600 hover:underline">在訂單管理查看 →</a>
     </div>
@@ -103,6 +157,8 @@
               <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">訂金已確認</span>
             {% elif o.payment_status == '待確認' %}
               <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">待確認</span>
+            {% elif o.payment_status == '已取消' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">已取消</span>
             {% else %}
               <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ o.payment_status }}</span>
             {% endif %}

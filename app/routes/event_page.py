@@ -15,6 +15,26 @@ from app.models.concert import Concert, EventGroup
 
 event_page_bp = Blueprint("event_page", __name__)
 
+# ── 藝人 slug 對照表 ─────────────────────────────────────────────────────────
+_ARTIST_SLUG = {
+    "BTS": "bts", "防彈少年團": "bts",
+    "BLACKPINK": "blackpink", "블랙핑크": "blackpink",
+    "TWICE": "twice", "트와이스": "twice",
+    "aespa": "aespa", "에스파": "aespa",
+    "IVE": "ive", "아이브": "ive",
+    "SEVENTEEN": "seventeen", "세븐틴": "seventeen",
+    "藤井風": "fujii-kaze",
+    "Mr.Children": "mr-children", "Mr.children": "mr-children",
+    "RADWIMPS": "radwimps",
+    "ONE OK ROCK": "one-ok-rock",
+    "LE SSERAFIM": "le-sserafim",
+    "NewJeans": "newjeans",
+    "stayc": "stayc", "STAYC": "stayc",
+    "EXO": "exo", "NCT": "nct", "NCT 127": "nct-127",
+    "SuperM": "superm", "SHINee": "shinee",
+    "GOT7": "got7", "2PM": "2pm",
+}
+
 # ── 城市 slug 對照表 ─────────────────────────────────────────────────────────
 _CITY_SLUG = {
     "高雄": "kaohsiung", "台北": "taipei", "臺北": "taipei",
@@ -31,8 +51,8 @@ def _make_slug(artist_name: str, departure_city: str = "") -> str:
     從藝人名稱 + 出發城市產生 URL-safe slug。
     例：'BTS', '高雄' → 'bts-kaohsiung'
     """
-    # 取藝人名稱：去空白、轉小寫、去除非 ASCII 英數
-    artist_part = re.sub(r"[^a-z0-9]+", "-", artist_name.strip().lower()).strip("-")
+    # 藝人 slug：先查對照表，再 fallback 到 regex
+    artist_part = _ARTIST_SLUG.get(artist_name.strip()) or re.sub(r"[^a-z0-9]+", "-", artist_name.strip().lower()).strip("-")
 
     # 城市轉 slug
     city_part = _CITY_SLUG.get(departure_city.strip(), "")

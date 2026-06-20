@@ -201,6 +201,16 @@
       <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">活動統計</span>
     </a>
 
+    <a href="{{ url_for('group.recommended_groups') }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+              {% if '/admin/recommended-groups' in request.path or '/admin/event-templates' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"
+       title="推薦開團">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">推薦開團</span>
+    </a>
+
     <!-- ─ 演唱會中心 ─ -->
     <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">演唱會中心</p>
 

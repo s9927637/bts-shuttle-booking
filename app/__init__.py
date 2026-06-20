@@ -27,6 +27,8 @@ from app.models.event_page import EventPage
 from app.models.event_metrics import EventMetrics
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_log import CrawlLog
+from app.models.event_template import EventTemplate
+from app.models.group_creation_job import GroupCreationJob
 
 def create_app():
     app = Flask(__name__)
@@ -54,6 +56,7 @@ def create_app():
     from app.routes.concert import concert_bp
     from app.routes.event_page import event_page_bp
     from app.routes.crawler import crawler_bp
+    from app.routes.group_creation import group_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -64,6 +67,7 @@ def create_app():
     app.register_blueprint(concert_bp)
     app.register_blueprint(event_page_bp)
     app.register_blueprint(crawler_bp)
+    app.register_blueprint(group_bp)
 
     import logging
     from flask import render_template as _rt

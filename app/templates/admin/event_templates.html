@@ -1,0 +1,99 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}價格模板{% endblock %}
+{% block page_title %}價格模板管理{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">設定不同出發城市的票價模板，開團時可快速套用。</p>
+    <a href="{{ url_for('group.recommended_groups') }}" class="text-sm text-purple-600 hover:underline">← 推薦開團</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}
+  <div class="px-4 py-3 rounded-lg text-sm font-medium
+    {% if cat == 'error' %}bg-red-50 text-red-700 border border-red-200
+    {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">{{ msg }}</div>
+  {% endfor %}{% endif %}
+  {% endwith %}
+
+  <!-- 新增表單 -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-700 mb-4">新增模板</h3>
+    <form method="POST" class="grid grid-cols-2 gap-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">模板名稱 *</label>
+        <input type="text" name="template_name" required placeholder="例：台北→高雄"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">出發城市</label>
+        <input type="text" name="departure_city" placeholder="例：台北"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">票價（NT$）</label>
+        <input type="number" name="price" value="2000" min="0" required
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">訂金（NT$）</label>
+        <input type="number" name="deposit" value="300" min="0" required
+               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+      </div>
+      <div class="col-span-2 flex justify-end">
+        <button type="submit"
+                class="px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+          新增模板
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 現有模板 -->
+  {% if templates %}
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-700">現有模板（{{ templates|length }} 個）</h3>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">模板名稱</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">出發城市</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">票價</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">訂金</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">尾款</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for t in templates %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ t.template_name }}</td>
+          <td class="px-4 py-3 text-center text-gray-600">{{ t.departure_city or '—' }}</td>
+          <td class="px-4 py-3 text-right text-gray-700">NT${{ '{:,}'.format(t.price) }}</td>
+          <td class="px-4 py-3 text-right text-purple-600">NT${{ '{:,}'.format(t.deposit) }}</td>
+          <td class="px-4 py-3 text-right text-gray-500">NT${{ '{:,}'.format(t.balance) }}</td>
+          <td class="px-4 py-3 text-center">
+            <form method="POST" action="{{ url_for('group.template_delete', t_id=t.id) }}"
+                  onsubmit="return confirm('確定刪除模板「{{ t.template_name }}」？')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="text-xs text-red-500 hover:underline">刪除</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="bg-white border border-gray-200 rounded-xl py-10 text-center shadow-sm">
+    <p class="text-gray-400 text-sm">尚無模板，請新增第一個。</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -110,6 +110,10 @@ def dashboard():
         reverse=True,
     )[:5]
 
+    from app.services.group_creation_service import get_recommended_concerts, count_created_groups
+    recommended_groups  = get_recommended_concerts()[:5]
+    created_groups_count = count_created_groups()
+
     return render_template(
         "admin/dashboard.html",
         stats={
@@ -136,6 +140,8 @@ def dashboard():
         recent_orders=recent_orders,
         hot_events=hot_events,
         revenue_events=revenue_events,
+        recommended_groups=recommended_groups,
+        created_groups_count=created_groups_count,
     )
 
 

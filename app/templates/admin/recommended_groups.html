@@ -1,0 +1,227 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}推薦開團{% endblock %}
+{% block page_title %}推薦開團中心{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">根據商機分析，自動推薦尚未開團的演唱會。</p>
+    <a href="{{ url_for('group.template_list') }}"
+       class="text-sm text-purple-600 hover:underline">管理價格模板 →</a>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for cat, msg in messages %}
+  <div class="px-4 py-3 rounded-lg text-sm font-medium
+    {% if cat == 'error' %}bg-red-50 text-red-700 border border-red-200
+    {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  {% if not recommended %}
+  <div class="bg-white border border-gray-200 rounded-xl py-16 text-center shadow-sm">
+    <p class="text-gray-400 text-sm">目前沒有推薦開團的演唱會。</p>
+    <p class="text-xs text-gray-400 mt-1">可能所有演唱會均已開團，或尚未完成商機分析。</p>
+    <a href="{{ url_for('concert.index') }}" class="inline-block mt-3 text-sm text-purple-600 hover:underline">
+      前往演唱會列表 →
+    </a>
+  </div>
+  {% else %}
+
+  <!-- 推薦列表 -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-700">推薦開團清單（{{ recommended|length }} 場）</h3>
+    </div>
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人 / 活動</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">城市</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">演出日期</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">商機分數</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">預估乘客</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">預估營收</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">最高優先商機</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100" id="rec-table-body">
+        {% for row in recommended %}
+        {% set c = row.concert %}
+        {% set m = row.metrics %}
+        {% set opp = row.top_opportunity %}
+        <tr class="hover:bg-gray-50 transition-colors" id="row-{{ c.id }}">
+          <td class="px-4 py-3">
+            <p class="font-semibold text-gray-800">{{ c.artist }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ c.name }}</p>
+          </td>
+          <td class="px-4 py-3 text-center text-gray-600">{{ c.city or '—' }}</td>
+          <td class="px-4 py-3 text-center text-gray-600">
+            {% if c.concert_date %}{{ c.concert_date.strftime('%Y/%m/%d') }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if m.opportunity_score %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
+              {% if m.opportunity_score >= 80 %}bg-green-100 text-green-700
+              {% elif m.opportunity_score >= 50 %}bg-yellow-100 text-yellow-700
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+              {{ m.opportunity_score | int }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center text-gray-600">{{ m.est_passengers or '—' }}</td>
+          <td class="px-4 py-3 text-right text-gray-700 font-semibold">
+            {% if m.est_revenue %}NT${{ '{:,}'.format(m.est_revenue) }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if opp %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
+              {% if opp.priority == '高' %}bg-red-100 text-red-700
+              {% elif opp.priority == '中' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+              {{ opp.priority }} | {{ opp.category or '未分類' }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            <!-- 模板選擇 + 一鍵開團 -->
+            <div class="flex items-center justify-center gap-2">
+              <select class="template-select text-xs border border-gray-200 rounded px-2 py-1 text-gray-600"
+                      data-concert-id="{{ c.id }}">
+                <option value="">預設模板</option>
+                {% for t in templates %}
+                <option value="{{ t.id }}">{{ t.template_name }}（NT${{ t.price }}）</option>
+                {% endfor %}
+              </select>
+              <button
+                onclick="createGroup({{ c.id }}, this)"
+                data-concert-id="{{ c.id }}"
+                class="px-3 py-1 text-xs font-medium text-white bg-purple-600 rounded hover:bg-purple-700 transition-colors">
+                一鍵開團
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 近期 Job 紀錄 -->
+  {% if recent_jobs %}
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-700">近期開團紀錄</h3>
+      <a href="/api/groups/jobs" target="_blank" class="text-xs text-gray-400 hover:underline">JSON API ↗</a>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">演唱會</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">備註</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">時間</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">活動頁</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for j in recent_jobs %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-700">
+            {% if j.concert %}{{ j.concert.artist }} {{ j.concert.city or '' }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if j.status == 'success' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">成功</span>
+            {% elif j.status == 'duplicate' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">重複</span>
+            {% elif j.status == 'error' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">失敗</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-500">{{ j.status }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-400">{{ j.error_message or '—' }}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">
+            {{ j.created_at.strftime('%m/%d %H:%M') if j.created_at else '—' }}
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if j.event_page_id %}
+            <a href="/admin/events/{{ j.event_page_id }}" class="text-xs text-purple-600 hover:underline">查看</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+async function createGroup(concertId, btn) {
+  const row      = document.getElementById('row-' + concertId);
+  const select   = row.querySelector('.template-select');
+  const templateId = select ? select.value : '';
+
+  btn.disabled   = true;
+  btn.textContent = '建立中…';
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  try {
+    const res = await fetch('/api/groups/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({
+        concert_id:  concertId,
+        template_id: templateId || null,
+      }),
+    });
+    const data = await res.json();
+
+    if (res.status === 201) {
+      btn.textContent = '✓ 已開團';
+      btn.className   = 'px-3 py-1 text-xs font-medium text-white bg-green-600 rounded cursor-default';
+      // 顯示連結
+      const link = document.createElement('a');
+      link.href      = data.url;
+      link.textContent = '查看活動';
+      link.className   = 'px-3 py-1 text-xs font-medium text-purple-600 border border-purple-200 rounded hover:bg-purple-50';
+      btn.parentNode.appendChild(link);
+    } else if (res.status === 409) {
+      btn.textContent = '已存在';
+      btn.className   = 'px-3 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded cursor-default';
+      if (data.url) {
+        const link = document.createElement('a');
+        link.href        = data.url;
+        link.textContent = '查看活動';
+        link.className   = 'px-3 py-1 text-xs font-medium text-purple-600 border border-purple-200 rounded hover:bg-purple-50';
+        btn.parentNode.appendChild(link);
+      }
+    } else {
+      btn.disabled    = false;
+      btn.textContent = '一鍵開團';
+      alert('開團失敗：' + (data.message || data.error || '未知錯誤'));
+    }
+  } catch (e) {
+    btn.disabled    = false;
+    btn.textContent = '一鍵開團';
+    alert('網路錯誤，請稍後再試。');
+  }
+}
+</script>
+{% endblock %}

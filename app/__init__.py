@@ -24,6 +24,8 @@ from app.models.audit_log import AuditLog
 from app.models.coupon import Coupon
 from app.models.concert import Concert, ConcertMetrics, ConcertOpportunity, EventGroup
 from app.models.event_page import EventPage
+from app.models.crawl_job import CrawlJob
+from app.models.crawl_log import CrawlLog
 
 def create_app():
     app = Flask(__name__)
@@ -50,6 +52,7 @@ def create_app():
     from app.routes.line_webhook import line_webhook_bp
     from app.routes.concert import concert_bp
     from app.routes.event_page import event_page_bp
+    from app.routes.crawler import crawler_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -59,6 +62,7 @@ def create_app():
     app.register_blueprint(line_webhook_bp)
     app.register_blueprint(concert_bp)
     app.register_blueprint(event_page_bp)
+    app.register_blueprint(crawler_bp)
 
     import logging
     from flask import render_template as _rt

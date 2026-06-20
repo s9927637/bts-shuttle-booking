@@ -15,6 +15,11 @@ class Concert(db.Model):
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # 爬蟲中心新增欄位（不修改既有欄位）
+    crawler_hash      = db.Column(db.String(64),  nullable=True, unique=True, index=True)
+    scheduler_enabled = db.Column(db.Boolean,     nullable=True, default=False)
+    last_success_at   = db.Column(db.DateTime,    nullable=True)
+
     metrics      = db.relationship("ConcertMetrics",      back_populates="concert", uselist=False, cascade="all, delete-orphan")
     opportunities = db.relationship("ConcertOpportunity", back_populates="concert", cascade="all, delete-orphan")
     event_groups  = db.relationship("EventGroup",         back_populates="concert", cascade="all, delete-orphan")

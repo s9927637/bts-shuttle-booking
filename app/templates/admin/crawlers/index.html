@@ -1,0 +1,208 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}爬蟲管理{% endblock %}
+{% block page_title %}演唱會爬蟲中心{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- ── 執行區 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-700 mb-4">手動執行爬蟲</h3>
+    <div class="flex flex-wrap gap-3 items-center">
+      <select id="source-select"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+        {% for src in sources %}
+        <option value="{{ src }}">{{ src }}</option>
+        {% endfor %}
+      </select>
+      <button id="run-btn" onclick="runCrawler()"
+              class="px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50">
+        ▶ 執行爬蟲
+      </button>
+      <span id="run-status" class="text-sm text-gray-500"></span>
+    </div>
+  </div>
+
+  <!-- ── 統計小卡 ── -->
+  {% set total    = jobs|length %}
+  {% set success  = jobs|selectattr('status','equalto','success')|list|length %}
+  {% set err_jobs = jobs|selectattr('status','equalto','error')|list|length %}
+  {% set running  = jobs|selectattr('status','equalto','running')|list|length %}
+  <div class="grid grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">執行總次數</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ total }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">成功</p>
+      <p class="text-2xl font-bold text-green-600 mt-1">{{ success }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">失敗</p>
+      <p class="text-2xl font-bold text-red-500 mt-1">{{ err_jobs }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs text-gray-500">執行中</p>
+      <p class="text-2xl font-bold text-yellow-500 mt-1">{{ running }}</p>
+    </div>
+  </div>
+
+  <!-- ── Job 列表 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-700">執行記錄（最近 50 筆）</h3>
+      <button onclick="location.reload()" class="text-xs text-gray-400 hover:text-gray-600">重新整理</button>
+    </div>
+    {% if jobs %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">ID</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">來源</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">新增</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">更新</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">錯誤</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">執行時間</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">建立時間</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">Log</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100" id="jobs-tbody">
+        {% for j in jobs %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 text-gray-400 font-mono text-xs">#{{ j.id }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 text-xs font-mono rounded bg-gray-100 text-gray-700">{{ j.source_name }}</span>
+          </td>
+          <td class="px-4 py-3">
+            {% if j.status == 'success' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">成功</span>
+            {% elif j.status == 'error' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-600">失敗</span>
+            {% elif j.status == 'running' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">執行中</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500">{{ j.status }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% if j.created_count > 0 %}
+            <span class="text-green-600 font-medium">+{{ j.created_count }}</span>
+            {% else %}<span class="text-gray-300">0</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% if j.updated_count > 0 %}
+            <span class="text-blue-500 font-medium">{{ j.updated_count }}</span>
+            {% else %}<span class="text-gray-300">0</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% if j.error_count > 0 %}
+            <span class="text-red-500 font-medium">{{ j.error_count }}</span>
+            {% else %}<span class="text-gray-300">0</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500">
+            {% if j.duration_seconds is not none %}{{ j.duration_seconds }}s{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-400">
+            {{ j.created_at.strftime('%m/%d %H:%M') if j.created_at else '—' }}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <button onclick="showLogs({{ j.id }})"
+                    class="text-xs text-purple-500 hover:underline">查看</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center text-gray-400 text-sm">尚無執行記錄，點擊「執行爬蟲」開始。</div>
+    {% endif %}
+  </div>
+
+  <!-- ── Log 面板 ── -->
+  <div id="log-panel" class="hidden bg-gray-900 rounded-xl p-5 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-gray-100">執行 Log <span id="log-job-label" class="text-gray-400 font-mono ml-1"></span></h3>
+      <button onclick="document.getElementById('log-panel').classList.add('hidden')"
+              class="text-xs text-gray-500 hover:text-gray-300">關閉</button>
+    </div>
+    <div id="log-content"
+         class="font-mono text-xs text-gray-300 space-y-1 max-h-80 overflow-y-auto"></div>
+  </div>
+
+</div>
+
+<script>
+const csrfToken = "{{ csrf_token() }}";
+
+async function runCrawler() {
+  const btn = document.getElementById('run-btn');
+  const statusEl = document.getElementById('run-status');
+  const source = document.getElementById('source-select').value;
+
+  btn.disabled = true;
+  statusEl.textContent = '執行中...';
+
+  try {
+    const res = await fetch('/api/crawlers/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ source }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      statusEl.textContent =
+        `✓ 完成 #${data.job_id}｜新增 ${data.created} 更新 ${data.updated} 錯誤 ${data.errors}`;
+      statusEl.className = 'text-sm text-green-600';
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      statusEl.textContent = `✗ 錯誤：${data.error || res.status}`;
+      statusEl.className = 'text-sm text-red-500';
+    }
+  } catch (e) {
+    statusEl.textContent = `✗ 網路錯誤：${e.message}`;
+    statusEl.className = 'text-sm text-red-500';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function showLogs(jobId) {
+  const panel = document.getElementById('log-panel');
+  const label = document.getElementById('log-job-label');
+  const content = document.getElementById('log-content');
+
+  label.textContent = `#${jobId}`;
+  content.innerHTML = '<span class="text-gray-500">載入中...</span>';
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const res = await fetch(`/api/crawlers/logs/${jobId}`);
+  const logs = await res.json();
+
+  if (!logs.length) {
+    content.innerHTML = '<span class="text-gray-500">（無 log 記錄）</span>';
+    return;
+  }
+
+  const colorMap = { INFO: 'text-gray-300', WARNING: 'text-yellow-400', ERROR: 'text-red-400' };
+  content.innerHTML = logs.map(l => {
+    const time = l.created_at ? l.created_at.substring(11, 19) : '';
+    const cls = colorMap[l.level] || 'text-gray-300';
+    return `<div class="${cls}"><span class="text-gray-600">${time}</span> [${l.level}] ${escHtml(l.message)}</div>`;
+  }).join('');
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+</script>
+{% endblock %}

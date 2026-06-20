@@ -1,0 +1,128 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}待開團{% endblock %}
+{% block page_title %}待開團{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-5">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">
+      尚未建立活動頁的演唱會（{{ concerts|length }} 筆）。
+      點擊「建立活動」自動產生前台活動頁並帶入演唱會資料。
+    </p>
+    <a href="{{ url_for('concert.concert_list') }}"
+       class="text-sm text-purple-600 hover:underline">← 演唱會列表</a>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    {% if concerts %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">演唱會名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">日期</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">城市 / 場館</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100" id="pending-tbody">
+        {% for c in concerts %}
+        <tr id="row-{{ c.id }}" class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ c.artist }}</td>
+          <td class="px-4 py-3 text-gray-700 text-xs">{{ c.name }}</td>
+          <td class="px-4 py-3 text-gray-600">
+            {{ c.concert_date.strftime('%Y-%m-%d') if c.concert_date else '—' }}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-600">
+            {{ c.city or '—' }}
+            {% if c.venue %}<br><span class="text-gray-400">{{ c.venue }}</span>{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% set color = {'確認開跑':'green','評估中':'yellow','暫停':'gray','取消':'red'}.get(c.status,'gray') %}
+            <span class="status-badge-{{ c.id }} px-2 py-0.5 text-xs font-medium rounded-full
+              {% if color == 'green' %}bg-green-100 text-green-700
+              {% elif color == 'yellow' %}bg-yellow-100 text-yellow-700
+              {% elif color == 'red' %}bg-red-100 text-red-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ c.status }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <button data-id="{{ c.id }}"
+                    onclick="createEvent({{ c.id }}, this)"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-40">
+              建立活動
+            </button>
+            <span id="result-{{ c.id }}" class="hidden ml-2 text-xs"></span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center">
+      <p class="text-gray-400 text-sm">目前所有演唱會都已建立活動頁。</p>
+      <a href="{{ url_for('concert.active') }}"
+         class="inline-block mt-2 text-sm text-purple-600 hover:underline">查看已開團 →</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+const csrf = "{{ csrf_token() }}";
+
+async function createEvent(concertId, btn) {
+  btn.disabled = true;
+  btn.textContent = '建立中…';
+  const resultEl = document.getElementById(`result-${concertId}`);
+  resultEl.classList.remove('hidden');
+  resultEl.className = 'ml-2 text-xs text-gray-400';
+  resultEl.textContent = '';
+
+  try {
+    const res = await fetch(`/admin/concerts/${concertId}/create-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      resultEl.className = 'ml-2 text-xs text-green-600';
+      resultEl.innerHTML =
+        `✓ 建立成功 — <a href="/events/${data.slug}" target="_blank"
+           class="underline hover:text-green-700">/events/${data.slug}</a>`;
+      btn.textContent = '已建立';
+      btn.className = btn.className.replace('bg-purple-600 hover:bg-purple-700', 'bg-gray-300');
+      // 從待開團列表移除此列（淡出）
+      const row = document.getElementById(`row-${concertId}`);
+      if (row) {
+        row.style.transition = 'opacity 0.6s';
+        setTimeout(() => { row.style.opacity = '0'; }, 1200);
+        setTimeout(() => { row.remove(); }, 1800);
+      }
+    } else if (res.status === 409) {
+      resultEl.className = 'ml-2 text-xs text-yellow-600';
+      resultEl.innerHTML =
+        `已存在 — <a href="/events/${data.slug}" target="_blank"
+           class="underline">/events/${data.slug}</a>`;
+      btn.textContent = '已建立';
+      btn.disabled = true;
+    } else {
+      resultEl.className = 'ml-2 text-xs text-red-500';
+      resultEl.textContent = `✗ 錯誤：${data.error || res.status}`;
+      btn.disabled = false;
+      btn.textContent = '建立活動';
+    }
+  } catch (e) {
+    resultEl.className = 'ml-2 text-xs text-red-500';
+    resultEl.textContent = `✗ 網路錯誤`;
+    btn.disabled = false;
+    btn.textContent = '建立活動';
+  }
+}
+</script>
+{% endblock %}

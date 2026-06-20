@@ -4,10 +4,11 @@ URL prefix: /admin/concerts
 """
 from datetime import date, datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from app import db
 from app.models.concert import Concert, ConcertMetrics, ConcertOpportunity, EventGroup
+from app.models.event_page import EventPage
 
 concert_bp = Blueprint("concert", __name__, url_prefix="/admin/concerts")
 
@@ -221,3 +222,65 @@ def event_group_delete(group_id):
     db.session.commit()
     flash(f"已刪除活動群組「{name}」。", "success")
     return redirect(url_for("concert.event_groups"))
+
+
+# ── 待開團：尚未建立 EventPage 的演唱會 ───────────────────────────────────────
+
+@concert_bp.route("/pending")
+def pending():
+    guard = _require_admin()
+    if guard: return guard
+
+    # 取得有 concert_id 的 EventPage concert_id 集合（未軟刪除）
+    linked_ids = {
+        row[0] for row in
+        db.session.query(EventPage.concert_id)
+        .filter(EventPage.concert_id.isnot(None), EventPage.deleted_at.is_(None))
+        .all()
+    }
+    concerts = (
+        Concert.query
+        .filter(Concert.id.notin_(linked_ids) if linked_ids else db.true())
+        .order_by(Concert.concert_date.asc())
+        .all()
+    )
+    return render_template("admin/concerts/pending.html", concerts=concerts)
+
+
+# ── 已開團：已建立 EventPage 的演唱會 ─────────────────────────────────────────
+
+@concert_bp.route("/active")
+def active():
+    guard = _require_admin()
+    if guard: return guard
+
+    event_pages = (
+        EventPage.query
+        .filter(EventPage.concert_id.isnot(None), EventPage.deleted_at.is_(None))
+        .order_by(EventPage.created_at.desc())
+        .all()
+    )
+    return render_template("admin/concerts/active.html", event_pages=event_pages)
+
+
+# ── API: 一鍵建立 EventPage ───────────────────────────────────────────────────
+
+@concert_bp.route("/<int:concert_id>/create-event", methods=["POST"])
+def api_create_event(concert_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "未登入"}), 401
+
+    concert = Concert.query.get_or_404(concert_id)
+
+    from app.services.event_builder import build_event_from_concert, EventAlreadyExists
+    try:
+        ep = build_event_from_concert(concert)
+        db.session.commit()
+        return jsonify({"success": True, "event_id": ep.id, "slug": ep.slug})
+    except EventAlreadyExists as e:
+        return jsonify({
+            "success": False,
+            "error": "已建立活動",
+            "event_id": e.event_page.id,
+            "slug": e.event_page.slug,
+        }), 409

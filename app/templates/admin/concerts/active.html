@@ -1,0 +1,73 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}已開團{% endblock %}
+{% block page_title %}已開團{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-5">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">
+      已建立活動頁的演唱會（{{ event_pages|length }} 筆）。
+    </p>
+    <a href="{{ url_for('concert.pending') }}"
+       class="text-sm text-purple-600 hover:underline">← 待開團</a>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    {% if event_pages %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動日期</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">城市</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">前台網址</th>
+          <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for ep in event_pages %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ ep.artist_name }}</td>
+          <td class="px-4 py-3 text-gray-700 text-xs">
+            <p class="font-medium text-gray-800">{{ ep.title }}</p>
+            <p class="text-gray-400 mt-0.5">{{ ep.event_name }}</p>
+          </td>
+          <td class="px-4 py-3 text-gray-600">{{ ep.event_date or '—' }}</td>
+          <td class="px-4 py-3 text-gray-600">{{ ep.departure_city or '—' }}</td>
+          <td class="px-4 py-3">
+            {% if ep.status == '已發布' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">已發布</span>
+            {% elif ep.status == '草稿' %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">草稿</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">{{ ep.status }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <a href="/events/{{ ep.slug }}" target="_blank"
+               class="text-xs text-purple-500 hover:underline font-mono">/events/{{ ep.slug }}</a>
+          </td>
+          <td class="px-4 py-3 text-right space-x-3 whitespace-nowrap">
+            <a href="/events/{{ ep.slug }}" target="_blank"
+               class="text-xs text-blue-500 hover:underline">查看活動</a>
+            <a href="{{ url_for('event_page.ep_edit', ep_id=ep.id) }}"
+               class="text-xs text-purple-600 hover:underline">編輯活動</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center">
+      <p class="text-gray-400 text-sm">尚無已開團的活動。</p>
+      <a href="{{ url_for('concert.pending') }}"
+         class="inline-block mt-2 text-sm text-purple-600 hover:underline">前往待開團 →</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

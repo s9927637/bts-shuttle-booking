@@ -2,10 +2,11 @@
 CrawlerManager — 統一管理各爬蟲的執行入口。
 
 支援：
-  run_mock()     執行 MockCrawler（測試用）
-  run_kktix()    執行 KKTixCrawler
-  run_tixcraft() 執行 TixCraftCrawler
-  run_all()      依序執行 kktix + tixcraft
+  run_mock()            執行 MockCrawler（測試用，不連線網路）
+  run_playwright_test() 執行 PlaywrightTestCrawler（example.com，驗證 Playwright pipeline）
+  run_kktix()           執行 KKTixCrawler
+  run_tixcraft()        執行 TixCraftCrawler
+  run_all()             依序執行 kktix + tixcraft
 """
 from datetime import datetime
 from typing import Optional
@@ -69,6 +70,11 @@ def _run_source(source_name: str) -> dict:
 
 def run_mock() -> dict:
     return _run_source("mock")
+
+
+def run_playwright_test() -> dict:
+    """執行 PlaywrightTestCrawler（example.com），驗證整條 Playwright pipeline。"""
+    return _run_source("playwright_test")
 
 
 def run_kktix() -> dict:

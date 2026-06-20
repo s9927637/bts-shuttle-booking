@@ -14,7 +14,9 @@ from app import db
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_log import CrawlLog
 from app.services.crawlers import REGISTRY
-from app.services.crawlers.crawler_manager import run_kktix, run_tixcraft, run_all
+from app.services.crawlers.crawler_manager import (
+    run_kktix, run_tixcraft, run_all, run_playwright_test,
+)
 
 crawler_bp = Blueprint("crawler", __name__)
 
@@ -146,6 +148,20 @@ def api_crawler_logs(job_id):
         }
         for l in logs
     ])
+
+
+# ── API: Playwright 測試（example.com pipeline 驗證）────────────────────────
+
+@crawler_bp.route("/api/crawlers/test", methods=["POST"])
+def api_crawler_test():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+    try:
+        result = run_playwright_test()
+        return jsonify(result), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 500
 
 
 # ── API: 執行 KKTIX 爬蟲 ─────────────────────────────────────────────────────

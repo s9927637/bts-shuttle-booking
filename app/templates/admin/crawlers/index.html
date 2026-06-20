@@ -11,6 +11,10 @@
 
     <!-- 快速執行按鈕 -->
     <div class="flex flex-wrap gap-3 items-center">
+      <button onclick="runTest(this)"
+              class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors">
+        ▶ Playwright 測試
+      </button>
       <button onclick="runDedicated('kktix', this)"
               class="crawler-btn px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
         ▶ 執行 KKTIX
@@ -167,6 +171,32 @@ function _setStatus(msg, cls) {
 
 function _lockAllBtns(lock) {
   document.querySelectorAll('.crawler-btn').forEach(b => { b.disabled = lock; });
+}
+
+// Playwright 測試按鈕（example.com pipeline 驗證）
+async function runTest(btn) {
+  _lockAllBtns(true);
+  _setStatus('Playwright 測試執行中（example.com），請稍候...', 'text-gray-500');
+  try {
+    const res = await fetch('/api/crawlers/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _setStatus(
+        `✓ Playwright 測試完成 #${data.job_id}｜新增 ${data.created} 更新 ${data.updated} 錯誤 ${data.errors}`,
+        'text-green-600',
+      );
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      _setStatus(`✗ 測試失敗：${data.error || res.status}`, 'text-red-500');
+    }
+  } catch (e) {
+    _setStatus(`✗ 網路錯誤：${e.message}`, 'text-red-500');
+  } finally {
+    _lockAllBtns(false);
+  }
 }
 
 // 專用按鈕（kktix / tixcraft）

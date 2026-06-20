@@ -52,7 +52,7 @@ def _make_slug(artist_name: str, departure_city: str = "") -> str:
 
 
 def _require_admin():
-    if not session.get("admin_logged_in"):
+    if not session.get("admin_id"):
         return redirect("/admin/login")
     return None
 
@@ -194,6 +194,6 @@ def event_show(slug):
         abort(404)
     if ep.status != "已發布":
         # 非發布狀態：後台管理員可預覽，一般訪客看 404
-        if not session.get("admin_logged_in"):
+        if not session.get("admin_id"):
             abort(404)
     return render_template("passenger/event_template.html", ep=ep)

@@ -16,7 +16,7 @@ concert_bp = Blueprint("concert", __name__, url_prefix="/admin/concerts")
 from flask import session
 
 def _require_admin():
-    if not session.get("admin_logged_in"):
+    if not session.get("admin_id"):
         return redirect("/admin/login")
     return None
 
@@ -267,7 +267,7 @@ def active():
 
 @concert_bp.route("/<int:concert_id>/create-event", methods=["POST"])
 def api_create_event(concert_id):
-    if not session.get("admin_logged_in"):
+    if not session.get("admin_id"):
         return jsonify({"error": "未登入"}), 401
 
     concert = Concert.query.get_or_404(concert_id)

@@ -1,0 +1,57 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}Debug: Routes{% endblock %}
+{% block page_title %}Debug — Route 清單{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- DB 狀態 -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-700 mb-3">資料庫狀態</h3>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p class="text-xs text-gray-400 mb-1">Alembic 目前版本</p>
+        <code class="font-mono text-purple-600">{{ alembic_head }}</code>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 mb-1">資料表數量</p>
+        <span class="font-semibold text-gray-800">{{ db_tables|length }} 個</span>
+      </div>
+    </div>
+    <div class="mt-3">
+      <p class="text-xs text-gray-400 mb-2">現有資料表</p>
+      <div class="flex flex-wrap gap-1.5">
+        {% for t in db_tables %}
+        <span class="px-2 py-0.5 text-xs font-mono rounded bg-gray-100 text-gray-700">{{ t }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Route 清單 -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-700">已註冊 Route（{{ rules|length }} 個）</h3>
+    </div>
+    <table class="w-full text-xs font-mono">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-2 text-left text-gray-500">URL</th>
+          <th class="px-4 py-2 text-left text-gray-500">Methods</th>
+          <th class="px-4 py-2 text-left text-gray-500">Endpoint</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for r in rules %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-1.5 text-gray-700">{{ r.rule }}</td>
+          <td class="px-4 py-1.5 text-blue-500">{{ r.methods|join(', ') }}</td>
+          <td class="px-4 py-1.5 text-purple-600">{{ r.endpoint }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

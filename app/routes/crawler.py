@@ -19,14 +19,14 @@ crawler_bp = Blueprint("crawler", __name__)
 
 
 def _require_admin():
-    if not session.get("admin_logged_in"):
+    if not session.get("admin_id"):
         return None, (jsonify({"error": "未登入"}), 401)
     return True, None
 
 
 def _require_admin_page():
     from flask import redirect
-    if not session.get("admin_logged_in"):
+    if not session.get("admin_id"):
         return redirect("/admin/login")
     return None
 

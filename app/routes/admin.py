@@ -1527,3 +1527,42 @@ def revenue_print():
         Order.payment_status.in_(["訂金已確認", "已完成"])
     ).order_by(Order.departure_date, Order.contact_name).all()
     return render_template("admin/revenue_print.html", orders=orders, now=datetime.utcnow())
+
+
+# ── Debug：列出所有已註冊 Route ────────────────────────────────────────────────
+
+@admin_bp.route("/debug/routes")
+def debug_routes():
+    guard = require_admin()
+    if guard:
+        return guard
+
+    from flask import current_app
+    rules = sorted(
+        [
+            {
+                "endpoint": r.endpoint,
+                "methods":  sorted(r.methods - {"HEAD", "OPTIONS"}),
+                "rule":     r.rule,
+            }
+            for r in current_app.url_map.iter_rules()
+        ],
+        key=lambda x: x["rule"],
+    )
+    from sqlalchemy import text, inspect
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT version_num FROM alembic_version"))
+            alembic_head = result.scalar()
+            insp = inspect(db.engine)
+            db_tables = sorted(insp.get_table_names())
+    except Exception as exc:
+        alembic_head = f"ERROR: {exc}"
+        db_tables = []
+
+    return render_template(
+        "admin/debug_routes.html",
+        rules=rules,
+        alembic_head=alembic_head,
+        db_tables=db_tables,
+    )

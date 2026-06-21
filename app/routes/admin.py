@@ -120,6 +120,38 @@ def dashboard():
     from app.services.business_intelligence.insight_engine import get_bi_stats
     bi_stats = get_bi_stats()
 
+    from app.services.advisor.group_advisor_service import get_advisor_stats
+    advisor_stats = get_advisor_stats()
+
+    from app.models.ai_group_advice import AiGroupAdvice
+    from app.models.concert_data_hub import ConcertDataHub as _Hub
+    import datetime as _dt
+    _this_month = _dt.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    advisor_best_month = (
+        AiGroupAdvice.query
+        .join(_Hub, AiGroupAdvice.concert_hub_id == _Hub.id)
+        .filter(_Hub.status == "active",
+                _Hub.event_date >= _this_month.date())
+        .order_by(AiGroupAdvice.confidence_score.desc())
+        .limit(5).all()
+    )
+    advisor_high_risk = (
+        AiGroupAdvice.query
+        .join(_Hub, AiGroupAdvice.concert_hub_id == _Hub.id)
+        .filter(_Hub.status == "active",
+                AiGroupAdvice.risk_level == "HIGH")
+        .order_by(AiGroupAdvice.confidence_score.desc())
+        .limit(5).all()
+    )
+    advisor_top_conf = (
+        AiGroupAdvice.query
+        .join(_Hub, AiGroupAdvice.concert_hub_id == _Hub.id)
+        .filter(_Hub.status == "active")
+        .order_by(AiGroupAdvice.confidence_score.desc())
+        .limit(5).all()
+    )
+
     from app.models.business_insight import BusinessInsight
     top_revenue = (
         BusinessInsight.query
@@ -171,6 +203,10 @@ def dashboard():
         top_recommended=top_recommended,
         top_revenue=top_revenue,
         top_profit=top_profit,
+        advisor_stats=advisor_stats,
+        advisor_best_month=advisor_best_month,
+        advisor_high_risk=advisor_high_risk,
+        advisor_top_conf=advisor_top_conf,
     )
 
 

@@ -1,0 +1,270 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}AI 開團顧問{% endblock %}
+{% block page_title %}AI Group Advisor{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- ── 統計小卡 ── -->
+  <div class="grid grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">顧問建議總數</p>
+      <p class="text-3xl font-bold text-gray-800 mt-1">{{ total }}</p>
+    </div>
+    <div class="bg-white border border-green-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">低風險</p>
+      <p class="text-3xl font-bold text-green-600 mt-1">{{ low_risk }}</p>
+    </div>
+    <div class="bg-white border border-red-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">高風險</p>
+      <p class="text-3xl font-bold text-red-500 mt-1">{{ high_risk }}</p>
+    </div>
+    <div class="bg-white border border-indigo-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">高信心（≥70）</p>
+      <p class="text-3xl font-bold text-indigo-600 mt-1">{{ high_conf }}</p>
+    </div>
+  </div>
+
+  <!-- ── 操作列 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+    <button onclick="recalculate(this)"
+            class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+      ↺ 重新計算顧問建議
+    </button>
+    <div id="calc-status" class="text-sm text-gray-500"></div>
+    <span class="text-xs text-gray-400">Rule-Based 引擎 × BI + 歷史資料</span>
+  </div>
+
+  <!-- ── 顧問建議列表 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-700">顧問建議列表（按信心分數排序）</h3>
+    </div>
+
+    {% if advices %}
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200 text-xs">
+        <tr>
+          <th class="px-3 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-3 py-3 text-left font-medium text-gray-500">活動</th>
+          <th class="px-3 py-3 text-left font-medium text-gray-500">日期</th>
+          <th class="px-3 py-3 text-left font-medium text-gray-500">城市</th>
+          <th class="px-3 py-3 text-right font-medium text-gray-500">建議票價</th>
+          <th class="px-3 py-3 text-right font-medium text-gray-500">建議訂金</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">出發城市</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">車數</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">乘客</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">風險</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">信心</th>
+          <th class="px-3 py-3 text-center font-medium text-gray-500">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for adv in advices %}
+        {% set hub = adv.hub %}
+        {% set bi  = adv.insight %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-3 py-3 font-medium text-gray-800 whitespace-nowrap">{{ hub.artist_name }}</td>
+          <td class="px-3 py-3 text-gray-600 max-w-[150px] truncate" title="{{ hub.concert_name }}">
+            {{ hub.concert_name }}
+          </td>
+          <td class="px-3 py-3 text-gray-600 whitespace-nowrap text-xs">
+            {{ hub.event_date.strftime('%Y/%m/%d') if hub.event_date else '—' }}
+          </td>
+          <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ hub.city or '—' }}</td>
+
+          <!-- 價格 -->
+          <td class="px-3 py-3 text-right font-mono text-gray-800 font-semibold whitespace-nowrap">
+            NT${{ "{:,}".format(adv.recommended_price) }}
+          </td>
+          <td class="px-3 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
+            NT${{ "{:,}".format(adv.recommended_deposit) }}
+          </td>
+
+          <!-- 城市 -->
+          <td class="px-3 py-3 text-center">
+            <span class="px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-700">
+              {{ adv.recommended_departure_city or '—' }}
+            </span>
+          </td>
+
+          <!-- 車數 / 乘客 -->
+          <td class="px-3 py-3 text-center font-mono text-gray-700">{{ adv.recommended_vehicle_count }}</td>
+          <td class="px-3 py-3 text-center font-mono text-gray-700">{{ adv.recommended_passenger_count }}</td>
+
+          <!-- 風險 -->
+          <td class="px-3 py-3 text-center">
+            {% if adv.risk_level == 'LOW' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">低</span>
+            {% elif adv.risk_level == 'MEDIUM' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">中</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">高</span>
+            {% endif %}
+          </td>
+
+          <!-- 信心分數 -->
+          <td class="px-3 py-3 text-center">
+            <span class="text-sm font-bold
+              {% if adv.confidence_score >= 70 %}text-green-600
+              {% elif adv.confidence_score >= 50 %}text-blue-600
+              {% else %}text-gray-400{% endif %}">
+              {{ adv.confidence_score }}
+            </span>
+          </td>
+
+          <!-- 採用建議按鈕 -->
+          <td class="px-3 py-3 text-center">
+            <button
+              onclick="adoptAdvice({{ adv|tojson|tojson }}, this)"
+              data-adv-id="{{ adv.id }}"
+              data-concert-id="{{ hub.concert_id or '' }}"
+              data-price="{{ adv.recommended_price }}"
+              data-deposit="{{ adv.recommended_deposit }}"
+              data-city="{{ adv.recommended_departure_city or '' }}"
+              class="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">
+              採用建議
+            </button>
+          </td>
+        </tr>
+        <!-- 展開摘要 -->
+        {% if adv.summary %}
+        <tr class="bg-gray-50">
+          <td colspan="12" class="px-4 py-2 text-xs text-gray-500 italic">{{ adv.summary }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="py-16 text-center text-gray-400 text-sm">
+      尚無顧問建議，請先至
+      <a href="{{ url_for('bi.bi_index') }}" class="text-indigo-500 underline">商機中心</a>
+      重新計算後，再點擊「重新計算顧問建議」。
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ── 採用建議確認 Modal ── -->
+<div id="adopt-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
+    <h2 class="text-base font-semibold text-gray-800 mb-4">確認採用顧問建議</h2>
+    <div id="modal-summary" class="text-sm text-gray-600 mb-4 space-y-1"></div>
+    <p class="text-xs text-amber-600 mb-5 bg-amber-50 border border-amber-200 rounded-lg p-3">
+      ⚠️ 採用後將帶入 Auto Group Creation 表單，<strong>仍需人工確認</strong>後才會建立活動。AI 不會直接建立活動。
+    </p>
+    <div class="flex gap-3 justify-end">
+      <button onclick="closeModal()"
+              class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
+      <button id="confirm-adopt-btn"
+              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+        確認採用 →
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const csrfToken = "{{ csrf_token() }}";
+
+let _pendingAdv = null;
+
+async function recalculate(btn) {
+  btn.disabled = true;
+  btn.textContent = '計算中…';
+  document.getElementById('calc-status').textContent = '正在重新計算所有顧問建議…';
+  try {
+    const res = await fetch('/api/group-advisor/recalculate', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('calc-status').textContent =
+        `✓ 完成：新增 ${data.created}，更新 ${data.updated}，共 ${data.total} 筆`;
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      document.getElementById('calc-status').textContent = `✗ ${data.error}`;
+    }
+  } catch (e) {
+    document.getElementById('calc-status').textContent = `✗ 網路錯誤：${e.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ 重新計算顧問建議';
+  }
+}
+
+function adoptAdvice(advJson, btn) {
+  // advJson is a string (double tojson) — parse it
+  const adv = typeof advJson === 'string' ? JSON.parse(advJson) : advJson;
+  const row  = btn.closest('tr');
+  const hub  = {
+    concert_id:  btn.dataset.concertId,
+    price:       btn.dataset.price,
+    deposit:     btn.dataset.deposit,
+    city:        btn.dataset.city,
+    artist_name: row.querySelector('td:nth-child(1)').textContent.trim(),
+    concert_name:row.querySelector('td:nth-child(2)').textContent.trim(),
+    event_date:  row.querySelector('td:nth-child(3)').textContent.trim(),
+    city_display:row.querySelector('td:nth-child(4)').textContent.trim(),
+  };
+  _pendingAdv = { adv, hub };
+
+  document.getElementById('modal-summary').innerHTML = `
+    <p><strong>藝人：</strong>${hub.artist_name}</p>
+    <p><strong>活動：</strong>${hub.concert_name}</p>
+    <p><strong>日期：</strong>${hub.event_date}</p>
+    <p><strong>建議票價：</strong>NT$${Number(hub.price).toLocaleString()}</p>
+    <p><strong>建議訂金：</strong>NT$${Number(hub.deposit).toLocaleString()}</p>
+    <p><strong>出發城市：</strong>${hub.city || '—'}</p>
+  `;
+  document.getElementById('adopt-modal').classList.remove('hidden');
+  document.getElementById('confirm-adopt-btn').onclick = confirmAdopt;
+}
+
+function closeModal() {
+  document.getElementById('adopt-modal').classList.add('hidden');
+  _pendingAdv = null;
+}
+
+async function confirmAdopt() {
+  if (!_pendingAdv) return;
+  const { adv, hub } = _pendingAdv;
+  closeModal();
+
+  if (!hub.concert_id) {
+    alert('此活動尚未連結 Concert ID，無法帶入自動開團。\n請先至 Concert Hub 確認資料。');
+    return;
+  }
+
+  const res = await fetch('/api/groups/create', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      concert_id:     parseInt(hub.concert_id),
+      override_price:  parseInt(hub.price),
+      override_deposit:parseInt(hub.deposit),
+      override_city:   hub.city,
+    }),
+  });
+  const data = await res.json();
+  if (res.ok || res.status === 201) {
+    alert(`✓ 已帶入 Auto Group Creation！活動已建立（仍需人工確認）。\n${data.message || ''}`);
+    location.reload();
+  } else if (res.status === 409) {
+    alert('此演唱會已有對應活動。');
+  } else {
+    alert(`建立失敗：${data.error || data.message || '未知錯誤'}`);
+  }
+}
+
+// 點背景關閉 modal
+document.getElementById('adopt-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+{% endblock %}

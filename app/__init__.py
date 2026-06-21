@@ -31,6 +31,7 @@ from app.models.event_template import EventTemplate
 from app.models.group_creation_job import GroupCreationJob
 from app.models.concert_data_hub import ConcertDataHub
 from app.models.business_insight import BusinessInsight
+from app.models.ai_group_advice import AiGroupAdvice
 
 def create_app():
     app = Flask(__name__)
@@ -61,6 +62,7 @@ def create_app():
     from app.routes.group_creation import group_bp
     from app.routes.concert_hub import hub_bp
     from app.routes.business_intelligence import bi_bp
+    from app.routes.group_advisor import advisor_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -74,6 +76,7 @@ def create_app():
     app.register_blueprint(group_bp)
     app.register_blueprint(hub_bp)
     app.register_blueprint(bi_bp)
+    app.register_blueprint(advisor_bp)
 
     import logging
     from flask import render_template as _rt

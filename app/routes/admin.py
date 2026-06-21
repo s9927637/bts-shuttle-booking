@@ -117,6 +117,27 @@ def dashboard():
     from app.services.concert_data_hub_service import get_hub_stats
     hub_stats = get_hub_stats()
 
+    from app.services.business_intelligence.insight_engine import get_bi_stats
+    bi_stats = get_bi_stats()
+
+    from app.models.business_insight import BusinessInsight
+    top_revenue = (
+        BusinessInsight.query
+        .order_by(BusinessInsight.estimated_revenue.desc())
+        .limit(20).all()
+    )
+    top_profit = (
+        BusinessInsight.query
+        .order_by(BusinessInsight.estimated_profit.desc())
+        .limit(20).all()
+    )
+    top_recommended = (
+        BusinessInsight.query
+        .filter(BusinessInsight.recommendation.in_(["STRONGLY_RECOMMENDED", "RECOMMENDED"]))
+        .order_by(BusinessInsight.opportunity_score.desc())
+        .limit(20).all()
+    )
+
     return render_template(
         "admin/dashboard.html",
         stats={
@@ -146,6 +167,10 @@ def dashboard():
         recommended_groups=recommended_groups,
         created_groups_count=created_groups_count,
         hub_stats=hub_stats,
+        bi_stats=bi_stats,
+        top_recommended=top_recommended,
+        top_revenue=top_revenue,
+        top_profit=top_profit,
     )
 
 

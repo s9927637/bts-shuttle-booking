@@ -397,4 +397,98 @@
 </div>
 {% endif %}
 
+<!-- ── Business Intelligence TOP20 Widgets ── -->
+{% if bi_stats is defined %}
+<div class="mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">商機決策中心</h2>
+    <a href="{{ url_for('bi.bi_index') }}" class="text-xs text-indigo-500 hover:underline">查看全部 →</a>
+  </div>
+
+  <!-- BI 統計小卡 -->
+  <div class="grid grid-cols-3 gap-4 mb-4">
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <p class="text-3xl font-semibold text-gray-700 tracking-tight">{{ bi_stats.total }}</p>
+      <p class="mt-1 text-xs text-gray-400">商機分析總數</p>
+    </div>
+    <div class="bg-white border border-green-200 rounded-2xl p-5">
+      <p class="text-3xl font-semibold text-green-600 tracking-tight">{{ bi_stats.strongly_recommended }}</p>
+      <p class="mt-1 text-xs text-gray-400">強烈推薦開團</p>
+    </div>
+    <div class="bg-white border border-blue-200 rounded-2xl p-5">
+      <p class="text-3xl font-semibold text-blue-600 tracking-tight">{{ bi_stats.actionable }}</p>
+      <p class="mt-1 text-xs text-gray-400">可執行商機（推薦+強推）</p>
+    </div>
+  </div>
+
+  <!-- TOP20 三欄 -->
+  <div class="grid grid-cols-3 gap-4">
+
+    <!-- 推薦開團 TOP20 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <h3 class="text-xs font-semibold text-gray-500 mb-3 uppercase">推薦開團 TOP20（商機分排序）</h3>
+      {% if top_recommended %}
+      <ol class="space-y-1.5">
+        {% for bi in top_recommended %}
+        <li class="flex items-center justify-between text-xs">
+          <span class="truncate text-gray-700 max-w-[140px]">
+            {{ loop.index }}. {{ bi.hub.artist_name }} · {{ bi.hub.city or '—' }}
+          </span>
+          <span class="font-mono font-bold
+            {% if bi.recommendation == 'STRONGLY_RECOMMENDED' %}text-green-600
+            {% else %}text-blue-600{% endif %}">
+            {{ bi.opportunity_score }}
+          </span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="text-xs text-gray-400 text-center py-4">尚無資料，請先重新計算商機</p>
+      {% endif %}
+    </div>
+
+    <!-- 最高預估營收 TOP20 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <h3 class="text-xs font-semibold text-gray-500 mb-3 uppercase">最高預估營收 TOP20</h3>
+      {% if top_revenue %}
+      <ol class="space-y-1.5">
+        {% for bi in top_revenue %}
+        <li class="flex items-center justify-between text-xs">
+          <span class="truncate text-gray-700 max-w-[120px]">
+            {{ loop.index }}. {{ bi.hub.artist_name }} · {{ bi.hub.city or '—' }}
+          </span>
+          <span class="font-mono text-indigo-600">NT${{ "{:,}".format(bi.estimated_revenue) }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="text-xs text-gray-400 text-center py-4">尚無資料</p>
+      {% endif %}
+    </div>
+
+    <!-- 最高預估利潤 TOP20 -->
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <h3 class="text-xs font-semibold text-gray-500 mb-3 uppercase">最高預估利潤 TOP20</h3>
+      {% if top_profit %}
+      <ol class="space-y-1.5">
+        {% for bi in top_profit %}
+        <li class="flex items-center justify-between text-xs">
+          <span class="truncate text-gray-700 max-w-[120px]">
+            {{ loop.index }}. {{ bi.hub.artist_name }} · {{ bi.hub.city or '—' }}
+          </span>
+          <span class="font-mono {% if bi.estimated_profit >= 0 %}text-green-600{% else %}text-red-500{% endif %}">
+            NT${{ "{:,}".format(bi.estimated_profit) }}
+          </span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="text-xs text-gray-400 text-center py-4">尚無資料</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

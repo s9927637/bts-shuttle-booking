@@ -1,0 +1,367 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}Crawler Diagnostics Center{% endblock %}
+{% block page_title %}Crawler Diagnostics Center{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Crawler Diagnostics Center</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        爬蟲流水線診斷 — 分析各階段資料遺失位置
+        <span class="ml-2 text-gray-400">生成時間：{{ generated_at.strftime('%Y/%m/%d %H:%M:%S') }}</span>
+      </p>
+    </div>
+    <a href="{{ url_for('crawler.crawler_index') }}"
+       class="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition">
+      ← 爬蟲管理
+    </a>
+  </div>
+
+  <!-- ===== Pipeline Funnel ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">各來源流水線診斷（Fetch → Parse → Import）</h2>
+    <div class="space-y-6">
+      {% for s in pipeline.sources %}
+      <div class="border border-gray-100 rounded-xl p-5">
+        <!-- Header row -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold
+                  {% if s.source == 'kktix' %}bg-green-100 text-green-700
+                  {% elif s.source == 'tixcraft' %}bg-blue-100 text-blue-700
+                  {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ s.source | upper }}
+            </span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                  {% if s.last_status == 'success' %}bg-green-50 text-green-600
+                  {% elif s.last_status == 'error' %}bg-red-50 text-red-600
+                  {% else %}bg-gray-50 text-gray-400{% endif %}">
+              {{ s.last_status }}
+            </span>
+            {% if s.last_ran_at %}
+            <span class="text-xs text-gray-400">最後執行：{{ s.last_ran_at.strftime('%Y/%m/%d %H:%M') }}</span>
+            {% endif %}
+          </div>
+          <span class="text-xs text-gray-400">DB 已儲存：<strong class="text-gray-700">{{ s.db_total }}</strong> 筆</span>
+        </div>
+
+        <!-- Funnel stats -->
+        <div class="grid grid-cols-4 gap-3 mb-4">
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-xs text-gray-400 mb-1">RAW (Fetch)</p>
+            <p class="text-2xl font-bold text-gray-800">{{ s.fetch_count if s.fetch_count is not none else '—' }}</p>
+          </div>
+          <div class="bg-indigo-50 rounded-lg p-3 text-center relative">
+            <p class="text-xs text-indigo-400 mb-1">PARSED</p>
+            <p class="text-2xl font-bold text-indigo-700">{{ s.parse_count if s.parse_count is not none else '—' }}</p>
+            {% if s.fetch_parse_loss > 0 %}
+            <span class="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 text-white rounded-full text-xs flex items-center justify-center font-bold">{{ s.fetch_parse_loss }}</span>
+            {% endif %}
+          </div>
+          <div class="bg-green-50 rounded-lg p-3 text-center relative">
+            <p class="text-xs text-green-500 mb-1">IMPORTED</p>
+            <p class="text-2xl font-bold text-green-700">{{ s.imported_count }}</p>
+            {% if s.skipped_count > 0 %}
+            <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-400 text-white rounded-full text-xs flex items-center justify-center font-bold">{{ s.skipped_count }}</span>
+            {% endif %}
+          </div>
+          <div class="bg-red-50 rounded-lg p-3 text-center">
+            <p class="text-xs text-red-400 mb-1">SKIPPED</p>
+            <p class="text-2xl font-bold text-red-600">{{ s.skipped_count }}</p>
+          </div>
+        </div>
+
+        <!-- Flow arrow -->
+        <div class="flex items-center gap-2 text-xs text-gray-400 mb-4">
+          <span class="font-mono bg-gray-50 px-2 py-0.5 rounded">Fetch {{ s.fetch_count or 0 }}</span>
+          <span>→</span>
+          {% if s.fetch_parse_loss > 0 %}
+          <span class="text-amber-600 font-medium">-{{ s.fetch_parse_loss }} (parse loss)</span>
+          <span>→</span>
+          {% endif %}
+          <span class="font-mono bg-indigo-50 px-2 py-0.5 rounded">Parse {{ s.parse_count or 0 }}</span>
+          <span>→</span>
+          {% if s.skipped_count > 0 %}
+          <span class="text-red-500 font-medium">-{{ s.skipped_count }} (skipped)</span>
+          <span>→</span>
+          {% endif %}
+          <span class="font-mono bg-green-50 px-2 py-0.5 rounded">Import {{ s.imported_count }}</span>
+          <span>→</span>
+          <span class="font-mono bg-gray-100 px-2 py-0.5 rounded">DB {{ s.db_total }}</span>
+        </div>
+
+        <!-- Issues -->
+        {% if s.issues %}
+        <div class="space-y-1 mb-3">
+          {% for issue in s.issues %}
+          <div class="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+            {{ issue }}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
+          ✅ 此來源流水線無明顯問題
+        </div>
+        {% endif %}
+
+        <!-- Skip reasons -->
+        {% if s.skip_reasons %}
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span class="text-xs text-gray-400">Skip 原因：</span>
+          {% for reason, cnt in s.skip_reasons.items() %}
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-50 text-red-600">
+            {{ reason }} ({{ cnt }})
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ===== Date Distribution ===== -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+    {% set dd = pipeline.db_dist %}
+    <div class="bg-white border border-gray-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">總計</p>
+      <p class="text-2xl font-bold text-gray-800">{{ dd.total }}</p>
+    </div>
+    <div class="bg-green-50 border border-green-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-green-500 mb-1">未來活動</p>
+      <p class="text-2xl font-bold text-green-700">{{ dd.future }}</p>
+    </div>
+    <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-gray-400 mb-1">歷史活動</p>
+      <p class="text-2xl font-bold text-gray-600">{{ dd.past }}</p>
+    </div>
+    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-indigo-500 mb-1">今年 ({{ dd.this_year }}yr)</p>
+      <p class="text-2xl font-bold text-indigo-700">{{ dd.this_year }}</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-amber-500 mb-1">去年</p>
+      <p class="text-2xl font-bold text-amber-700">{{ dd.last_year }}</p>
+    </div>
+    <div class="bg-purple-50 border border-purple-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-purple-500 mb-1">明年</p>
+      <p class="text-2xl font-bold text-purple-700">{{ dd.next_year }}</p>
+    </div>
+    <div class="bg-red-50 border border-red-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-xs text-red-400 mb-1">無日期</p>
+      <p class="text-2xl font-bold text-red-600">{{ dd.no_date }}</p>
+    </div>
+  </div>
+
+  <!-- ===== Top Skip Reasons ===== -->
+  {% if pipeline.top_skip %}
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Top Skip Reasons（所有來源彙整）</h2>
+    <div class="space-y-2">
+      {% for s in pipeline.top_skip %}
+      <div class="flex items-start gap-4 p-3 bg-gray-50 rounded-xl">
+        <div class="shrink-0 w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold">
+          {{ loop.index }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-800 font-mono">{{ s.reason }}</span>
+            <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{{ s.count }} 筆</span>
+          </div>
+          {% for ex in s.examples %}
+          <p class="text-xs text-gray-400 mt-0.5 truncate">{{ ex }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-green-50 border border-green-100 rounded-2xl p-6 text-center text-green-700">
+    ✅ 目前無 Skip 記錄
+  </div>
+  {% endif %}
+
+  <!-- ===== Future Events (Top 50) ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">未來活動（Future Events — DB 中已匯入）</h2>
+      <span class="text-xs text-gray-400">{{ future_concerts | length }} 筆</span>
+    </div>
+    {% if future_concerts %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="text-xs text-gray-400 uppercase">
+          <tr>
+            <th class="pb-3 text-left font-medium">日期</th>
+            <th class="pb-3 text-left font-medium">藝人</th>
+            <th class="pb-3 text-left font-medium">活動名稱</th>
+            <th class="pb-3 text-left font-medium">城市</th>
+            <th class="pb-3 text-left font-medium">來源</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for c in future_concerts %}
+          <tr class="hover:bg-gray-50">
+            <td class="py-2.5 text-gray-700 font-mono text-xs">{{ c.concert_date }}</td>
+            <td class="py-2.5 text-xs font-medium text-gray-700">{{ c.artist | truncate(20, True) }}</td>
+            <td class="py-2.5 text-xs text-gray-600">{{ c.name | truncate(45, True) }}</td>
+            <td class="py-2.5 text-xs text-gray-500">{{ c.city or '—' }}</td>
+            <td class="py-2.5">
+              <span class="inline-flex px-1.5 py-0.5 rounded text-xs font-medium
+                    {% if c.source_type == 'KKTIX' %}bg-green-100 text-green-700
+                    {% elif c.source_type == 'TIXCRAFT' %}bg-blue-100 text-blue-700
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {{ c.source_type or 'MOCK' }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400 text-center py-8">DB 中尚無未來演唱會資料</p>
+    {% endif %}
+  </div>
+
+  <!-- ===== Recent 100 Concerts ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">最近匯入 100 筆（Raw Events in DB）</h2>
+      <span class="text-xs text-gray-400">共 {{ recent_concerts | length }} 筆</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="text-xs text-gray-400 uppercase">
+          <tr>
+            <th class="pb-3 text-left font-medium">匯入時間</th>
+            <th class="pb-3 text-left font-medium">日期</th>
+            <th class="pb-3 text-left font-medium">藝人</th>
+            <th class="pb-3 text-left font-medium">活動名稱</th>
+            <th class="pb-3 text-left font-medium">來源</th>
+            <th class="pb-3 text-left font-medium">城市</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for c in recent_concerts %}
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 text-xs text-gray-400 font-mono">{{ c.created_at.strftime('%m/%d %H:%M') if c.created_at else '—' }}</td>
+            <td class="py-2 text-xs text-gray-600 font-mono">{{ c.concert_date or '—' }}</td>
+            <td class="py-2 text-xs font-medium text-gray-700">{{ c.artist | truncate(18, True) }}</td>
+            <td class="py-2 text-xs text-gray-600">
+              {% if c.source_url %}
+              <a href="{{ c.source_url }}" target="_blank"
+                 class="hover:text-indigo-600 hover:underline">{{ c.name | truncate(40, True) }}</a>
+              {% else %}
+              {{ c.name | truncate(40, True) }}
+              {% endif %}
+            </td>
+            <td class="py-2">
+              <span class="inline-flex px-1.5 py-0.5 rounded text-xs font-medium
+                    {% if c.source_type == 'KKTIX' %}bg-green-100 text-green-700
+                    {% elif c.source_type == 'TIXCRAFT' %}bg-blue-100 text-blue-700
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {{ c.source_type or 'MOCK' }}
+              </span>
+            </td>
+            <td class="py-2 text-xs text-gray-400">{{ c.city or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Job History ===== -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">爬蟲執行歷史（最近 30 筆）</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="text-xs text-gray-400 uppercase">
+          <tr>
+            <th class="pb-3 text-left font-medium">Job ID</th>
+            <th class="pb-3 text-left font-medium">來源</th>
+            <th class="pb-3 text-left font-medium">狀態</th>
+            <th class="pb-3 text-center font-medium">Fetch</th>
+            <th class="pb-3 text-center font-medium">Parse</th>
+            <th class="pb-3 text-center font-medium">Created</th>
+            <th class="pb-3 text-center font-medium">Updated</th>
+            <th class="pb-3 text-center font-medium">Skipped</th>
+            <th class="pb-3 text-center font-medium">Errors</th>
+            <th class="pb-3 text-left font-medium">執行時間</th>
+            <th class="pb-3 text-left font-medium">耗時</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for j in jobs_summary %}
+          <tr class="hover:bg-gray-50">
+            <td class="py-2.5 text-xs text-gray-400 font-mono">#{{ j.id }}</td>
+            <td class="py-2.5">
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold
+                    {% if j.source == 'kktix' %}bg-green-100 text-green-700
+                    {% elif j.source == 'tixcraft' %}bg-blue-100 text-blue-700
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {{ j.source }}
+              </span>
+            </td>
+            <td class="py-2.5">
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
+                    {% if j.status == 'success' %}bg-green-50 text-green-600
+                    {% elif j.status == 'error' %}bg-red-50 text-red-600
+                    {% else %}bg-amber-50 text-amber-600{% endif %}">
+                {{ j.status }}
+              </span>
+            </td>
+            <td class="py-2.5 text-center text-xs {% if j.raw and j.raw < 10 %}text-amber-600 font-bold{% else %}text-gray-600{% endif %}">
+              {{ j.raw if j.raw is not none else '—' }}
+            </td>
+            <td class="py-2.5 text-center text-xs text-gray-600">{{ j.parsed if j.parsed is not none else '—' }}</td>
+            <td class="py-2.5 text-center text-xs text-green-600 font-medium">{{ j.created }}</td>
+            <td class="py-2.5 text-center text-xs text-indigo-600">{{ j.updated }}</td>
+            <td class="py-2.5 text-center text-xs {% if j.skipped > 0 %}text-red-500 font-bold{% else %}text-gray-400{% endif %}">{{ j.skipped }}</td>
+            <td class="py-2.5 text-center text-xs {% if j.errors > 0 %}text-red-600 font-bold{% else %}text-gray-400{% endif %}">{{ j.errors }}</td>
+            <td class="py-2.5 text-xs text-gray-400">{{ j.ran_at.strftime('%m/%d %H:%M') if j.ran_at else '—' }}</td>
+            <td class="py-2.5 text-xs text-gray-400">{{ j.duration_s }}s</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Diagnosis Report ===== -->
+  <div class="bg-gray-900 text-green-400 rounded-2xl p-6 font-mono text-xs">
+    <p class="text-green-300 font-bold mb-3">══ CRAWLER DIAGNOSTICS REPORT ══</p>
+    {% for s in pipeline.sources %}
+    <p class="text-yellow-300 mt-3">[ {{ s.source | upper }} ]</p>
+    <p>  Fetch Count  : {{ s.fetch_count if s.fetch_count is not none else 'N/A' }}</p>
+    <p>  Parse Count  : {{ s.parse_count if s.parse_count is not none else 'N/A' }}</p>
+    <p>  Imported     : {{ s.imported_count }} (created + updated)</p>
+    <p>  Skipped      : {{ s.skipped_count }}</p>
+    <p>  DB Total     : {{ s.db_total }}</p>
+    <p>  Last Status  : {{ s.last_status }}</p>
+    <p>  Last Ran     : {{ s.last_ran_at.strftime('%Y-%m-%d %H:%M:%S') if s.last_ran_at else 'never' }}</p>
+    {% if s.issues %}
+    {% for issue in s.issues %}
+    <p class="text-red-400">  ISSUE: {{ issue }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+    <p class="mt-4 text-green-300">[ DATE DISTRIBUTION ]</p>
+    {% set dd = pipeline.db_dist %}
+    <p>  Total        : {{ dd.total }}</p>
+    <p>  Future       : {{ dd.future }}</p>
+    <p>  Past         : {{ dd.past }}</p>
+    <p>  This Year    : {{ dd.this_year }}</p>
+    <p>  Last Year    : {{ dd.last_year }}</p>
+    <p>  No Date      : {{ dd.no_date }}</p>
+    <p class="mt-2 text-gray-500">══ END REPORT ══</p>
+  </div>
+
+</div>
+{% endblock %}

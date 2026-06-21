@@ -308,6 +308,30 @@ def api_crawler_sources():
     })
 
 
+# ── Crawler Diagnostics Center ───────────────────────────────────────────────
+
+@crawler_bp.route("/admin/crawlers/debug")
+def crawler_debug():
+    guard = _require_admin_page()
+    if guard:
+        return guard
+
+    from app.services.crawler_diagnostics_service import generate_diagnostics_report
+    report = generate_diagnostics_report()
+    return render_template("admin/crawlers/debug.html", **report)
+
+
+@crawler_bp.route("/api/crawlers/diagnostics")
+def api_crawler_diagnostics():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.services.crawler_diagnostics_service import get_pipeline_diagnosis
+    diag = get_pipeline_diagnosis()
+    return jsonify(diag)
+
+
 # ── API: 全部執行 ─────────────────────────────────────────────────────────────
 
 @crawler_bp.route("/api/crawlers/run-all", methods=["POST"])

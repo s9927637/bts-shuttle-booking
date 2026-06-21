@@ -682,6 +682,41 @@
 </div>
 {% endif %}
 
+{% if crawl_diag_dist is defined %}
+<div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">演唱會資料庫分布</h2>
+    <a href="{{ url_for('crawler.crawler_debug') }}" class="text-xs text-blue-600 hover:underline">爬蟲診斷 →</a>
+  </div>
+  <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+    <div class="bg-green-50 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-green-700">{{ crawl_diag_dist.future }}</p>
+      <p class="text-xs text-green-500 mt-0.5">未來活動</p>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-gray-600">{{ crawl_diag_dist.past }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">歷史活動</p>
+    </div>
+    <div class="bg-indigo-50 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-indigo-700">{{ crawl_diag_dist.this_year }}</p>
+      <p class="text-xs text-indigo-500 mt-0.5">今年</p>
+    </div>
+    <div class="bg-amber-50 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-amber-700">{{ crawl_diag_dist.last_year }}</p>
+      <p class="text-xs text-amber-500 mt-0.5">去年</p>
+    </div>
+    <div class="bg-red-50 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-red-600">{{ crawl_diag_dist.no_date }}</p>
+      <p class="text-xs text-red-400 mt-0.5">無日期</p>
+    </div>
+    <div class="bg-white border border-gray-100 rounded-xl p-3 text-center">
+      <p class="text-2xl font-bold text-gray-800">{{ crawl_diag_dist.total }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">總計</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if event_distribution is defined and event_distribution %}
 <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
   <div class="flex items-center justify-between mb-4">

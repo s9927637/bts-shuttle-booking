@@ -161,6 +161,10 @@ def dashboard():
     from app.services.passenger_service import get_passenger_statistics
     passenger_stats = get_passenger_statistics()
 
+    # 爬蟲診斷 Dashboard widgets
+    from app.services.crawler_diagnostics_service import get_date_distribution
+    crawl_diag_dist = get_date_distribution()
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -251,6 +255,7 @@ def dashboard():
         pending_dispatch_events=pending_dispatch_events,
         dispatch_summary=dispatch_summary,
         passenger_stats=passenger_stats,
+        crawl_diag_dist=crawl_diag_dist,
     )
 
 

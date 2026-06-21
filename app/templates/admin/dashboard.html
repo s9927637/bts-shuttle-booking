@@ -682,7 +682,59 @@
 </div>
 {% endif %}
 
-{% if crawl_diag_dist is defined %}
+{% if crawl_audit_summary is defined %}
+<div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">爬蟲 Audit 狀態</h2>
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('crawler.crawler_future_events') }}" class="text-xs text-green-600 hover:underline">未來活動 →</a>
+      <a href="{{ url_for('crawler.crawler_missing_events') }}" class="text-xs text-red-500 hover:underline">略過活動 →</a>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+    <a href="{{ url_for('crawler.crawler_future_events') }}"
+       class="bg-green-50 rounded-xl p-4 text-center hover:shadow-md transition">
+      <p class="text-2xl font-bold text-green-700">{{ crawl_audit_summary.future_in_db }}</p>
+      <p class="text-xs text-green-500 mt-0.5">未來活動數</p>
+    </a>
+    <div class="bg-indigo-50 rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-indigo-700">{{ crawl_audit_summary.total_imported }}</p>
+      <p class="text-xs text-indigo-500 mt-0.5">Audit 匯入數</p>
+    </div>
+    <a href="{{ url_for('crawler.crawler_missing_events') }}"
+       class="bg-red-50 rounded-xl p-4 text-center hover:shadow-md transition">
+      <p class="text-2xl font-bold text-red-600">{{ crawl_audit_summary.total_skipped }}</p>
+      <p class="text-xs text-red-400 mt-0.5">略過活動數</p>
+    </a>
+    <a href="{{ url_for('crawler.crawler_missing_events') }}?reason=PAST_EVENT"
+       class="bg-amber-50 rounded-xl p-4 text-center hover:shadow-md transition">
+      <p class="text-2xl font-bold text-amber-700">{{ crawl_audit_summary.past_event_skips }}</p>
+      <p class="text-xs text-amber-500 mt-0.5">歷史略過</p>
+    </a>
+  </div>
+  {% if crawl_audit_coverage %}
+  <div class="grid grid-cols-3 gap-3">
+    {% for c in crawl_audit_coverage %}
+    <div class="border border-gray-100 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-xs font-bold
+              {% if c.source == 'kktix' %}text-green-700
+              {% elif c.source == 'tixcraft' %}text-blue-700
+              {% else %}text-gray-500{% endif %}">
+          {{ c.source | upper }}
+        </span>
+        <span class="text-xs text-gray-500">{{ c.coverage_pct }}%</span>
+      </div>
+      <div class="w-full bg-gray-100 rounded-full h-1.5">
+        <div class="h-1.5 rounded-full bg-green-400" style="width:{{ c.coverage_pct }}%"></div>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">匯入 {{ c.imported }} / 略過 {{ c.skipped }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% elif crawl_diag_dist is defined %}
 <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">演唱會資料庫分布</h2>

@@ -37,6 +37,7 @@ from app.models.system_health_check import SystemHealthCheck
 from app.models.order_event import OrderEvent
 from app.models.dispatch_event import DispatchEvent, DispatchEventOrder
 from app.models.passenger_profile import PassengerProfile, PassengerTag
+from app.models.crawler_audit_log import CrawlerAuditLog
 
 def create_app():
     app = Flask(__name__)

@@ -13,6 +13,7 @@ from datetime import datetime, date
 from app import db
 from app.models.concert import Concert
 from app.models.crawl_log import CrawlLog
+from app.models.crawler_audit_log import CrawlerAuditLog
 
 
 class BaseCrawler(ABC):
@@ -62,21 +63,53 @@ class BaseCrawler(ABC):
         from app.services.data_quality_validator import validate_batch
 
         created = updated = skipped = errors = 0
+        today = date.today()
 
-        # 資料品質驗證
+        # ── 資料品質驗證 ─────────────────────────────────────────────────────
         valid_records, invalid_records = validate_batch(records)
         for inv in invalid_records:
             errs = inv.get("_validation_errors", [])
             self._log("WARNING", f"[SKIP] 資料品質不符，略過：{inv.get('name')} — {errs}")
+            reason = self._classify_validation_errors(errs)
+            self._audit(
+                event_name=inv.get("name"),
+                artist_name=inv.get("artist"),
+                event_date=inv.get("concert_date"),
+                venue=inv.get("venue"),
+                city=inv.get("city"),
+                source_url=inv.get("source_url"),
+                status=CrawlerAuditLog.STATUS_SKIPPED,
+                reason=reason,
+            )
             skipped += 1
 
+        # ── PAST_EVENT 過濾（不匯入歷史活動）────────────────────────────────
+        future_records = []
         for rec in valid_records:
+            cd = rec.get("concert_date")
+            if cd and cd < today:
+                self._log("INFO", f"[SKIP/PAST] {rec.get('artist')} — {rec.get('name')} ({cd})")
+                self._audit(
+                    event_name=rec.get("name"),
+                    artist_name=rec.get("artist"),
+                    event_date=cd,
+                    venue=rec.get("venue"),
+                    city=rec.get("city"),
+                    source_url=rec.get("source_url"),
+                    status=CrawlerAuditLog.STATUS_SKIPPED,
+                    reason=CrawlerAuditLog.REASON_PAST_EVENT,
+                )
+                skipped += 1
+            else:
+                future_records.append(rec)
+
+        # ── 寫入演唱會資料 ───────────────────────────────────────────────────
+        for rec in future_records:
             try:
                 h = self._make_hash(rec)
                 existing = Concert.query.filter_by(crawler_hash=h).first()
 
                 if existing:
-                    # Hash 完全相同 → 更新既有資料
                     existing.artist       = rec.get("artist", existing.artist)
                     existing.name         = rec.get("name",   existing.name)
                     existing.concert_date = rec.get("concert_date", existing.concert_date)
@@ -89,15 +122,31 @@ class BaseCrawler(ABC):
                     existing.updated_at   = datetime.utcnow()
                     updated += 1
                     self._log("INFO", f"[UPDATE] {rec.get('artist')} — {rec.get('name')}")
+                    self._audit(
+                        event_name=rec.get("name"),
+                        artist_name=rec.get("artist"),
+                        event_date=rec.get("concert_date"),
+                        venue=rec.get("venue"),
+                        city=rec.get("city"),
+                        source_url=rec.get("source_url"),
+                        status=CrawlerAuditLog.STATUS_IMPORTED,
+                    )
 
                 else:
-                    # 嘗試跨來源合併（同日期 + 相似標題）
                     was_merged = merge_concert(rec)
                     if was_merged:
                         self._log("INFO", f"[MERGE] {rec.get('artist')} — {rec.get('name')}")
                         updated += 1
+                        self._audit(
+                            event_name=rec.get("name"),
+                            artist_name=rec.get("artist"),
+                            event_date=rec.get("concert_date"),
+                            venue=rec.get("venue"),
+                            city=rec.get("city"),
+                            source_url=rec.get("source_url"),
+                            status=CrawlerAuditLog.STATUS_IMPORTED,
+                        )
                     else:
-                        # 新建資料
                         c = Concert(
                             artist       = rec["artist"],
                             name         = rec["name"],
@@ -114,16 +163,75 @@ class BaseCrawler(ABC):
                         db.session.add(c)
                         created += 1
                         self._log("INFO", f"[CREATE] {rec.get('artist')} — {rec.get('name')}")
+                        self._audit(
+                            event_name=rec.get("name"),
+                            artist_name=rec.get("artist"),
+                            event_date=rec.get("concert_date"),
+                            venue=rec.get("venue"),
+                            city=rec.get("city"),
+                            source_url=rec.get("source_url"),
+                            status=CrawlerAuditLog.STATUS_IMPORTED,
+                        )
 
             except Exception as exc:
                 errors += 1
                 self._log("ERROR", f"[ERROR] {rec.get('name', rec)}: {exc}")
+                self._audit(
+                    event_name=rec.get("name"),
+                    artist_name=rec.get("artist"),
+                    event_date=rec.get("concert_date"),
+                    status=CrawlerAuditLog.STATUS_SKIPPED,
+                    reason=CrawlerAuditLog.REASON_IMPORT_ERROR,
+                )
                 db.session.rollback()
 
         if created + updated > 0:
             db.session.commit()
 
         return created, updated, skipped, errors
+
+    # ── Audit 工具方法 ────────────────────────────────────────────────────────
+
+    def _audit(
+        self,
+        status: str,
+        event_name: str = None,
+        artist_name: str = None,
+        event_date=None,
+        venue: str = None,
+        city: str = None,
+        source_url: str = None,
+        reason: str = None,
+    ):
+        """寫入 crawler_audit_logs，失敗不影響主流程。"""
+        try:
+            entry = CrawlerAuditLog(
+                job_id      = self.job_id,
+                source_name = self.source_name,
+                event_name  = (event_name or "")[:300],
+                artist_name = (artist_name or "")[:150],
+                event_date  = event_date,
+                venue       = (venue or "")[:200],
+                city        = (city or "")[:50],
+                source_url  = (source_url or "")[:500],
+                status      = status,
+                reason      = reason,
+                created_at  = datetime.utcnow(),
+            )
+            db.session.add(entry)
+            db.session.flush()
+        except Exception:
+            db.session.rollback()
+
+    @staticmethod
+    def _classify_validation_errors(errors: list[str]) -> str:
+        """將驗證錯誤訊息轉為 audit reason。"""
+        joined = " ".join(errors)
+        if "日期" in joined:
+            return CrawlerAuditLog.REASON_DATE_MISSING
+        if "名稱" in joined:
+            return CrawlerAuditLog.REASON_INVALID_FORMAT
+        return CrawlerAuditLog.REASON_INVALID_FORMAT
 
     # ── 工具方法 ──────────────────────────────────────────────────────────────
 

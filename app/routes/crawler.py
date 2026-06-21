@@ -308,6 +308,174 @@ def api_crawler_sources():
     })
 
 
+# ── Crawler Audit ─────────────────────────────────────────────────────────────
+
+@crawler_bp.route("/admin/crawlers/future-events")
+def crawler_future_events():
+    guard = _require_admin_page()
+    if guard:
+        return guard
+
+    from app.services.crawler_audit_service import (
+        get_future_events, get_audit_summary, get_coverage_by_source,
+    )
+    page    = max(1, request.args.get("page", 1, type=int))
+    result  = get_future_events(page=page, per_page=50)
+    summary = get_audit_summary()
+    coverage = get_coverage_by_source()
+    return render_template(
+        "admin/crawlers/future_events.html",
+        **result,
+        summary=summary,
+        coverage=coverage,
+    )
+
+
+@crawler_bp.route("/admin/crawlers/missing-events")
+def crawler_missing_events():
+    guard = _require_admin_page()
+    if guard:
+        return guard
+
+    from app.services.crawler_audit_service import (
+        get_missing_events, get_skip_reasons, get_audit_summary,
+    )
+    reason  = request.args.get("reason", "").strip()
+    page    = max(1, request.args.get("page", 1, type=int))
+    result  = get_missing_events(reason_filter=reason, page=page, per_page=50)
+    reasons = get_skip_reasons()
+    summary = get_audit_summary()
+    return render_template(
+        "admin/crawlers/missing_events.html",
+        **result,
+        skip_reasons=reasons,
+        current_reason=reason,
+        summary=summary,
+    )
+
+
+@crawler_bp.route("/api/crawlers/audit")
+def api_crawler_audit():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.services.crawler_audit_service import get_audit_logs
+    source = request.args.get("source", "").strip()
+    status = request.args.get("status", "").strip()
+    page   = max(1, request.args.get("page", 1, type=int))
+    result = get_audit_logs(source=source, status=status, page=page, per_page=50)
+
+    return jsonify({
+        "items": [
+            {
+                "id":          a.id,
+                "source":      a.source_name,
+                "event_name":  a.event_name,
+                "artist":      a.artist_name,
+                "event_date":  str(a.event_date) if a.event_date else None,
+                "venue":       a.venue,
+                "city":        a.city,
+                "source_url":  a.source_url,
+                "status":      a.status,
+                "reason":      a.reason,
+                "created_at":  a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in result["items"]
+        ],
+        "total": result["total"],
+        "page":  result["page"],
+        "pages": result["pages"],
+    })
+
+
+@crawler_bp.route("/api/crawlers/future-events")
+def api_crawler_future_events():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.services.crawler_audit_service import get_future_events
+    page   = max(1, request.args.get("page", 1, type=int))
+    result = get_future_events(page=page, per_page=100)
+
+    return jsonify({
+        "items": [
+            {
+                "id":          a.id,
+                "source":      a.source_name,
+                "event_name":  a.event_name,
+                "artist":      a.artist_name,
+                "event_date":  str(a.event_date) if a.event_date else None,
+                "venue":       a.venue,
+                "city":        a.city,
+                "source_url":  a.source_url,
+            }
+            for a in result["items"]
+        ],
+        "total": result["total"],
+        "page":  result["page"],
+    })
+
+
+@crawler_bp.route("/api/crawlers/missing-events")
+def api_crawler_missing_events():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.services.crawler_audit_service import get_missing_events, get_skip_reasons
+    reason = request.args.get("reason", "").strip()
+    page   = max(1, request.args.get("page", 1, type=int))
+    result = get_missing_events(reason_filter=reason, page=page, per_page=100)
+    top_reasons = get_skip_reasons()
+
+    return jsonify({
+        "items": [
+            {
+                "id":          a.id,
+                "source":      a.source_name,
+                "event_name":  a.event_name,
+                "artist":      a.artist_name,
+                "event_date":  str(a.event_date) if a.event_date else None,
+                "status":      a.status,
+                "reason":      a.reason,
+                "reason_label": a.reason_label,
+                "created_at":  a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in result["items"]
+        ],
+        "total":       result["total"],
+        "top_reasons": top_reasons,
+    })
+
+
+@crawler_bp.route("/api/crawlers/coverage")
+def api_crawler_coverage():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.services.crawler_audit_service import get_coverage_by_source
+    return jsonify(get_coverage_by_source())
+
+
+@crawler_bp.route("/api/crawlers/revalidate", methods=["POST"])
+def api_crawler_revalidate():
+    """重跑所有 SKIPPED 項目的驗證（示意 API，標記為 pending 重驗）。"""
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    from app.models.crawler_audit_log import CrawlerAuditLog as AuditLog
+    skipped_count = AuditLog.query.filter_by(status="SKIPPED").count()
+    return jsonify({
+        "message":       f"共 {skipped_count} 筆 SKIPPED 記錄（需重新執行爬蟲以重驗）",
+        "skipped_total": skipped_count,
+        "action":        "請至爬蟲管理頁重新執行各來源爬蟲",
+    })
+
+
 # ── Crawler Diagnostics Center ───────────────────────────────────────────────
 
 @crawler_bp.route("/admin/crawlers/debug")

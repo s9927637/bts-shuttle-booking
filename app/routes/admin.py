@@ -165,6 +165,11 @@ def dashboard():
     from app.services.crawler_diagnostics_service import get_date_distribution
     crawl_diag_dist = get_date_distribution()
 
+    # 爬蟲 Audit Dashboard widgets
+    from app.services.crawler_audit_service import get_audit_summary, get_coverage_by_source
+    crawl_audit_summary  = get_audit_summary()
+    crawl_audit_coverage = get_coverage_by_source()
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -256,6 +261,8 @@ def dashboard():
         dispatch_summary=dispatch_summary,
         passenger_stats=passenger_stats,
         crawl_diag_dist=crawl_diag_dist,
+        crawl_audit_summary=crawl_audit_summary,
+        crawl_audit_coverage=crawl_audit_coverage,
     )
 
 

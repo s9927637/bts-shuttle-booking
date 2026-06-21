@@ -579,6 +579,33 @@
 </div>
 {% endif %}
 
+{% if event_distribution is defined and event_distribution %}
+<div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">活動訂單分布</h2>
+    <a href="{{ url_for('admin.stats_by_event') }}" class="text-xs text-blue-600 hover:underline">詳細統計 →</a>
+  </div>
+  <div class="space-y-3">
+    {% set _total_all = event_distribution | sum(attribute='count') %}
+    {% for ed in event_distribution %}
+    {% set _pct = ((ed.count / _total_all * 100) | round(1)) if _total_all > 0 else 0 %}
+    <div>
+      <div class="flex items-center justify-between text-sm mb-1">
+        <span class="font-medium text-gray-700">
+          <span class="text-xs text-gray-400 mr-1">{{ ed.artist }}</span>{{ ed.title | truncate(28, True, '…') }}
+        </span>
+        <span class="text-gray-500 font-semibold">{{ ed.count }} 筆</span>
+      </div>
+      <div class="w-full bg-gray-100 rounded-full h-2">
+        <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ _pct }}%"></div>
+      </div>
+      <p class="text-xs text-gray-400 mt-0.5 text-right">{{ _pct }}%</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% if health_summary is defined %}
 <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
   <div class="flex items-center justify-between mb-4">

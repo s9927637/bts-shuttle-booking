@@ -126,6 +126,29 @@ def dashboard():
     from app.services.system_health.health_check_service import get_summary as get_health_summary
     health_summary = get_health_summary()
 
+    # 活動訂單分布（Dashboard Widget）
+    from app.models.event_page import EventPage as _EP
+    _event_dist_rows = (
+        db.session.query(
+            Order.event_page_id,
+            func.count(Order.id).label("cnt"),
+        )
+        .filter(Order.event_page_id.isnot(None))
+        .group_by(Order.event_page_id)
+        .all()
+    )
+    _ep_map = {ep.id: ep for ep in _EP.query.filter(
+        _EP.id.in_([r.event_page_id for r in _event_dist_rows])
+    ).all()} if _event_dist_rows else {}
+    _bts_cnt = db.session.query(func.count(Order.id)).filter(Order.event_page_id.is_(None)).scalar() or 0
+
+    event_distribution = [{"title": "BTS 高雄演唱會", "artist": "BTS", "count": _bts_cnt}] + [
+        {"title": _ep_map[r.event_page_id].title if r.event_page_id in _ep_map else "(已刪除)",
+         "artist": _ep_map[r.event_page_id].artist_name if r.event_page_id in _ep_map else "—",
+         "count": r.cnt}
+        for r in _event_dist_rows
+    ]
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -211,6 +234,7 @@ def dashboard():
         advisor_high_risk=advisor_high_risk,
         advisor_top_conf=advisor_top_conf,
         health_summary=health_summary,
+        event_distribution=event_distribution,
     )
 
 
@@ -224,18 +248,21 @@ def orders():
 
     from app.models.event_page import EventPage
 
-    q         = request.args.get("q", "").strip()
-    status    = request.args.get("status", "").strip()
+    q            = request.args.get("q", "").strip()
+    status       = request.args.get("status", "").strip()
     event_filter = request.args.get("event_filter", "").strip()  # "bts" | "<ep_id>" | ""
-    page      = max(1, request.args.get("page", 1, type=int))
+    page         = max(1, request.args.get("page", 1, type=int))
 
-    query = Order.query
+    query = Order.query.outerjoin(EventPage, Order.event_page_id == EventPage.id)
+
     if q:
         query = query.filter(
             db.or_(
                 Order.contact_name.ilike(f"%{q}%"),
                 Order.order_no.ilike(f"%{q}%"),
                 Order.phone.ilike(f"%{q}%"),
+                EventPage.title.ilike(f"%{q}%"),
+                EventPage.artist_name.ilike(f"%{q}%"),
             )
         )
     if status:
@@ -257,7 +284,7 @@ def orders():
         .all()
     )
     vehicles    = Vehicle.query.order_by(Vehicle.plate_number).all()
-    event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.created_at.desc()).all()
+    event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.artist_name, EventPage.created_at.desc()).all()
 
     return render_template(
         "admin/orders.html",
@@ -1663,124 +1690,186 @@ def revenue_print():
 
 # ── Debug：列出所有已註冊 Route ────────────────────────────────────────────────
 
-@admin_bp.route("/api/orders/by-event")
-def api_orders_by_event():
-    """依活動統計訂單數 / 人數 / 訂金。
+@admin_bp.route("/api/orders")
+def api_orders_list():
+    """GET /api/orders?event_id=<id>  — 依活動篩選訂單（JSON）。
 
-    回傳格式：
-    {
-      "events": [
-        {"event_page_id": 1, "title": "...", "artist_name": "...",
-         "order_count": 10, "passenger_count": 25, "deposit_total": 75000},
-        ...
-      ],
-      "bts": {"order_count": 5, "passenger_count": 12, "deposit_total": 36000}
-    }
+    event_id=0 或省略 → 全部；event_id=bts → BTS 舊訂單（無 event_page_id）
     """
     guard = require_admin()
     if guard:
         return jsonify({"error": "Unauthorized"}), 401
 
-    from app.models.order_event import OrderEvent
+    event_id = request.args.get("event_id", "").strip()
+    query    = Order.query
+
+    if event_id == "bts":
+        query = query.filter(Order.event_page_id.is_(None))
+    elif event_id and event_id.isdigit():
+        query = query.filter(Order.event_page_id == int(event_id))
+
+    rows = query.order_by(Order.created_at.desc()).limit(200).all()
+
+    return jsonify({
+        "orders": [
+            {
+                "id":             o.id,
+                "order_no":       o.order_no,
+                "contact_name":   o.contact_name,
+                "phone":          o.phone,
+                "departure_date": o.departure_date,
+                "passenger_count":o.passenger_count,
+                "payment_status": o.payment_status,
+                "deposit_amount": o.deposit_amount,
+                "total_amount":   o.total_amount,
+                "event_page_id":  o.event_page_id,
+                "event_title":    o.event_page.title if o.event_page else "BTS 高雄演唱會",
+                "created_at":     o.created_at.strftime("%Y-%m-%d %H:%M") if o.created_at else None,
+            }
+            for o in rows
+        ],
+        "total": len(rows),
+    })
+
+
+def _event_stats_rows():
+    """共用查詢：直接用 orders.event_page_id 統計各活動。"""
     from app.models.event_page import EventPage
 
     rows = (
         db.session.query(
-            OrderEvent.event_page_id,
-            func.count(func.distinct(OrderEvent.order_id)).label("order_count"),
+            Order.event_page_id,
+            func.count(Order.id).label("order_count"),
             func.sum(Order.passenger_count).label("passenger_count"),
             func.sum(Order.deposit_amount).label("deposit_total"),
+            func.sum(Order.total_amount).label("revenue_total"),
+            func.count(
+                db.case((Order.payment_status.in_(["訂金已確認", "已完成"]), 1))
+            ).label("paid_count"),
+            func.count(
+                db.case((Order.payment_status == "待付款", 1))
+            ).label("unpaid_count"),
         )
-        .join(Order, OrderEvent.order_id == Order.id)
-        .group_by(OrderEvent.event_page_id)
+        .filter(Order.event_page_id.isnot(None))
+        .group_by(Order.event_page_id)
         .all()
     )
 
     ep_ids = [r.event_page_id for r in rows]
     eps = {ep.id: ep for ep in EventPage.query.filter(EventPage.id.in_(ep_ids)).all()} if ep_ids else {}
+
+    bts_q = (
+        db.session.query(
+            func.count(Order.id).label("order_count"),
+            func.sum(Order.passenger_count).label("passenger_count"),
+            func.sum(Order.deposit_amount).label("deposit_total"),
+            func.sum(Order.total_amount).label("revenue_total"),
+            func.count(
+                db.case((Order.payment_status.in_(["訂金已確認", "已完成"]), 1))
+            ).label("paid_count"),
+            func.count(
+                db.case((Order.payment_status == "待付款", 1))
+            ).label("unpaid_count"),
+        )
+        .filter(Order.event_page_id.is_(None))
+        .one()
+    )
+
+    return rows, eps, bts_q
+
+
+@admin_bp.route("/api/orders/statistics-by-event")
+def api_orders_statistics_by_event():
+    """GET /api/orders/statistics-by-event — 依活動統計訂單 / 付款 / 未付款 / 營收。"""
+    guard = require_admin()
+    if guard:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    rows, eps, bts_q = _event_stats_rows()
 
     events = []
     for r in rows:
         ep = eps.get(r.event_page_id)
         events.append({
             "event_page_id":   r.event_page_id,
-            "title":           ep.title if ep else "(已刪除)",
+            "title":           ep.title       if ep else "(已刪除)",
             "artist_name":     ep.artist_name if ep else "—",
-            "order_count":     r.order_count or 0,
+            "order_count":     r.order_count  or 0,
             "passenger_count": int(r.passenger_count or 0),
-            "deposit_total":   int(r.deposit_total or 0),
+            "paid_count":      r.paid_count   or 0,
+            "unpaid_count":    r.unpaid_count or 0,
+            "deposit_total":   int(r.deposit_total  or 0),
+            "revenue_total":   int(r.revenue_total  or 0),
         })
-
-    mapped_order_ids = db.session.query(OrderEvent.order_id).distinct().scalar_subquery()
-    bts_q = (
-        db.session.query(
-            func.count(Order.id).label("order_count"),
-            func.sum(Order.passenger_count).label("passenger_count"),
-            func.sum(Order.deposit_amount).label("deposit_total"),
-        )
-        .filter(~Order.id.in_(mapped_order_ids))
-        .one()
-    )
 
     return jsonify({
         "events": events,
         "bts": {
-            "order_count":     bts_q.order_count or 0,
+            "title":           "BTS 高雄演唱會",
+            "order_count":     bts_q.order_count  or 0,
             "passenger_count": int(bts_q.passenger_count or 0),
-            "deposit_total":   int(bts_q.deposit_total or 0),
+            "paid_count":      bts_q.paid_count   or 0,
+            "unpaid_count":    bts_q.unpaid_count or 0,
+            "deposit_total":   int(bts_q.deposit_total  or 0),
+            "revenue_total":   int(bts_q.revenue_total  or 0),
+        },
+    })
+
+
+@admin_bp.route("/api/orders/by-event")
+def api_orders_by_event():
+    """舊路由保留相容（改用 orders.event_page_id 查詢）。"""
+    rows, eps, bts_q = _event_stats_rows()
+    events = []
+    for r in rows:
+        ep = eps.get(r.event_page_id)
+        events.append({
+            "event_page_id":   r.event_page_id,
+            "title":           ep.title       if ep else "(已刪除)",
+            "artist_name":     ep.artist_name if ep else "—",
+            "order_count":     r.order_count  or 0,
+            "passenger_count": int(r.passenger_count or 0),
+            "deposit_total":   int(r.deposit_total   or 0),
+        })
+    return jsonify({
+        "events": events,
+        "bts": {
+            "order_count":     bts_q.order_count  or 0,
+            "passenger_count": int(bts_q.passenger_count or 0),
+            "deposit_total":   int(bts_q.deposit_total   or 0),
         },
     })
 
 
 @admin_bp.route("/admin/stats/by-event")
 def stats_by_event():
-    """依活動統計頁面（HTML）。"""
+    """依活動統計頁面（HTML）— 使用 orders.event_page_id。"""
     guard = require_admin()
     if guard:
         return guard
 
-    from app.models.order_event import OrderEvent
-    from app.models.event_page import EventPage
-
-    rows = (
-        db.session.query(
-            OrderEvent.event_page_id,
-            func.count(func.distinct(OrderEvent.order_id)).label("order_count"),
-            func.sum(Order.passenger_count).label("passenger_count"),
-            func.sum(Order.deposit_amount).label("deposit_total"),
-        )
-        .join(Order, OrderEvent.order_id == Order.id)
-        .group_by(OrderEvent.event_page_id)
-        .all()
-    )
-
-    ep_ids = [r.event_page_id for r in rows]
-    eps = {ep.id: ep for ep in EventPage.query.filter(EventPage.id.in_(ep_ids)).all()} if ep_ids else {}
+    rows, eps, bts_q = _event_stats_rows()
 
     event_stats = []
     for r in rows:
         ep = eps.get(r.event_page_id)
         event_stats.append({
             "event_page":      ep,
-            "order_count":     r.order_count or 0,
+            "order_count":     r.order_count  or 0,
             "passenger_count": int(r.passenger_count or 0),
-            "deposit_total":   int(r.deposit_total or 0),
+            "paid_count":      r.paid_count   or 0,
+            "unpaid_count":    r.unpaid_count or 0,
+            "deposit_total":   int(r.deposit_total  or 0),
+            "revenue_total":   int(r.revenue_total  or 0),
         })
 
-    mapped_order_ids = db.session.query(OrderEvent.order_id).distinct().scalar_subquery()
-    bts_q = (
-        db.session.query(
-            func.count(Order.id).label("order_count"),
-            func.sum(Order.passenger_count).label("passenger_count"),
-            func.sum(Order.deposit_amount).label("deposit_total"),
-        )
-        .filter(~Order.id.in_(mapped_order_ids))
-        .one()
-    )
     bts_stats = {
-        "order_count":     bts_q.order_count or 0,
+        "order_count":     bts_q.order_count  or 0,
         "passenger_count": int(bts_q.passenger_count or 0),
-        "deposit_total":   int(bts_q.deposit_total or 0),
+        "paid_count":      bts_q.paid_count   or 0,
+        "unpaid_count":    bts_q.unpaid_count or 0,
+        "deposit_total":   int(bts_q.deposit_total  or 0),
+        "revenue_total":   int(bts_q.revenue_total  or 0),
     }
 
     return render_template(

@@ -118,7 +118,7 @@
       </div>
       <input type="text" name="q" value="{{ request.args.get('q','') }}"
              class="pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent w-64"
-             placeholder="搜尋姓名、電話、訂單編號…" />
+             placeholder="搜尋姓名、電話、訂單編號、活動名稱…" />
     </form>
 
     <form method="get" id="filter-form">
@@ -183,10 +183,9 @@
       <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
         <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ order.order_no }}</td>
         <td class="px-6 py-4 text-xs">
-          {% set _mapping = order.event_mappings.first() %}
-          {% if _mapping %}
+          {% if order.event_page %}
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-              {{ _mapping.event_page.artist_name }} — {{ _mapping.event_page.title | truncate(20, True, '…') }}
+              {{ order.event_page.artist_name }} — {{ order.event_page.title | truncate(22, True, '…') }}
             </span>
           {% else %}
             <span class="text-gray-400">BTS 高雄演唱會</span>
@@ -249,6 +248,11 @@
                     data-vehicle-id="{{ order.vehicle_id or '' }}"
                     data-line-user-id="{{ order.line_user_id or '' }}"
                     data-display-name="{{ order.display_name or '' }}"
+                    data-event-title="{{ order.event_page.title if order.event_page else 'BTS 高雄演唱會' }}"
+                    data-event-date="{{ order.event_page.event_date if order.event_page else '多場次' }}"
+                    data-event-price="{{ order.event_page.price if order.event_page else '' }}"
+                    data-event-deposit="{{ order.event_page.deposit if order.event_page else '' }}"
+                    data-event-artist="{{ order.event_page.artist_name if order.event_page else 'BTS' }}"
                     onclick="fillEditModal(this)"
                     class="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100">
               編輯
@@ -499,6 +503,33 @@
                       class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900"></textarea>
           </div>
 
+          <!-- 活動資訊（唯讀） -->
+          <div class="col-span-2 pt-2 border-t border-gray-100">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">活動資訊</p>
+            <div class="bg-indigo-50 rounded-xl px-4 py-3 grid grid-cols-2 gap-3">
+              <div class="col-span-2">
+                <p class="text-xs text-gray-400 mb-0.5">活動名稱</p>
+                <p id="edit_event_title" class="text-sm font-semibold text-indigo-900">—</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 mb-0.5">藝人 / 主辦</p>
+                <p id="edit_event_artist" class="text-sm text-gray-700">—</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 mb-0.5">活動日期</p>
+                <p id="edit_event_date" class="text-sm text-gray-700">—</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 mb-0.5">票價 (NT$)</p>
+                <p id="edit_event_price" class="text-sm text-gray-700">—</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 mb-0.5">訂金 (NT$)</p>
+                <p id="edit_event_deposit" class="text-sm text-gray-700">—</p>
+              </div>
+            </div>
+          </div>
+
           <!-- LINE 資訊（唯讀） -->
           <div class="col-span-2 pt-2 border-t border-gray-100">
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">LINE 資訊</p>
@@ -568,6 +599,13 @@ function fillEditModal(btn) {
   document.getElementById('edit_payment_status').value  = d.paymentStatus;
   document.getElementById('edit_vehicle_id').value      = d.vehicleId;
   calcEditTotal(d.passengerCount);
+
+  // 活動資訊（唯讀）
+  document.getElementById('edit_event_title').textContent   = d.eventTitle  || '—';
+  document.getElementById('edit_event_artist').textContent  = d.eventArtist || '—';
+  document.getElementById('edit_event_date').textContent    = d.eventDate   || '—';
+  document.getElementById('edit_event_price').textContent   = d.eventPrice  ? 'NT$ ' + parseInt(d.eventPrice).toLocaleString() : '—';
+  document.getElementById('edit_event_deposit').textContent = d.eventDeposit ? 'NT$ ' + parseInt(d.eventDeposit).toLocaleString() : '—';
 
   // LINE 資訊（唯讀）
   document.getElementById('edit_line_display_name').textContent = d.displayName || '—';

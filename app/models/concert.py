@@ -20,6 +20,8 @@ class Concert(db.Model):
     scheduler_enabled = db.Column(db.Boolean,     nullable=True, default=False)
     last_success_at   = db.Column(db.DateTime,    nullable=True)
     source_url        = db.Column(db.String(500), nullable=True)
+    source_type       = db.Column(db.String(50),  nullable=True)
+    source_urls       = db.Column(db.Text,        nullable=True)
 
     metrics      = db.relationship("ConcertMetrics",      back_populates="concert", uselist=False, cascade="all, delete-orphan")
     opportunities = db.relationship("ConcertOpportunity", back_populates="concert", cascade="all, delete-orphan")

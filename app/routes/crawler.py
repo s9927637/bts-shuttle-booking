@@ -17,6 +17,7 @@ from app.services.crawlers import REGISTRY
 from app.services.crawlers.crawler_manager import (
     run_kktix, run_tixcraft, run_all, run_playwright_test,
 )
+from app.services.concert_merge_service import get_source_stats
 
 crawler_bp = Blueprint("crawler", __name__)
 
@@ -42,9 +43,10 @@ def crawler_index():
     if guard:
         return guard
 
-    jobs = CrawlJob.query.order_by(CrawlJob.created_at.desc()).limit(50).all()
+    jobs    = CrawlJob.query.order_by(CrawlJob.created_at.desc()).limit(50).all()
     sources = list(REGISTRY.keys())
-    return render_template("admin/crawlers/index.html", jobs=jobs, sources=sources)
+    stats   = get_source_stats()
+    return render_template("admin/crawlers/index.html", jobs=jobs, sources=sources, stats=stats)
 
 
 # ── API: 手動執行爬蟲 ──────────────────────────────────────────────────────────
@@ -190,6 +192,120 @@ def api_crawler_tixcraft():
         return jsonify(result), 200
     except Exception as exc:
         return jsonify({"status": "error", "error": str(exc)}), 500
+
+
+# ── API: KKTIX 狀態 ──────────────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/kktix/status")
+def api_crawler_kktix_status():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    last_job = (
+        CrawlJob.query
+        .filter_by(source_name="kktix")
+        .order_by(CrawlJob.created_at.desc())
+        .first()
+    )
+    from app.models.concert import Concert
+    total_concerts = Concert.query.filter_by(deleted_at=None).count()
+    kktix_concerts = Concert.query.filter(
+        Concert.source_url.like("%kktix%"),
+        Concert.deleted_at.is_(None),
+    ).count()
+
+    return jsonify({
+        "source":          "kktix",
+        "target_url":      "https://kktix.com/events?event_tag_ids_in=1",
+        "last_job":        {
+            "id":         last_job.id           if last_job else None,
+            "status":     last_job.status        if last_job else None,
+            "created":    last_job.created_count if last_job else 0,
+            "updated":    last_job.updated_count if last_job else 0,
+            "errors":     last_job.error_count   if last_job else 0,
+            "ran_at":     last_job.created_at.isoformat() if last_job and last_job.created_at else None,
+            "duration_s": last_job.duration_seconds if last_job else None,
+        },
+        "total_concerts":  total_concerts,
+        "kktix_concerts":  kktix_concerts,
+    })
+
+
+# ── API: TixCraft 狀態 ───────────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/tixcraft/status")
+def api_crawler_tixcraft_status():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    last_job = (
+        CrawlJob.query
+        .filter_by(source_name="tixcraft")
+        .order_by(CrawlJob.created_at.desc())
+        .first()
+    )
+    from app.models.concert import Concert
+    total_concerts   = Concert.query.count()
+    tixcraft_concerts = Concert.query.filter(
+        Concert.source_type.like("%TIXCRAFT%")
+    ).count()
+
+    return jsonify({
+        "source":           "tixcraft",
+        "target_url":       "https://tixcraft.com/activity/category/C",
+        "last_job":         {
+            "id":         last_job.id            if last_job else None,
+            "status":     last_job.status         if last_job else None,
+            "created":    last_job.created_count  if last_job else 0,
+            "updated":    last_job.updated_count  if last_job else 0,
+            "errors":     last_job.error_count    if last_job else 0,
+            "ran_at":     last_job.created_at.isoformat() if last_job and last_job.created_at else None,
+            "duration_s": last_job.duration_seconds if last_job else None,
+        },
+        "total_concerts":   total_concerts,
+        "tixcraft_concerts": tixcraft_concerts,
+    })
+
+
+# ── API: 各來源統計 ───────────────────────────────────────────────────────────
+
+@crawler_bp.route("/api/crawlers/sources")
+def api_crawler_sources():
+    ok, err = _require_admin()
+    if not ok:
+        return err
+
+    stats = get_source_stats()
+
+    # 最新一次各來源 job
+    def _last_job(source: str):
+        j = (
+            CrawlJob.query
+            .filter_by(source_name=source)
+            .order_by(CrawlJob.created_at.desc())
+            .first()
+        )
+        if not j:
+            return None
+        return {
+            "id":         j.id,
+            "status":     j.status,
+            "created":    j.created_count,
+            "updated":    j.updated_count,
+            "ran_at":     j.created_at.isoformat() if j.created_at else None,
+            "duration_s": j.duration_seconds,
+        }
+
+    return jsonify({
+        "concerts":   stats,
+        "last_jobs":  {
+            "kktix":    _last_job("kktix"),
+            "tixcraft": _last_job("tixcraft"),
+            "mock":     _last_job("mock"),
+        },
+    })
 
 
 # ── API: 全部執行 ─────────────────────────────────────────────────────────────

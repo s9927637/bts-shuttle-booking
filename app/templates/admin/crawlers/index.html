@@ -50,6 +50,33 @@
     <div id="run-status" class="text-sm text-gray-500 min-h-[20px]"></div>
   </div>
 
+  <!-- ── 資料來源統計 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+    <h3 class="text-sm font-semibold text-gray-700 mb-4">資料來源統計</h3>
+    <div class="grid grid-cols-5 gap-4">
+      <div class="text-center">
+        <p class="text-xs text-gray-500">演唱會總數</p>
+        <p class="text-2xl font-bold text-gray-800 mt-1">{{ stats.total }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-gray-500">KKTIX 來源</p>
+        <p class="text-2xl font-bold text-blue-600 mt-1">{{ stats.kktix }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-gray-500">TixCraft 來源</p>
+        <p class="text-2xl font-bold text-indigo-600 mt-1">{{ stats.tixcraft }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-gray-500">跨來源合併</p>
+        <p class="text-2xl font-bold text-purple-600 mt-1">{{ stats.merged }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-gray-500">未標記來源</p>
+        <p class="text-2xl font-bold text-gray-400 mt-1">{{ stats.unknown }}</p>
+      </div>
+    </div>
+  </div>
+
   <!-- ── 統計小卡 ── -->
   {% set total    = jobs|length %}
   {% set success  = jobs|selectattr('status','equalto','success')|list|length %}

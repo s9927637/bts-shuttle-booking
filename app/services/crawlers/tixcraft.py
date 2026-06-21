@@ -2,226 +2,224 @@
 TixCraftCrawler — 使用 Playwright 抓取 TixCraft 演唱會活動。
 
 目標頁面：
-  https://tixcraft.com/activity/category/C   (演唱會分類)
+    https://tixcraft.com/activity/category/C  (演唱會分類)
 
-抓取欄位：
-  活動名稱、活動日期、活動地點、活動網址
+DOM 結構（已驗證 2026-06）：
+    .eventContainer
+        a[href]                        ← 活動連結（/activity/detail/...）
+        img[alt]                       ← 活動名稱（最可靠）
+        inner_text line 1              ← 日期（2026/06/27 (Sat.)）
+        inner_text line 2              ← 活動名稱（同 img.alt）
 """
+from __future__ import annotations
+
 import re
 
-from app.services.crawlers.base import BaseCrawler
-from app.services.concert_normalizer import normalize
+from app.services.crawlers.playwright_base import PlaywrightBaseCrawler
+from app.services.concert_normalizer import parse_date, extract_city
+from app.services.location_parser import parse_city
+from app.services.artist_parser import parse_artist
 
-_BASE_URL   = "https://tixcraft.com"
-_LIST_URL   = "https://tixcraft.com/activity/category/C"
-_PAGE_LIMIT = 3
+_BASE_URL = "https://tixcraft.com"
+_LIST_URL = "https://tixcraft.com/activity/category/C"
 
 
-class TixCraftCrawler(BaseCrawler):
+class TixCraftCrawler(PlaywrightBaseCrawler):
 
     source_name = "tixcraft"
+    _target_url = _LIST_URL
+    _timeout_ms = 30_000
+    _wait_ms    = 10_000
 
-    # ── fetch() ──────────────────────────────────────────────────────────────
+    # ── fetch() — 覆寫：DOM 直接解析 ─────────────────────────────────────────
 
     def fetch(self) -> list[dict]:
+        """
+        導航至 TixCraft 演唱會分類頁，等待 .eventContainer 出現，
+        直接從 DOM 取出活動資料。
+        回傳格式：[{"title", "date_text", "source_url"}]
+        """
         from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
         raw_items: list[dict] = []
 
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True)
-            ctx = browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                ),
-                locale="zh-TW",
-            )
+            browser, ctx = self._make_browser_context(pw)
             page = ctx.new_page()
-            page.set_default_timeout(30_000)
+            page.set_default_timeout(self._timeout_ms)
 
-            for page_no in range(1, _PAGE_LIMIT + 1):
-                # TixCraft 分頁：page_no=1 → 不加 param，page_no>1 → ?p=N
-                url = _LIST_URL if page_no == 1 else f"{_LIST_URL}?p={page_no}"
-                self._log("INFO", f"[TixCraft] 載入頁面 {page_no}：{url}")
+            self._log("INFO", f"[TixCraft] 前往：{_LIST_URL}")
+            try:
+                page.goto(_LIST_URL, wait_until="networkidle", timeout=self._timeout_ms)
+            except PWTimeout:
+                self._log("WARNING", "[TixCraft] networkidle 超時，繼續嘗試")
+            except Exception as exc:
+                self._log("ERROR", f"[TixCraft] 頁面載入失敗：{exc}")
+                browser.close()
+                return []
 
+            # 等待活動卡片出現
+            try:
+                page.wait_for_selector(".eventContainer", timeout=self._wait_ms)
+            except PWTimeout:
+                self._log("WARNING", "[TixCraft] 等待 .eventContainer 超時，嘗試繼續解析")
+
+            items = page.query_selector_all(".eventContainer")
+            self._log("INFO", f"[TixCraft] 找到 {len(items)} 個 eventContainer")
+
+            for el in items:
                 try:
-                    page.goto(url, wait_until="domcontentloaded")
-                    try:
-                        page.wait_for_selector(
-                            "a[href*='/activity/detail/'], table tbody tr, "
-                            ".card, [class*='activity'], ul.list-item li",
-                            timeout=15_000,
-                        )
-                    except PWTimeout:
-                        self._log("WARNING", f"[TixCraft] page {page_no} 等待超時，嘗試直接解析")
-
-                    items = self._parse_page(page)
-                    if not items:
-                        self._log("INFO", f"[TixCraft] page {page_no} 無資料，停止翻頁")
-                        break
-                    raw_items.extend(items)
-                    self._log("INFO", f"[TixCraft] page {page_no} 取得 {len(items)} 筆")
-
-                except PWTimeout:
-                    self._log("ERROR", f"[TixCraft] page {page_no} 頁面載入超時")
-                    break
+                    raw = self._extract_item(el)
+                    if raw:
+                        raw_items.append(raw)
                 except Exception as exc:
-                    self._log("ERROR", f"[TixCraft] page {page_no} 錯誤：{exc}")
-                    break
+                    self._log("WARNING", f"[TixCraft] 單筆解析失敗：{exc}")
 
             browser.close()
 
-        self._log("INFO", f"[TixCraft] fetch 完成，共 {len(raw_items)} 筆")
+        self._log("INFO", f"[TixCraft] fetch 完成，共 {len(raw_items)} 筆原始資料")
         return raw_items
 
-    # ── _parse_page() ─────────────────────────────────────────────────────────
+    def _extract_item(self, el) -> dict | None:
+        """從單一 .eventContainer 提取活動資訊。"""
+        # 連結
+        link = el.query_selector("a")
+        if not link:
+            return None
+        href = link.get_attribute("href") or ""
+        if not href:
+            return None
+        if not href.startswith("http"):
+            href = _BASE_URL + href
 
-    def _parse_page(self, page) -> list[dict]:
-        items: list[dict] = []
+        # 標題：優先用 img.alt（最穩定）
+        img   = el.query_selector("img")
+        title = (img.get_attribute("alt") or "").strip() if img else ""
 
-        # 策略 1：TixCraft 使用 table 列表
-        try:
-            rows = page.query_selector_all("table tbody tr")
-            if rows:
-                for row in rows:
-                    item = self._extract_from_table_row(row)
-                    if item:
-                        items.append(item)
-                if items:
-                    return items
-        except Exception:
-            pass
+        # 日期：取 inner_text 第一行
+        full_text = el.inner_text().strip()
+        lines = [l.strip() for l in full_text.splitlines() if l.strip()]
 
-        # 策略 2：卡片式列表
-        card_selectors = [
-            "a[href*='/activity/detail/']",
-            ".col-activity a",
-            "[class*='activity-item'] a",
-            "ul.list-unstyled li a",
-        ]
-        for sel in card_selectors:
-            try:
-                els = page.query_selector_all(sel)
-                if els:
-                    seen: set[str] = set()
-                    for el in els[:40]:
-                        try:
-                            href = el.get_attribute("href") or ""
-                            if href in seen:
-                                continue
-                            seen.add(href)
-                            item = self._extract_from_card(el)
-                            if item:
-                                items.append(item)
-                        except Exception:
-                            continue
-                    if items:
-                        return items
-            except Exception:
-                continue
+        date_text = ""
+        if lines:
+            first = lines[0]
+            # 判斷是否為日期行（含 / 與 4 位年份）
+            if re.search(r"20\d{2}/\d{1,2}/\d{1,2}", first):
+                date_text = first
+            # 若第一行是標題，嘗試第二行
+            elif len(lines) > 1 and re.search(r"20\d{2}/\d{1,2}/\d{1,2}", lines[1]):
+                date_text = lines[1]
 
-        # 策略 3：抓所有 activity/detail 連結
-        try:
-            all_links = page.query_selector_all("a[href*='activity']")
-            seen_hrefs: set[str] = set()
-            for el in all_links[:60]:
-                try:
-                    href = el.get_attribute("href") or ""
-                    if "detail" not in href:
-                        continue
-                    if href in seen_hrefs:
-                        continue
-                    seen_hrefs.add(href)
-                    item = self._extract_from_card(el)
-                    if item and item.get("title"):
-                        items.append(item)
-                except Exception:
-                    continue
-        except Exception:
-            pass
+        # 若 img.alt 為空，用文字最後一行作標題
+        if not title and lines:
+            title = lines[-1]
 
-        return items
-
-    def _extract_from_table_row(self, row) -> dict | None:
-        try:
-            cells = row.query_selector_all("td")
-            if len(cells) < 2:
-                return None
-            # TixCraft table 欄位：活動名稱, 日期, 場地
-            link_el = cells[0].query_selector("a")
-            title = (cells[0].inner_text() or "").strip()
-            href  = ""
-            if link_el:
-                href  = link_el.get_attribute("href") or ""
-                title = (link_el.inner_text() or title).strip()
-            if not href.startswith("http"):
-                href = _BASE_URL + href
-
-            date_text  = (cells[1].inner_text() or "").strip() if len(cells) > 1 else ""
-            venue_text = (cells[2].inner_text() or "").strip() if len(cells) > 2 else ""
-
-            if not title or len(title) < 2:
-                return None
-
-            return {
-                "title":      title,
-                "date_text":  date_text,
-                "venue":      venue_text,
-                "source_url": href,
-            }
-        except Exception:
+        if not title or len(title) < 2:
             return None
 
-    def _extract_from_card(self, el) -> dict | None:
-        try:
-            href = el.get_attribute("href") or ""
-            if not href.startswith("http"):
-                href = _BASE_URL + href
-
-            all_text = (el.inner_text() or "").strip()
-            lines = [l.strip() for l in all_text.splitlines() if l.strip()]
-            if not lines:
-                return None
-
-            title = lines[0]
-            date_text  = ""
-            venue_text = ""
-            for line in lines[1:]:
-                if re.search(r"\d{4}[/\-年]|\d{1,2}[/月]\d{1,2}", line):
-                    if not date_text:
-                        date_text = line
-                elif not venue_text:
-                    venue_text = line
-
-            if not title or len(title) < 2:
-                return None
-
-            return {
-                "title":      title,
-                "date_text":  date_text,
-                "venue":      venue_text,
-                "source_url": href,
-            }
-        except Exception:
+        # 過濾無效標題（優惠購票說明頁、身心障礙票頁等，標題以 [ 開頭）
+        if title.startswith("["):
             return None
 
-    # ── parse() ──────────────────────────────────────────────────────────────
+        return {
+            "title":     title,
+            "date_text": date_text,
+            "venue":     "",
+            "source_url": href,
+        }
+
+    # ── parse() — 標準化 ─────────────────────────────────────────────────────
 
     def parse(self, raw: list[dict]) -> list[dict]:
-        result = []
-        seen: set[str] = set()
+        """
+        標準化 fetch() 回傳的原始資料。
+        同時從標題中提取城市資訊（例如 "in TAIPEI"、"in KAOHSIUNG"）。
+        """
+        result: list[dict] = []
+        seen:   set[str]   = set()
+
         for item in raw:
             try:
-                normalized = normalize(item)
-                if not normalized:
-                    continue
-                key = f"{normalized['name']}|{normalized['concert_date']}"
+                title      = item.get("title", "")
+                date_text  = item.get("date_text", "")
+                source_url = item.get("source_url", "")
+
+                artist       = parse_artist(title)
+                concert_date = _parse_tixcraft_date(date_text)
+                city         = _extract_city_from_title(title) or extract_city("")
+
+                record = {
+                    "artist":       artist,
+                    "name":         title,
+                    "concert_date": concert_date,
+                    "city":         city or "待確認",
+                    "venue":        "待確認",
+                    "source_url":   source_url,
+                    "source_type":  "TIXCRAFT",
+                    "status":       "active",
+                }
+
+                key = f"{artist}|{concert_date}|{title}"
                 if key in seen:
                     continue
                 seen.add(key)
-                result.append(normalized)
+
+                result.append(record)
+
             except Exception as exc:
                 self._log("WARNING", f"[TixCraft] parse 略過一筆：{exc}")
+
+        self._log("INFO", f"[TixCraft] parse 完成，{len(result)} 筆有效資料")
         return result
+
+
+# ── 輔助函式 ──────────────────────────────────────────────────────────────────
+
+def _parse_tixcraft_date(text: str):
+    """
+    解析 TixCraft 日期格式。
+    例：
+        "2026/06/27 (Sat.)"           → date(2026, 6, 27)
+        "2026/06/20 (Sat.) ~ 2026/06/21 (Sun.)" → date(2026, 6, 20)（取開始日）
+    """
+    if not text:
+        return None
+    match = re.search(r"(20\d{2})/(\d{1,2})/(\d{1,2})", text)
+    if match:
+        from datetime import date
+        try:
+            return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        except ValueError:
+            return None
+    return None
+
+
+def _extract_city_from_title(title: str) -> str:
+    """
+    從標題提取城市資訊。
+    例："ITZY 3RD WORLD TOUR in KAOHSIUNG" → "高雄"
+    """
+    # 先用 location_parser
+    city = parse_city(title)
+    if city:
+        return city
+
+    # 英文城市關鍵字（TixCraft 標題常用英文）
+    _EN_CITY_MAP = {
+        "taipei":    "台北",
+        "tpe":       "台北",
+        "kaohsiung": "高雄",
+        "khs":       "高雄",
+        "taichung":  "台中",
+        "tainan":    "台南",
+        "taoyuan":   "桃園",
+        "osaka":     "大阪",
+        "tokyo":     "東京",
+        "seoul":     "首爾",
+    }
+    lower = title.lower()
+    for kw, city_name in _EN_CITY_MAP.items():
+        if kw in lower:
+            return city_name
+
+    return ""

@@ -58,15 +58,25 @@ class BaseCrawler(ABC):
     # ── 寫入邏輯（共用，子類別通常不需覆寫） ─────────────────────────────────
 
     def save(self, records: list[dict]) -> tuple[int, int, int, int]:
+        from app.services.concert_merge_service import merge_concert
+        from app.services.data_quality_validator import validate_batch
+
         created = updated = skipped = errors = 0
 
-        for rec in records:
+        # 資料品質驗證
+        valid_records, invalid_records = validate_batch(records)
+        for inv in invalid_records:
+            errs = inv.get("_validation_errors", [])
+            self._log("WARNING", f"[SKIP] 資料品質不符，略過：{inv.get('name')} — {errs}")
+            skipped += 1
+
+        for rec in valid_records:
             try:
                 h = self._make_hash(rec)
                 existing = Concert.query.filter_by(crawler_hash=h).first()
 
                 if existing:
-                    # 更新資料
+                    # Hash 完全相同 → 更新既有資料
                     existing.artist       = rec.get("artist", existing.artist)
                     existing.name         = rec.get("name",   existing.name)
                     existing.concert_date = rec.get("concert_date", existing.concert_date)
@@ -74,29 +84,40 @@ class BaseCrawler(ABC):
                     existing.venue        = rec.get("venue",  existing.venue)
                     if rec.get("source_url"):
                         existing.source_url = rec["source_url"]
+                    if rec.get("source_type"):
+                        existing.source_type = rec["source_type"]
                     existing.updated_at   = datetime.utcnow()
                     updated += 1
                     self._log("INFO", f"[UPDATE] {rec.get('artist')} — {rec.get('name')}")
+
                 else:
-                    c = Concert(
-                        artist       = rec["artist"],
-                        name         = rec["name"],
-                        concert_date = rec.get("concert_date"),
-                        city         = rec.get("city"),
-                        venue        = rec.get("venue"),
-                        source_url   = rec.get("source_url"),
-                        status       = rec.get("status", "評估中"),
-                        crawler_hash = h,
-                        created_at   = datetime.utcnow(),
-                        updated_at   = datetime.utcnow(),
-                    )
-                    db.session.add(c)
-                    created += 1
-                    self._log("INFO", f"[CREATE] {rec.get('artist')} — {rec.get('name')}")
+                    # 嘗試跨來源合併（同日期 + 相似標題）
+                    was_merged = merge_concert(rec)
+                    if was_merged:
+                        self._log("INFO", f"[MERGE] {rec.get('artist')} — {rec.get('name')}")
+                        updated += 1
+                    else:
+                        # 新建資料
+                        c = Concert(
+                            artist       = rec["artist"],
+                            name         = rec["name"],
+                            concert_date = rec.get("concert_date"),
+                            city         = rec.get("city"),
+                            venue        = rec.get("venue"),
+                            source_url   = rec.get("source_url"),
+                            source_type  = rec.get("source_type"),
+                            status       = rec.get("status", "評估中"),
+                            crawler_hash = h,
+                            created_at   = datetime.utcnow(),
+                            updated_at   = datetime.utcnow(),
+                        )
+                        db.session.add(c)
+                        created += 1
+                        self._log("INFO", f"[CREATE] {rec.get('artist')} — {rec.get('name')}")
 
             except Exception as exc:
                 errors += 1
-                self._log("ERROR", f"[ERROR] {rec}: {exc}")
+                self._log("ERROR", f"[ERROR] {rec.get('name', rec)}: {exc}")
                 db.session.rollback()
 
         if created + updated > 0:

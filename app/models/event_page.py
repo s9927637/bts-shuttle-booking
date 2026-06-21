@@ -20,14 +20,40 @@ class EventPage(db.Model):
     faq_content  = db.Column(db.Text, nullable=True)
     terms_content = db.Column(db.Text, nullable=True)
     # 預留未來接入欄位
+    # Phase 1：擴充欄位
+    category         = db.Column(db.String(50),  nullable=True, default='concert')
+    venue            = db.Column(db.String(200),  nullable=True)
+    booking_open_at  = db.Column(db.DateTime,     nullable=True)
+    booking_close_at = db.Column(db.DateTime,     nullable=True)
+    banner_image     = db.Column(db.String(500),  nullable=True)
+    thumbnail_image  = db.Column(db.String(500),  nullable=True)
+
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
-    deleted_at   = db.Column(db.DateTime, nullable=True)   # 軟刪除
+    deleted_at   = db.Column(db.DateTime, nullable=True)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     concert     = db.relationship("Concert",    foreign_keys=[concert_id],     backref=db.backref("event_pages", lazy="select"))
     event_group = db.relationship("EventGroup", foreign_keys=[event_group_id], backref=db.backref("event_pages", lazy="select"))
+    sections    = db.relationship("EventSection", backref="event_page", lazy="dynamic",
+                                  cascade="all, delete-orphan", order_by="EventSection.sort_order")
+
+    CATEGORY_LABELS = {
+        'concert':    '演唱會',
+        'sports':     '球賽',
+        'festival':   '節慶',
+        'exhibition': '展覽',
+        'other':      '其他',
+    }
+
+    @property
+    def category_label(self):
+        return self.CATEGORY_LABELS.get(self.category or 'concert', '演唱會')
+
+    @property
+    def display_image(self):
+        return self.banner_image or self.cover_image
 
     @property
     def is_published(self):

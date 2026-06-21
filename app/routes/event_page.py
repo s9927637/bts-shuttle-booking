@@ -4,6 +4,7 @@
 後台：/admin/event-pages/*
 前台：/events/<slug>
 """
+import json
 import re
 from datetime import datetime
 
@@ -11,6 +12,7 @@ from flask import Blueprint, abort, flash, jsonify, redirect, render_template, r
 
 from app import db
 from app.models.event_page import EventPage
+from app.models.event_section import EventSection
 from app.models.concert import Concert, EventGroup
 
 event_page_bp = Blueprint("event_page", __name__)
@@ -127,6 +129,13 @@ def ep_create():
     title = request.form.get("title", "").strip() or f"{artist_name} {departure_city}演唱會包車"
     slug  = _make_slug(artist_name, departure_city)
 
+    def _parse_dt(field):
+        v = request.form.get(field, "").strip()
+        try:
+            return datetime.fromisoformat(v) if v else None
+        except ValueError:
+            return None
+
     ep = EventPage(
         title=title,
         slug=slug,
@@ -137,6 +146,12 @@ def ep_create():
         price=int(request.form.get("price", 2000) or 2000),
         deposit=int(request.form.get("deposit", 300) or 300),
         cover_image=request.form.get("cover_image", "").strip() or None,
+        banner_image=request.form.get("banner_image", "").strip() or None,
+        thumbnail_image=request.form.get("thumbnail_image", "").strip() or None,
+        category=request.form.get("category", "concert") or "concert",
+        venue=request.form.get("venue", "").strip() or None,
+        booking_open_at=_parse_dt("booking_open_at"),
+        booking_close_at=_parse_dt("booking_close_at"),
         status=request.form.get("status", "草稿"),
         description=request.form.get("description", "").strip() or None,
         faq_content=request.form.get("faq_content", "").strip() or None,
@@ -170,21 +185,34 @@ def ep_edit(ep_id):
                                concerts=concerts, event_groups=event_groups)
 
     # POST
-    ep.title        = request.form.get("title", ep.title).strip()
-    ep.artist_name  = request.form.get("artist_name", ep.artist_name).strip()
-    ep.event_name   = request.form.get("event_name", ep.event_name).strip()
-    ep.event_date   = request.form.get("event_date", "").strip() or None
+    def _parse_dt_edit(field):
+        v = request.form.get(field, "").strip()
+        try:
+            return datetime.fromisoformat(v) if v else None
+        except ValueError:
+            return None
+
+    ep.title          = request.form.get("title", ep.title).strip()
+    ep.artist_name    = request.form.get("artist_name", ep.artist_name).strip()
+    ep.event_name     = request.form.get("event_name", ep.event_name).strip()
+    ep.event_date     = request.form.get("event_date", "").strip() or None
     ep.departure_city = request.form.get("departure_city", "").strip() or None
-    ep.price        = int(request.form.get("price", ep.price or 2000) or 2000)
-    ep.deposit      = int(request.form.get("deposit", ep.deposit or 300) or 300)
-    ep.cover_image  = request.form.get("cover_image", "").strip() or None
-    ep.status       = request.form.get("status", ep.status)
-    ep.description  = request.form.get("description", "").strip() or None
-    ep.faq_content  = request.form.get("faq_content", "").strip() or None
-    ep.terms_content = request.form.get("terms_content", "").strip() or None
-    ep.concert_id   = int(request.form.get("concert_id") or 0) or None
+    ep.price          = int(request.form.get("price", ep.price or 2000) or 2000)
+    ep.deposit        = int(request.form.get("deposit", ep.deposit or 300) or 300)
+    ep.cover_image    = request.form.get("cover_image", "").strip() or None
+    ep.banner_image   = request.form.get("banner_image", "").strip() or None
+    ep.thumbnail_image = request.form.get("thumbnail_image", "").strip() or None
+    ep.category       = request.form.get("category", ep.category or "concert") or "concert"
+    ep.venue          = request.form.get("venue", "").strip() or None
+    ep.booking_open_at  = _parse_dt_edit("booking_open_at")
+    ep.booking_close_at = _parse_dt_edit("booking_close_at")
+    ep.status         = request.form.get("status", ep.status)
+    ep.description    = request.form.get("description", "").strip() or None
+    ep.faq_content    = request.form.get("faq_content", "").strip() or None
+    ep.terms_content  = request.form.get("terms_content", "").strip() or None
+    ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
-    ep.updated_at   = datetime.utcnow()
+    ep.updated_at     = datetime.utcnow()
     db.session.commit()
     flash(f"已更新活動「{ep.title}」。", "success")
     return redirect(url_for("event_page.ep_list"))
@@ -383,3 +411,231 @@ def api_events_statistics_all():
         })
 
     return jsonify({"events": result, "total": len(result)})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 2/3  活動區塊系統
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── 後台：區塊列表 + 新增 ──────────────────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections", methods=["GET", "POST"])
+def ep_sections(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    ep = EventPage.query.get_or_404(ep_id)
+
+    if request.method == "POST":
+        section_type = request.form.get("type", "").strip()
+        if section_type not in EventSection.TYPES:
+            flash("不支援的區塊類型。", "error")
+            return redirect(url_for("event_page.ep_sections", ep_id=ep_id))
+
+        # 自動填入預設 content
+        default_content = EventSection.TYPE_DEFAULTS.get(section_type, {})
+        title = request.form.get("title", "").strip() or None
+        content_raw = request.form.get("content_json", "").strip()
+        try:
+            content = json.loads(content_raw) if content_raw else default_content
+        except json.JSONDecodeError:
+            content = default_content
+
+        max_order = db.session.query(db.func.max(EventSection.sort_order)).filter_by(event_id=ep_id).scalar() or 0
+        sec = EventSection(
+            event_id=ep_id,
+            type=section_type,
+            title=title,
+            sort_order=max_order + 1,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        sec.content = content
+        db.session.add(sec)
+        db.session.commit()
+        flash(f"已新增「{sec.type_label}」區塊。", "success")
+        return redirect(url_for("event_page.ep_sections", ep_id=ep_id))
+
+    sections = ep.sections.all()
+    return render_template("admin/event_pages/sections.html",
+                           ep=ep, sections=sections,
+                           section_types=EventSection.TYPES,
+                           type_labels=EventSection.TYPE_LABELS)
+
+
+# ── 後台：編輯區塊 ─────────────────────────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections/<int:sec_id>/edit",
+                     methods=["GET", "POST"])
+def ep_section_edit(ep_id, sec_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    ep  = EventPage.query.get_or_404(ep_id)
+    sec = EventSection.query.get_or_404(sec_id)
+    if sec.event_id != ep_id:
+        abort(404)
+
+    if request.method == "POST":
+        sec.title = request.form.get("title", "").strip() or None
+        content_raw = request.form.get("content_json", "").strip()
+        try:
+            sec.content = json.loads(content_raw) if content_raw else sec.content
+        except json.JSONDecodeError:
+            flash("JSON 格式錯誤，未儲存 content。", "warning")
+        sec.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash("已更新區塊。", "success")
+        return redirect(url_for("event_page.ep_sections", ep_id=ep_id))
+
+    return render_template("admin/event_pages/section_edit.html",
+                           ep=ep, sec=sec,
+                           type_labels=EventSection.TYPE_LABELS)
+
+
+# ── 後台：刪除區塊 ─────────────────────────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections/<int:sec_id>/delete",
+                     methods=["POST"])
+def ep_section_delete(ep_id, sec_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    sec = EventSection.query.get_or_404(sec_id)
+    if sec.event_id != ep_id:
+        abort(404)
+    db.session.delete(sec)
+    db.session.commit()
+    flash("已刪除區塊。", "success")
+    return redirect(url_for("event_page.ep_sections", ep_id=ep_id))
+
+
+# ── 後台：啟用/停用區塊 ────────────────────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections/<int:sec_id>/toggle",
+                     methods=["POST"])
+def ep_section_toggle(ep_id, sec_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    sec = EventSection.query.get_or_404(sec_id)
+    if sec.event_id != ep_id:
+        abort(404)
+    sec.is_active = not sec.is_active
+    sec.updated_at = datetime.utcnow()
+    db.session.commit()
+    state = "啟用" if sec.is_active else "停用"
+    return jsonify({"ok": True, "is_active": sec.is_active, "msg": f"已{state}"})
+
+
+# ── 後台：更新排序 ─────────────────────────────────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections/reorder", methods=["POST"])
+def ep_section_reorder(ep_id):
+    guard = _require_admin()
+    if guard:
+        return jsonify({"error": "未登入"}), 401
+
+    data = request.get_json(silent=True) or {}
+    order_list = data.get("order", [])   # [{id: 1}, {id: 2}, ...]
+    for idx, item in enumerate(order_list):
+        sec = EventSection.query.get(item.get("id"))
+        if sec and sec.event_id == ep_id:
+            sec.sort_order = idx
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 4  活動複製
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/admin/events/<int:ep_id>/clone", methods=["POST"])
+def ep_clone(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    src = EventPage.query.get_or_404(ep_id)
+
+    new_title = f"{src.title} (副本)"
+    base_slug  = f"{src.slug}-copy"
+    new_slug   = base_slug
+    n = 2
+    while EventPage.query.filter_by(slug=new_slug).first():
+        new_slug = f"{base_slug}-{n}"
+        n += 1
+
+    clone = EventPage(
+        title=new_title,
+        slug=new_slug,
+        artist_name=src.artist_name,
+        event_name=src.event_name,
+        event_date=src.event_date,
+        departure_city=src.departure_city,
+        price=src.price,
+        deposit=src.deposit,
+        cover_image=src.cover_image,
+        banner_image=src.banner_image,
+        thumbnail_image=src.thumbnail_image,
+        status="草稿",
+        description=src.description,
+        faq_content=src.faq_content,
+        terms_content=src.terms_content,
+        category=src.category,
+        venue=src.venue,
+        booking_open_at=src.booking_open_at,
+        booking_close_at=src.booking_close_at,
+        concert_id=src.concert_id,
+        event_group_id=src.event_group_id,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.session.add(clone)
+    db.session.flush()   # 取得 clone.id
+
+    # 複製 event_sections
+    for sec in src.sections.all():
+        new_sec = EventSection(
+            event_id=clone.id,
+            type=sec.type,
+            title=sec.title,
+            content_json=sec.content_json,
+            sort_order=sec.sort_order,
+            is_active=sec.is_active,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.session.add(new_sec)
+
+    db.session.commit()
+    flash(f"已複製活動「{new_title}」，請修改後發布。", "success")
+    return redirect(url_for("event_page.ep_edit", ep_id=clone.id))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 5  公開活動列表  /events
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/events")
+def events_list():
+    category = request.args.get("category", "").strip()
+    query = (
+        EventPage.query
+        .filter(EventPage.deleted_at.is_(None), EventPage.status == "已發布")
+        .order_by(EventPage.event_date.asc(), EventPage.created_at.desc())
+    )
+    if category:
+        query = query.filter(EventPage.category == category)
+
+    events = query.all()
+    categories = EventPage.CATEGORY_LABELS
+    return render_template("passenger/events.html",
+                           events=events,
+                           categories=categories,
+                           current_category=category)

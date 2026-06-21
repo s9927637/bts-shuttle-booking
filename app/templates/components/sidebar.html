@@ -195,6 +195,15 @@
     <!-- ─ 活動管理 ─ -->
     <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">活動管理</p>
 
+    <a href="/events" target="_blank"
+       class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+       title="前台活動列表">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+      </svg>
+      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">前台活動頁 ↗</span>
+    </a>
+
     <a href="{{ url_for('event_page.ep_list') }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
               {% if '/admin/event-pages' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"

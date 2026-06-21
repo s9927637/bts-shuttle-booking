@@ -91,9 +91,16 @@
             <a href="/events/{{ p.slug }}" target="_blank"
                class="text-xs text-purple-500 hover:underline font-mono">/events/{{ p.slug }}</a>
           </td>
-          <td class="px-4 py-3 text-right space-x-3">
+          <td class="px-4 py-3 text-right space-x-2">
+            <a href="{{ url_for('event_page.ep_sections', ep_id=p.id) }}"
+               class="text-xs text-indigo-600 hover:underline">區塊</a>
             <a href="{{ url_for('event_page.ep_edit', ep_id=p.id) }}"
                class="text-xs text-blue-600 hover:underline">編輯</a>
+            <form method="post" action="{{ url_for('event_page.ep_clone', ep_id=p.id) }}"
+                  class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="text-xs text-amber-600 hover:underline">複製</button>
+            </form>
             <form method="post" action="{{ url_for('event_page.ep_delete', ep_id=p.id) }}"
                   class="inline" onsubmit="return confirm('確定刪除「{{ p.title }}」？刪除後可至資料庫還原。')">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

@@ -38,6 +38,7 @@ from app.models.order_event import OrderEvent
 from app.models.dispatch_event import DispatchEvent, DispatchEventOrder
 from app.models.passenger_profile import PassengerProfile, PassengerTag
 from app.models.crawler_audit_log import CrawlerAuditLog
+from app.models.event_section import EventSection
 
 def create_app():
     app = Flask(__name__)

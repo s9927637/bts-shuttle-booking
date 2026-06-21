@@ -327,72 +327,173 @@
   </div>
 </section>
 
-<!-- ── 活動介紹 ── -->
-{% if ep.description %}
-<section style="background:#060312;">
-  <div class="ev-section">
-    <h2 class="ev-section-title">活動介紹</h2>
-    <p class="ev-prose">{{ ep.description }}</p>
-  </div>
-</section>
-{% endif %}
+<!-- ══════════════════════════════════════════════════════
+     event_sections 動態區塊（Phase 7）
+     若 sections 存在則優先渲染，否則 fallback 到舊欄位
+     ══════════════════════════════════════════════════════ -->
+{% set active_sections = ep.sections.filter_by(is_active=True).order_by('sort_order').all() %}
 
-<!-- ── FAQ ── -->
-{% if ep.faq_content %}
-<section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
-  <div class="ev-section">
-    <h2 class="ev-section-title">常見問題</h2>
-    {% set faq_lines = ep.faq_content.splitlines() %}
-    {% set ns = namespace(q='', a='') %}
-    {% for line in faq_lines %}
-      {% if line.startswith('Q:') or line.startswith('Q：') %}
-        {% if ns.q %}
+{% if active_sections %}
+  {% for sec in active_sections %}
+    {% set c = sec.content %}
+
+    {# ── highlights ── #}
+    {% if sec.type == 'highlights' %}
+    <section style="background:#060312;">
+      <div class="ev-section">
+        <h2 class="ev-section-title">{{ sec.title or '活動特色' }}</h2>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+          {% for item in c.get('items', []) %}
+          <li style="display:flex;align-items:center;gap:10px;font-size:0.875rem;color:rgba(255,255,255,0.75);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#a78bfa;flex-shrink:0;"></span>
+            {{ item }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    {# ── process ── #}
+    {% elif sec.type == 'process' %}
+    <section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
+      <div class="ev-section">
+        <h2 class="ev-section-title">{{ sec.title or '預約流程' }}</h2>
+        <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;counter-reset:step;">
+          {% for step in c.get('steps', []) %}
+          <li style="display:flex;align-items:center;gap:12px;font-size:0.875rem;color:rgba(255,255,255,0.75);">
+            <span style="width:24px;height:24px;border-radius:50%;background:rgba(124,58,237,0.6);
+                         display:flex;align-items:center;justify-content:center;
+                         font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;">
+              {{ loop.index }}
+            </span>
+            {{ step }}
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+
+    {# ── announcement ── #}
+    {% elif sec.type == 'announcement' %}
+    <section style="background:#1a0a2e;border-top:1px solid rgba(255,255,255,0.05);">
+      <div class="ev-section">
+        {% if sec.title %}<h2 class="ev-section-title">{{ sec.title }}</h2>{% endif %}
+        <p class="ev-prose" style="color:#fbbf24;">{{ c.get('content', '') }}</p>
+      </div>
+    </section>
+
+    {# ── faq ── #}
+    {% elif sec.type == 'faq' %}
+    <section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
+      <div class="ev-section">
+        <h2 class="ev-section-title">{{ sec.title or '常見問題' }}</h2>
+        {% for item in c.get('items', []) %}
         <div class="ev-faq-item">
-          <p class="ev-faq-q">{{ ns.q }}</p>
-          <p class="ev-faq-a">{{ ns.a }}</p>
+          <p class="ev-faq-q">{{ item.get('question', '') }}</p>
+          <p class="ev-faq-a">{{ item.get('answer', '') }}</p>
         </div>
-        {% endif %}
-        {% set ns.q = line[2:].strip() %}
-        {% set ns.a = '' %}
-      {% elif line.startswith('A:') or line.startswith('A：') %}
-        {% set ns.a = ns.a + line[2:].strip() %}
-      {% elif ns.q and line.strip() %}
-        {% set ns.a = ns.a + ' ' + line.strip() %}
-      {% endif %}
-    {% endfor %}
-    {% if ns.q %}
-    <div class="ev-faq-item">
-      <p class="ev-faq-q">{{ ns.q }}</p>
-      <p class="ev-faq-a">{{ ns.a }}</p>
-    </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ── cta ── #}
+    {% elif sec.type == 'cta' %}
+    <section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);padding:56px 24px;">
+      <div style="max-width:480px;margin:0 auto;text-align:center;">
+        <p style="font-size:1.4rem;font-weight:800;color:#ffffff;margin-bottom:8px;">
+          {{ c.get('title', '準備好出發了嗎？') }}
+        </p>
+        <p style="font-size:0.85rem;color:#a78bfa;margin-bottom:28px;">
+          立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保座位
+        </p>
+        <a href="/booking?event_id={{ ep.id }}" class="ev-cta-btn"
+           style="display:inline-flex;justify-content:center;padding:15px 40px;font-size:0.95rem;">
+          {{ c.get('buttonText', '立即預約') }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    {# ── hero（在 Hero section 之後顯示為次要橫幅）── #}
+    {% elif sec.type == 'hero' %}
+    {# hero 通常由主 hero section 負責，此處跳過以避免重複 #}
+
     {% endif %}
-  </div>
-</section>
-{% endif %}
+  {% endfor %}
 
-<!-- ── 訂購須知 ── -->
-{% if ep.terms_content %}
-<section style="background:#060312;border-top:1px solid rgba(255,255,255,0.05);">
-  <div class="ev-section">
-    <h2 class="ev-section-title">訂購須知</h2>
-    <p class="ev-prose">{{ ep.terms_content }}</p>
-  </div>
-</section>
-{% endif %}
+{% else %}
+  {# ── Fallback：舊欄位渲染（向前相容）── #}
 
-<!-- ── 底部 CTA ── -->
-<section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);padding:56px 24px;">
-  <div style="max-width:480px;margin:0 auto;text-align:center;">
-    <p style="font-size:1.4rem;font-weight:800;color:#ffffff;margin-bottom:8px;">準備好出發了嗎？</p>
-    <p style="font-size:0.85rem;color:#a78bfa;margin-bottom:28px;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保座位</p>
-    <a href="/booking" class="ev-cta-btn" style="display:inline-flex;justify-content:center;padding:15px 40px;font-size:0.95rem;">
-      立即預定包車
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-      </svg>
-    </a>
-  </div>
-</section>
+  <!-- 活動介紹 -->
+  {% if ep.description %}
+  <section style="background:#060312;">
+    <div class="ev-section">
+      <h2 class="ev-section-title">活動介紹</h2>
+      <p class="ev-prose">{{ ep.description }}</p>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- FAQ -->
+  {% if ep.faq_content %}
+  <section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
+    <div class="ev-section">
+      <h2 class="ev-section-title">常見問題</h2>
+      {% set faq_lines = ep.faq_content.splitlines() %}
+      {% set ns = namespace(q='', a='') %}
+      {% for line in faq_lines %}
+        {% if line.startswith('Q:') or line.startswith('Q：') %}
+          {% if ns.q %}
+          <div class="ev-faq-item">
+            <p class="ev-faq-q">{{ ns.q }}</p>
+            <p class="ev-faq-a">{{ ns.a }}</p>
+          </div>
+          {% endif %}
+          {% set ns.q = line[2:].strip() %}
+          {% set ns.a = '' %}
+        {% elif line.startswith('A:') or line.startswith('A：') %}
+          {% set ns.a = ns.a + line[2:].strip() %}
+        {% elif ns.q and line.strip() %}
+          {% set ns.a = ns.a + ' ' + line.strip() %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.q %}
+      <div class="ev-faq-item">
+        <p class="ev-faq-q">{{ ns.q }}</p>
+        <p class="ev-faq-a">{{ ns.a }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- 訂購須知 -->
+  {% if ep.terms_content %}
+  <section style="background:#060312;border-top:1px solid rgba(255,255,255,0.05);">
+    <div class="ev-section">
+      <h2 class="ev-section-title">訂購須知</h2>
+      <p class="ev-prose">{{ ep.terms_content }}</p>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- 底部 CTA（fallback） -->
+  <section style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);padding:56px 24px;">
+    <div style="max-width:480px;margin:0 auto;text-align:center;">
+      <p style="font-size:1.4rem;font-weight:800;color:#ffffff;margin-bottom:8px;">準備好出發了嗎？</p>
+      <p style="font-size:0.85rem;color:#a78bfa;margin-bottom:28px;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保座位</p>
+      <a href="/booking?event_id={{ ep.id }}" class="ev-cta-btn"
+         style="display:inline-flex;justify-content:center;padding:15px 40px;font-size:0.95rem;">
+        立即預定包車
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+{% endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 </body>

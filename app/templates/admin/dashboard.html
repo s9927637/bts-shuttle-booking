@@ -650,6 +650,38 @@
 </div>
 {% endif %}
 
+{% if passenger_stats is defined %}
+<div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+  <a href="{{ url_for('passenger_center.pc_index') }}"
+     class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 hover:shadow-md transition">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">總乘客數</p>
+    <p class="text-3xl font-bold text-gray-900">{{ passenger_stats.total }}</p>
+    <p class="text-xs text-gray-400 mt-1">乘客管理中心 →</p>
+  </a>
+
+  <a href="{{ url_for('passenger_center.pc_index') }}?tag=VIP"
+     class="bg-amber-50 border border-amber-100 rounded-2xl shadow-sm p-5 hover:shadow-md transition">
+    <p class="text-xs font-medium text-amber-500 uppercase tracking-wider mb-1">VIP 乘客</p>
+    <p class="text-3xl font-bold text-amber-700">{{ passenger_stats.vip_count }}</p>
+    <p class="text-xs text-amber-400 mt-1">查看 VIP 名單 →</p>
+  </a>
+
+  <div class="bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm p-5">
+    <p class="text-xs font-medium text-indigo-500 uppercase tracking-wider mb-1">回購乘客</p>
+    <p class="text-3xl font-bold text-indigo-700">{{ passenger_stats.repurchase }}</p>
+    <p class="text-xs text-indigo-400 mt-1">2+ 筆訂單</p>
+  </div>
+
+  <div class="bg-green-50 border border-green-100 rounded-2xl shadow-sm p-5">
+    <p class="text-xs font-medium text-green-500 uppercase tracking-wider mb-1">本月新增</p>
+    <p class="text-3xl font-bold text-green-700">{{ passenger_stats.new_this_month }}</p>
+    <p class="text-xs text-green-400 mt-1">本月首次建立</p>
+  </div>
+
+</div>
+{% endif %}
+
 {% if event_distribution is defined and event_distribution %}
 <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
   <div class="flex items-center justify-between mb-4">

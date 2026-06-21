@@ -1,0 +1,158 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}乘客管理中心{% endblock %}
+{% block page_title %}乘客管理中心{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">乘客管理中心</h1>
+      <p class="text-sm text-gray-500 mt-1">以電話為唯一識別，管理跨活動乘客資料</p>
+    </div>
+    <form action="{{ url_for('passenger_center.pc_sync') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit"
+              class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        同步乘客資料
+      </button>
+    </form>
+  </div>
+
+  <!-- 統計卡片 -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white border border-gray-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 mt-1">總乘客數</p>
+    </div>
+    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-2xl font-bold text-indigo-700">{{ stats.vip_count }}</p>
+      <p class="text-xs text-indigo-600 mt-1">VIP 乘客</p>
+    </div>
+    <div class="bg-green-50 border border-green-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-2xl font-bold text-green-700">{{ stats.repurchase }}</p>
+      <p class="text-xs text-green-600 mt-1">回購乘客</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center shadow-sm">
+      <p class="text-2xl font-bold text-amber-700">{{ stats.new_this_month }}</p>
+      <p class="text-xs text-amber-600 mt-1">本月新增</p>
+    </div>
+  </div>
+
+  <!-- 搜尋 + 標籤篩選 -->
+  <form method="get" class="flex flex-wrap gap-2 mb-6">
+    <div class="relative flex-1 min-w-[200px]">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+      </svg>
+      <input type="text" name="q" value="{{ q }}"
+             placeholder="搜尋姓名、電話…"
+             class="pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-gray-900">
+    </div>
+    <select name="tag" onchange="this.form.submit()"
+            class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900">
+      <option value="" {% if not current_tag %}selected{% endif %}>全部標籤</option>
+      {% for t in predefined_tags %}
+      <option value="{{ t }}" {% if current_tag == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit"
+            class="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition">
+      搜尋
+    </button>
+  </form>
+
+  <!-- 列表 -->
+  {% if items %}
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-100">
+      <thead class="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider">
+        <tr>
+          <th class="px-6 py-3 text-left font-medium">姓名</th>
+          <th class="px-6 py-3 text-left font-medium">電話</th>
+          <th class="px-6 py-3 text-center font-medium">訂單數</th>
+          <th class="px-6 py-3 text-center font-medium">參加活動</th>
+          <th class="px-6 py-3 text-right font-medium">總消費</th>
+          <th class="px-6 py-3 text-left font-medium">標籤</th>
+          <th class="px-6 py-3 text-left font-medium">最後下單</th>
+          <th class="px-6 py-3 text-right font-medium">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for p in items %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-semibold text-gray-900">{{ p.name }}</p>
+              {% if p.is_vip %}
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700">VIP</span>
+              {% endif %}
+              {% if p.line_user_id %}
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-green-50 text-green-600">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>LINE
+              </span>
+              {% endif %}
+            </div>
+            {% if p.display_name and p.display_name != p.name %}
+            <p class="text-xs text-gray-400 mt-0.5">{{ p.display_name }}</p>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600 font-mono">{{ p.phone }}</td>
+          <td class="px-6 py-4 text-center">
+            <span class="text-sm font-bold {% if p.is_repurchase %}text-indigo-600{% else %}text-gray-700{% endif %}">
+              {{ p.total_orders }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-center text-sm text-gray-700">{{ p.total_events }}</td>
+          <td class="px-6 py-4 text-right text-sm font-medium text-gray-800">{{ p.total_spent_fmt }}</td>
+          <td class="px-6 py-4">
+            <div class="flex flex-wrap gap-1">
+              {% for t in p.tag_names %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ t }}</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="px-6 py-4 text-xs text-gray-400">
+            {{ p.last_order_at.strftime('%Y/%m/%d') if p.last_order_at else '—' }}
+          </td>
+          <td class="px-6 py-4 text-right">
+            <a href="{{ url_for('passenger_center.pc_detail', passenger_id=p.id) }}"
+               class="text-xs font-medium text-blue-600 hover:underline">查看 →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 分頁 -->
+  {% if pages > 1 %}
+  <div class="flex justify-center items-center gap-2 mt-6">
+    {% if page > 1 %}
+    <a href="?q={{ q }}&tag={{ current_tag }}&page={{ page - 1 }}"
+       class="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">← 上一頁</a>
+    {% endif %}
+    <span class="text-sm text-gray-500">第 {{ page }} / {{ pages }} 頁（共 {{ total }} 筆）</span>
+    {% if page < pages %}
+    <a href="?q={{ q }}&tag={{ current_tag }}&page={{ page + 1 }}"
+       class="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">下一頁 →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-16 text-gray-400">
+    <svg class="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+    <p class="text-sm">尚無乘客資料</p>
+    <p class="text-xs mt-1">點擊「同步乘客資料」從訂單建立乘客 Profile</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

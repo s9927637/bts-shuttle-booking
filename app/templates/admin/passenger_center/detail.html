@@ -1,0 +1,257 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}{{ profile.name }} — 乘客詳情{% endblock %}
+{% block page_title %}乘客詳情{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+    <a href="{{ url_for('passenger_center.pc_index') }}" class="hover:text-gray-700">乘客管理中心</a>
+    <span>/</span>
+    <span class="text-gray-700 font-medium">{{ profile.name }}</span>
+  </div>
+
+  <!-- 基本資料 + 標籤 -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+    <!-- 基本資料卡 -->
+    <div class="lg:col-span-2 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">基本資料</h2>
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+          <span class="text-lg font-bold text-indigo-700">{{ profile.name[0] }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-lg font-bold text-gray-900">{{ profile.name }}</h3>
+            {% if profile.is_vip %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">VIP</span>
+            {% endif %}
+            {% if profile.is_repurchase %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">回購客</span>
+            {% endif %}
+          </div>
+          {% if profile.display_name and profile.display_name != profile.name %}
+          <p class="text-sm text-gray-500 mt-0.5">LINE 名稱：{{ profile.display_name }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <dl class="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
+        <div>
+          <dt class="text-xs text-gray-400">電話</dt>
+          <dd class="text-sm font-medium text-gray-800 font-mono mt-0.5">{{ profile.phone }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-400">LINE 綁定</dt>
+          <dd class="mt-0.5">
+            {% if profile.line_user_id %}
+            <span class="inline-flex items-center gap-1 text-sm text-green-700">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>已綁定
+            </span>
+            {% else %}
+            <span class="text-sm text-gray-400">未綁定</span>
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-400">訂單數</dt>
+          <dd class="text-sm font-bold text-gray-800 mt-0.5">{{ profile.total_orders }} 筆</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-400">參加活動數</dt>
+          <dd class="text-sm font-bold text-gray-800 mt-0.5">{{ profile.total_events }} 個</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-400">總消費</dt>
+          <dd class="text-sm font-bold text-indigo-700 mt-0.5">{{ profile.total_spent_fmt }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-gray-400">最後下單</dt>
+          <dd class="text-sm text-gray-700 mt-0.5">
+            {{ profile.last_order_at.strftime('%Y/%m/%d %H:%M') if profile.last_order_at else '—' }}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- 標籤卡 -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">乘客標籤</h2>
+
+      <!-- 已有標籤 -->
+      {% set current_tags = profile.tag_names %}
+      {% if current_tags %}
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for t in current_tags %}
+        <form action="{{ url_for('passenger_center.pc_remove_tag', passenger_id=profile.id) }}" method="post"
+              class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="tag_name"   value="{{ t }}">
+          <button type="submit"
+                  class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-red-100 hover:text-red-600 transition-colors group">
+            {{ t }}
+            <svg class="w-3 h-3 opacity-50 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- 新增標籤 -->
+      <form action="{{ url_for('passenger_center.pc_add_tag', passenger_id=profile.id) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="tag_name"
+                class="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-gray-900">
+          <option value="">— 選擇標籤 —</option>
+          {% for t in predefined_tags %}
+          {% if t not in current_tags %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        <button type="submit"
+                class="w-full text-sm font-medium text-white bg-gray-900 py-2 rounded-xl hover:bg-gray-700 transition">
+          新增標籤
+        </button>
+      </form>
+
+      <!-- 自訂標籤 -->
+      <form action="{{ url_for('passenger_center.pc_add_tag', passenger_id=profile.id) }}" method="post"
+            class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="flex gap-2">
+          <input type="text" name="tag_name" placeholder="自訂標籤…"
+                 class="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-900">
+          <button type="submit"
+                  class="text-sm font-medium text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-xl hover:bg-indigo-50 transition">
+            新增
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 活動參與紀錄 -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">活動參與紀錄</h2>
+    {% if events_history %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {% for ev in events_history %}
+      <div class="bg-gray-50 rounded-xl p-4">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-1">{{ ev.artist }}</span>
+        <p class="text-sm font-medium text-gray-800 mt-1">{{ ev.title | truncate(28, True, '…') }}</p>
+        <p class="text-xs text-gray-500 mt-1">訂單 {{ ev.order_count }} 筆</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400">尚無活動紀錄</p>
+    {% endif %}
+  </div>
+
+  <!-- 歷史訂單 -->
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">歷史訂單（{{ orders | length }} 筆）</h2>
+    {% if orders %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="text-xs text-gray-400 uppercase">
+          <tr>
+            <th class="pb-3 text-left font-medium">訂單編號</th>
+            <th class="pb-3 text-left font-medium">活動</th>
+            <th class="pb-3 text-left font-medium">出發日期</th>
+            <th class="pb-3 text-center font-medium">人數</th>
+            <th class="pb-3 text-right font-medium">金額</th>
+            <th class="pb-3 text-left font-medium">狀態</th>
+            <th class="pb-3 text-left font-medium">下單時間</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for o in orders %}
+          <tr class="hover:bg-gray-50">
+            <td class="py-3 font-mono text-xs text-gray-400">{{ o.order_no }}</td>
+            <td class="py-3 text-xs text-gray-600">
+              {% if o.event_page %}{{ o.event_page.artist_name }} — {{ o.event_page.title | truncate(18, True, '…') }}
+              {% else %}BTS 高雄演唱會{% endif %}
+            </td>
+            <td class="py-3 text-gray-600">{{ o.departure_date }}</td>
+            <td class="py-3 text-center font-medium">{{ o.passenger_count }}</td>
+            <td class="py-3 text-right font-medium text-gray-800">NT$ {{ "{:,}".format(o.total_amount) }}</td>
+            <td class="py-3">
+              {% if o.payment_status in ['訂金已確認', '已完成'] %}
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{{ o.payment_status }}</span>
+              {% elif o.payment_status == '待確認' %}
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">待確認</span>
+              {% else %}
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{{ o.payment_status }}</span>
+              {% endif %}
+            </td>
+            <td class="py-3 text-xs text-gray-400">{{ o.created_at.strftime('%Y/%m/%d %H:%M') if o.created_at else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400">尚無訂單紀錄</p>
+    {% endif %}
+  </div>
+
+  <!-- 付款紀錄 -->
+  {% if payments %}
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">付款紀錄（{{ payments | length }} 筆）</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="text-xs text-gray-400 uppercase">
+          <tr>
+            <th class="pb-3 text-left font-medium">付款類型</th>
+            <th class="pb-3 text-right font-medium">金額</th>
+            <th class="pb-3 text-left font-medium">狀態</th>
+            <th class="pb-3 text-left font-medium">時間</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for p in payments %}
+          <tr class="hover:bg-gray-50">
+            <td class="py-3 text-gray-600">{{ p.payment_type or '—' }}</td>
+            <td class="py-3 text-right font-medium text-gray-800">NT$ {{ "{:,}".format(p.amount or 0) }}</td>
+            <td class="py-3 text-xs text-gray-500">{{ p.status or '—' }}</td>
+            <td class="py-3 text-xs text-gray-400">{{ p.created_at.strftime('%Y/%m/%d %H:%M') if p.created_at else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 通知紀錄 -->
+  {% if notifications %}
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">通知紀錄（{{ notifications | length }} 筆）</h2>
+    <div class="space-y-2">
+      {% for n in notifications %}
+      <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+        <div>
+          <p class="text-sm text-gray-700">{{ n.message_type or n.receiver_type or '—' }}</p>
+          <p class="text-xs text-gray-400">{{ n.created_at.strftime('%Y/%m/%d %H:%M') if n.created_at else '—' }}</p>
+        </div>
+        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
+              {% if n.status == 'success' %}bg-green-100 text-green-700
+              {% elif n.status == 'failed' %}bg-red-100 text-red-600
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+          {{ n.status }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

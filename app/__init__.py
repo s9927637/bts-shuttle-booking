@@ -36,6 +36,7 @@ from app.models.crawler_source_status import CrawlerSourceStatus
 from app.models.system_health_check import SystemHealthCheck
 from app.models.order_event import OrderEvent
 from app.models.dispatch_event import DispatchEvent, DispatchEventOrder
+from app.models.passenger_profile import PassengerProfile, PassengerTag
 
 def create_app():
     app = Flask(__name__)
@@ -70,6 +71,7 @@ def create_app():
     from app.routes.crawler_coverage import coverage_bp
     from app.routes.system_health import health_bp
     from app.routes.event_dispatch import event_dispatch_bp
+    from app.routes.passenger_center import passenger_center_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -87,6 +89,7 @@ def create_app():
     app.register_blueprint(coverage_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(event_dispatch_bp)
+    app.register_blueprint(passenger_center_bp)
 
     import logging
     from flask import render_template as _rt

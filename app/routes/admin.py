@@ -157,6 +157,10 @@ def dashboard():
     pending_dispatch_events = get_pending_dispatch_events()
     dispatch_summary        = get_dispatch_summary()
 
+    # 乘客管理 Dashboard widgets
+    from app.services.passenger_service import get_passenger_statistics
+    passenger_stats = get_passenger_statistics()
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -246,6 +250,7 @@ def dashboard():
         today_dispatch_events=today_dispatch_events,
         pending_dispatch_events=pending_dispatch_events,
         dispatch_summary=dispatch_summary,
+        passenger_stats=passenger_stats,
     )
 
 

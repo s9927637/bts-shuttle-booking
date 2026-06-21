@@ -34,6 +34,7 @@ from app.models.business_insight import BusinessInsight
 from app.models.ai_group_advice import AiGroupAdvice
 from app.models.crawler_source_status import CrawlerSourceStatus
 from app.models.system_health_check import SystemHealthCheck
+from app.models.order_event import OrderEvent
 
 def create_app():
     app = Flask(__name__)

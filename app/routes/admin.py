@@ -1663,6 +1663,133 @@ def revenue_print():
 
 # ── Debug：列出所有已註冊 Route ────────────────────────────────────────────────
 
+@admin_bp.route("/api/orders/by-event")
+def api_orders_by_event():
+    """依活動統計訂單數 / 人數 / 訂金。
+
+    回傳格式：
+    {
+      "events": [
+        {"event_page_id": 1, "title": "...", "artist_name": "...",
+         "order_count": 10, "passenger_count": 25, "deposit_total": 75000},
+        ...
+      ],
+      "bts": {"order_count": 5, "passenger_count": 12, "deposit_total": 36000}
+    }
+    """
+    guard = require_admin()
+    if guard:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    from app.models.order_event import OrderEvent
+    from app.models.event_page import EventPage
+
+    rows = (
+        db.session.query(
+            OrderEvent.event_page_id,
+            func.count(func.distinct(OrderEvent.order_id)).label("order_count"),
+            func.sum(Order.passenger_count).label("passenger_count"),
+            func.sum(Order.deposit_amount).label("deposit_total"),
+        )
+        .join(Order, OrderEvent.order_id == Order.id)
+        .group_by(OrderEvent.event_page_id)
+        .all()
+    )
+
+    ep_ids = [r.event_page_id for r in rows]
+    eps = {ep.id: ep for ep in EventPage.query.filter(EventPage.id.in_(ep_ids)).all()} if ep_ids else {}
+
+    events = []
+    for r in rows:
+        ep = eps.get(r.event_page_id)
+        events.append({
+            "event_page_id":   r.event_page_id,
+            "title":           ep.title if ep else "(已刪除)",
+            "artist_name":     ep.artist_name if ep else "—",
+            "order_count":     r.order_count or 0,
+            "passenger_count": int(r.passenger_count or 0),
+            "deposit_total":   int(r.deposit_total or 0),
+        })
+
+    mapped_order_ids = db.session.query(OrderEvent.order_id).distinct().scalar_subquery()
+    bts_q = (
+        db.session.query(
+            func.count(Order.id).label("order_count"),
+            func.sum(Order.passenger_count).label("passenger_count"),
+            func.sum(Order.deposit_amount).label("deposit_total"),
+        )
+        .filter(~Order.id.in_(mapped_order_ids))
+        .one()
+    )
+
+    return jsonify({
+        "events": events,
+        "bts": {
+            "order_count":     bts_q.order_count or 0,
+            "passenger_count": int(bts_q.passenger_count or 0),
+            "deposit_total":   int(bts_q.deposit_total or 0),
+        },
+    })
+
+
+@admin_bp.route("/admin/stats/by-event")
+def stats_by_event():
+    """依活動統計頁面（HTML）。"""
+    guard = require_admin()
+    if guard:
+        return guard
+
+    from app.models.order_event import OrderEvent
+    from app.models.event_page import EventPage
+
+    rows = (
+        db.session.query(
+            OrderEvent.event_page_id,
+            func.count(func.distinct(OrderEvent.order_id)).label("order_count"),
+            func.sum(Order.passenger_count).label("passenger_count"),
+            func.sum(Order.deposit_amount).label("deposit_total"),
+        )
+        .join(Order, OrderEvent.order_id == Order.id)
+        .group_by(OrderEvent.event_page_id)
+        .all()
+    )
+
+    ep_ids = [r.event_page_id for r in rows]
+    eps = {ep.id: ep for ep in EventPage.query.filter(EventPage.id.in_(ep_ids)).all()} if ep_ids else {}
+
+    event_stats = []
+    for r in rows:
+        ep = eps.get(r.event_page_id)
+        event_stats.append({
+            "event_page":      ep,
+            "order_count":     r.order_count or 0,
+            "passenger_count": int(r.passenger_count or 0),
+            "deposit_total":   int(r.deposit_total or 0),
+        })
+
+    mapped_order_ids = db.session.query(OrderEvent.order_id).distinct().scalar_subquery()
+    bts_q = (
+        db.session.query(
+            func.count(Order.id).label("order_count"),
+            func.sum(Order.passenger_count).label("passenger_count"),
+            func.sum(Order.deposit_amount).label("deposit_total"),
+        )
+        .filter(~Order.id.in_(mapped_order_ids))
+        .one()
+    )
+    bts_stats = {
+        "order_count":     bts_q.order_count or 0,
+        "passenger_count": int(bts_q.passenger_count or 0),
+        "deposit_total":   int(bts_q.deposit_total or 0),
+    }
+
+    return render_template(
+        "admin/stats_by_event.html",
+        event_stats=event_stats,
+        bts_stats=bts_stats,
+    )
+
+
 @admin_bp.route("/debug/routes")
 def debug_routes():
     guard = require_admin()

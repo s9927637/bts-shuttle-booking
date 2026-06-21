@@ -1,0 +1,83 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}依活動統計{% endblock %}
+{% block page_title %}依活動統計{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">依活動統計</h1>
+      <p class="text-sm text-gray-500 mt-1">以 Order Event Mapping 為基礎統計各活動訂單</p>
+    </div>
+    <a href="{{ url_for('admin.orders') }}"
+       class="text-sm text-blue-600 hover:underline">← 返回訂單列表</a>
+  </div>
+
+  <!-- BTS 舊訂單 -->
+  <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">BTS 高雄演唱會（舊訂單，無 Mapping）</h2>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="text-center">
+        <p class="text-2xl font-bold text-gray-800">{{ bts_stats.order_count }}</p>
+        <p class="text-xs text-gray-500 mt-1">訂單數</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-gray-800">{{ bts_stats.passenger_count }}</p>
+        <p class="text-xs text-gray-500 mt-1">乘客人數</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-bold text-gray-800">NT$ {{ "{:,}".format(bts_stats.deposit_total) }}</p>
+        <p class="text-xs text-gray-500 mt-1">訂金合計</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新活動 -->
+  {% if event_stats %}
+  <div class="space-y-4">
+    {% for es in event_stats %}
+    <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          {% if es.event_page %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-1">
+            {{ es.event_page.artist_name }}
+          </span>
+          <h3 class="text-base font-semibold text-gray-900">{{ es.event_page.title }}</h3>
+          <p class="text-xs text-gray-400">{{ es.event_page.event_date or '—' }} ・ {{ es.event_page.departure_city or '—' }}</p>
+          {% else %}
+          <h3 class="text-base font-semibold text-gray-400">（活動已刪除）</h3>
+          {% endif %}
+        </div>
+        {% if es.event_page %}
+        <a href="{{ url_for('admin.orders', event_filter=es.event_page.id) }}"
+           class="text-xs text-blue-600 hover:underline shrink-0">查看訂單 →</a>
+        {% endif %}
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="text-center bg-gray-50 rounded-lg p-3">
+          <p class="text-xl font-bold text-gray-800">{{ es.order_count }}</p>
+          <p class="text-xs text-gray-500 mt-1">訂單數</p>
+        </div>
+        <div class="text-center bg-gray-50 rounded-lg p-3">
+          <p class="text-xl font-bold text-gray-800">{{ es.passenger_count }}</p>
+          <p class="text-xs text-gray-500 mt-1">乘客人數</p>
+        </div>
+        <div class="text-center bg-gray-50 rounded-lg p-3">
+          <p class="text-xl font-bold text-gray-800">NT$ {{ "{:,}".format(es.deposit_total) }}</p>
+          <p class="text-xs text-gray-500 mt-1">訂金合計</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <p class="text-sm">尚無新活動訂單 Mapping 紀錄</p>
+    <p class="text-xs mt-1">新活動訂單建立後，Mapping 將自動出現在此</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

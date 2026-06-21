@@ -1,0 +1,169 @@
+{% extends "admin/base.html" %}
+{% block title %}系統健康度中心{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">系統健康度中心</h1>
+      <p class="text-sm text-gray-500 mt-1">監控各模組運作狀態，僅讀取資料，不影響訂單 / 付款 / 收據</p>
+    </div>
+    <button id="runBtn"
+            onclick="runCheck()"
+            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      執行全部檢查
+    </button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8" id="summaryCards">
+    {% set color_map = {"HEALTHY": "green", "WARNING": "yellow", "ERROR": "red", "UNKNOWN": "gray"} %}
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+      <div class="text-3xl font-bold text-green-700" id="cnt-healthy">{{ summary.healthy }}</div>
+      <div class="text-sm text-green-600 mt-1">正常</div>
+    </div>
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+      <div class="text-3xl font-bold text-yellow-700" id="cnt-warning">{{ summary.warning }}</div>
+      <div class="text-sm text-yellow-600 mt-1">警告</div>
+    </div>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+      <div class="text-3xl font-bold text-red-700" id="cnt-error">{{ summary.error }}</div>
+      <div class="text-sm text-red-600 mt-1">異常</div>
+    </div>
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+      <div class="text-3xl font-bold text-gray-500" id="cnt-unknown">{{ summary.unknown }}</div>
+      <div class="text-sm text-gray-500 mt-1">未實作 / 未知</div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <table class="min-w-full divide-y divide-gray-200" id="resultsTable">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">模組</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">分類</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">狀態</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">回應時間</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">最後檢查</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">訊息</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-100" id="resultsBody">
+        {% for r in results %}
+        {% set badge = {
+            "HEALTHY": "bg-green-100 text-green-800",
+            "WARNING": "bg-yellow-100 text-yellow-800",
+            "ERROR":   "bg-red-100 text-red-800",
+            "NOT_IMPLEMENTED": "bg-gray-100 text-gray-500",
+            "UNKNOWN": "bg-gray-100 text-gray-500"
+          }.get(r.status, "bg-gray-100 text-gray-500") %}
+        <tr>
+          <td class="px-6 py-4 font-medium text-gray-900">{{ r.display }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ r.category }}</td>
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ badge }}">
+              {{ r.status_label }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600 font-mono">{{ r.response_ms }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">
+            {% if r.last_checked_at %}
+              {{ r.last_checked_at.strftime('%m/%d %H:%M:%S') }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">{{ r.message }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-gray-400 mt-4">* 所有檢查均為唯讀操作，不修改任何訂單 / 付款 / 收據 / 通知資料</p>
+</div>
+
+<script>
+const CSRF = "{{ csrf_token() }}";
+
+function statusBadgeClass(status) {
+  const map = {
+    HEALTHY: "bg-green-100 text-green-800",
+    WARNING: "bg-yellow-100 text-yellow-800",
+    ERROR:   "bg-red-100 text-red-800",
+  };
+  return map[status] || "bg-gray-100 text-gray-500";
+}
+
+function statusLabel(r) {
+  const map = { HEALTHY: "正常", WARNING: "警告", ERROR: "異常",
+                NOT_IMPLEMENTED: "未實作", UNKNOWN: "未知" };
+  return map[r.status] || r.status;
+}
+
+function fmtTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const hh = String(d.getHours()).padStart(2,"0");
+  const min= String(d.getMinutes()).padStart(2,"0");
+  const ss = String(d.getSeconds()).padStart(2,"0");
+  return `${mm}/${dd} ${hh}:${min}:${ss}`;
+}
+
+async function runCheck() {
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true;
+  btn.textContent = "檢查中…";
+
+  try {
+    const res = await fetch("{{ url_for('health.api_health_run') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF }
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    renderResults(data.results, data.summary);
+  } catch (e) {
+    alert("執行失敗：" + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg> 執行全部檢查`;
+  }
+}
+
+function renderResults(results, summary) {
+  // summary cards
+  document.getElementById("cnt-healthy").textContent = summary.healthy;
+  document.getElementById("cnt-warning").textContent = summary.warning;
+  document.getElementById("cnt-error").textContent   = summary.error;
+  document.getElementById("cnt-unknown").textContent = summary.unknown;
+
+  // table
+  const tbody = document.getElementById("resultsBody");
+  tbody.innerHTML = results.map(r => `
+    <tr>
+      <td class="px-6 py-4 font-medium text-gray-900">${r.display}</td>
+      <td class="px-6 py-4 text-sm text-gray-500">${r.category}</td>
+      <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadgeClass(r.status)}">
+          ${statusLabel(r)}
+        </span>
+      </td>
+      <td class="px-6 py-4 text-sm text-gray-600 font-mono">${r.response_ms}</td>
+      <td class="px-6 py-4 text-sm text-gray-500">${fmtTime(r.last_checked_at)}</td>
+      <td class="px-6 py-4 text-sm text-gray-600">${r.message}</td>
+    </tr>
+  `).join("");
+}
+</script>
+{% endblock %}

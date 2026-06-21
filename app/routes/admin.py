@@ -123,6 +123,9 @@ def dashboard():
     from app.services.advisor.group_advisor_service import get_advisor_stats
     advisor_stats = get_advisor_stats()
 
+    from app.services.system_health.health_check_service import get_summary as get_health_summary
+    health_summary = get_health_summary()
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -207,6 +210,7 @@ def dashboard():
         advisor_best_month=advisor_best_month,
         advisor_high_risk=advisor_high_risk,
         advisor_top_conf=advisor_top_conf,
+        health_summary=health_summary,
     )
 
 

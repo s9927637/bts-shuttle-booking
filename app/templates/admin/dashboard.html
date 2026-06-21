@@ -579,4 +579,40 @@
 </div>
 {% endif %}
 
+{% if health_summary is defined %}
+<div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">系統健康度</h2>
+    <a href="{{ url_for('health.health_index') }}" class="text-xs text-blue-600 hover:underline">查看詳情 →</a>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-green-50 rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-green-700">{{ health_summary.healthy }}</p>
+      <p class="text-xs text-green-600 mt-1">正常</p>
+    </div>
+    <div class="bg-yellow-50 rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-yellow-700">{{ health_summary.warning }}</p>
+      <p class="text-xs text-yellow-600 mt-1">警告</p>
+    </div>
+    <div class="bg-red-50 rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-red-700">{{ health_summary.error }}</p>
+      <p class="text-xs text-red-600 mt-1">異常</p>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-gray-500">{{ health_summary.unknown }}</p>
+      <p class="text-xs text-gray-500 mt-1">未實作 / 未知</p>
+    </div>
+  </div>
+  {% if health_summary.overall == "ERROR" %}
+  <p class="mt-3 text-xs text-red-500 font-medium">有模組發生異常，請至系統健康度中心確認</p>
+  {% elif health_summary.overall == "WARNING" %}
+  <p class="mt-3 text-xs text-yellow-600 font-medium">注意：有模組需要關注</p>
+  {% elif health_summary.overall == "HEALTHY" %}
+  <p class="mt-3 text-xs text-green-600 font-medium">所有模組運作正常</p>
+  {% else %}
+  <p class="mt-3 text-xs text-gray-400">尚未執行健康檢查，請至系統健康度中心執行</p>
+  {% endif %}
+</div>
+{% endif %}
+
 {% endblock %}

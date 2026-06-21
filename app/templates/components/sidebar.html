@@ -313,6 +313,16 @@
     <!-- ─ 系統 ─ -->
     <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">系統</p>
 
+    <a href="{{ url_for('health.health_index') }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+              {% if '/admin/system-health' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"
+       title="系統健康度中心">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">系統健康度中心</span>
+    </a>
+
     <a href="{{ url_for('admin.debug_routes') }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
               {% if '/admin/debug/routes' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"

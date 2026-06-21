@@ -1,0 +1,156 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}多活動排車中心{% endblock %}
+{% block page_title %}多活動排車中心{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">多活動排車中心</h1>
+      <p class="text-sm text-gray-500 mt-1">管理各活動車次，BTS 舊排車資料不受影響</p>
+    </div>
+    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+            class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      建立車次
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="flex gap-2 mb-6 flex-wrap">
+    <select name="event_filter" onchange="this.form.submit()"
+            class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
+      <option value="" {% if not event_filter %}selected{% endif %}>全部活動</option>
+      <option value="bts" {% if event_filter == 'bts' %}selected{% endif %}>BTS 高雄演唱會</option>
+      {% for ep in event_pages %}
+      <option value="{{ ep.id }}" {% if event_filter == ep.id|string %}selected{% endif %}>
+        {{ ep.artist_name }} — {{ ep.title | truncate(25, True, '…') }}
+      </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- Table -->
+  {% if dispatch_events %}
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-100">
+      <thead class="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider">
+        <tr>
+          <th class="px-6 py-3 text-left font-medium">活動</th>
+          <th class="px-6 py-3 text-left font-medium">出車日期</th>
+          <th class="px-6 py-3 text-left font-medium">出發地</th>
+          <th class="px-6 py-3 text-center font-medium">車輛數</th>
+          <th class="px-6 py-3 text-center font-medium">乘客數</th>
+          <th class="px-6 py-3 text-left font-medium">狀態</th>
+          <th class="px-6 py-3 text-left font-medium">建立時間</th>
+          <th class="px-6 py-3 text-right font-medium">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for de in dispatch_events %}
+        {% set badge_cls = {
+            "規劃中": "bg-gray-100 text-gray-600",
+            "確認中": "bg-yellow-100 text-yellow-700",
+            "已確認": "bg-green-100 text-green-700",
+            "已出發": "bg-blue-100 text-blue-700",
+            "已完成": "bg-gray-200 text-gray-500",
+            "已取消": "bg-red-100 text-red-600",
+          }.get(de.status, "bg-gray-100 text-gray-600") %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 mb-1">
+              {{ de.artist_name }}
+            </span>
+            <p class="text-sm font-medium text-gray-900">{{ de.event_title | truncate(30, True, '…') }}</p>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-700">{{ de.dispatch_date }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ de.departure_city or '—' }}</td>
+          <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ de.vehicle_count }}</td>
+          <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ de.passenger_count }}</td>
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ badge_cls }}">
+              {{ de.status }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-xs text-gray-400">
+            {{ de.created_at.strftime('%m/%d %H:%M') if de.created_at else '—' }}
+          </td>
+          <td class="px-6 py-4 text-right">
+            <a href="{{ url_for('event_dispatch.ed_detail', dispatch_event_id=de.id) }}"
+               class="text-xs font-medium text-blue-600 hover:underline px-2 py-1">查看 →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-16 text-gray-400">
+    <svg class="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <p class="text-sm">尚無車次紀錄</p>
+    <p class="text-xs mt-1">點擊「建立車次」開始規劃</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- 建立車次 Modal -->
+<div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-900">建立車次</h3>
+      <button onclick="document.getElementById('createModal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form action="{{ url_for('event_dispatch.ed_create') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">活動 <span class="text-red-400">*</span></label>
+          <select name="event_page_id"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+            <option value="">BTS 高雄演唱會（舊活動）</option>
+            {% for ep in event_pages %}
+            <option value="{{ ep.id }}">{{ ep.artist_name }} — {{ ep.title | truncate(30, True, '…') }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">出車日期 <span class="text-red-400">*</span></label>
+          <input type="text" name="dispatch_date" required
+                 placeholder="例如：2026/07/19"
+                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">出發地</label>
+          <input type="text" name="departure_city"
+                 placeholder="例如：高雄"
+                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
+          <textarea name="notes" rows="2"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-5">
+        <button type="button"
+                onclick="document.getElementById('createModal').classList.add('hidden')"
+                class="px-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50">取消</button>
+        <button type="submit"
+                class="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-700">建立</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

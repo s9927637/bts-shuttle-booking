@@ -154,18 +154,32 @@
       <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">收據管理</span>
     </a>
 
-    <!-- ─ 排車 ─ -->
-    <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">排車</p>
+    <!-- ─ 營運中心 ─ -->
+    <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">營運中心</p>
 
-    <a href="/admin/dispatch"
+    <a href="{{ url_for('event_dispatch.ed_index') }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-              {% if '/admin/dispatch' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"
-       title="排車管理">
+              {% if '/admin/event-dispatch' in request.path %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"
+       title="多活動排車中心">
       <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2.67-2.67A2 2 0 017.08 13H13zm0 0h2l3-5h-3a1 1 0 00-1 1v4z"/>
       </svg>
-      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">排車管理</span>
+      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">排車中心</span>
+    </a>
+
+    <!-- ─ 排車（BTS 舊系統）─ -->
+    <p class="sidebar-text sidebar-cat px-3 mt-5 mb-2 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">排車</p>
+
+    <a href="/admin/dispatch"
+       class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+              {% if request.path == '/admin/dispatch' or (request.path.startswith('/admin/dispatch') and '/event-dispatch' not in request.path) %}text-gray-900 bg-gray-100{% else %}text-gray-500 hover:text-gray-900 hover:bg-gray-100{% endif %}"
+       title="排車管理（BTS）">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2.67-2.67A2 2 0 017.08 13H13zm0 0h2l3-5h-3a1 1 0 00-1 1v4z"/>
+      </svg>
+      <span class="sidebar-text whitespace-nowrap overflow-hidden transition-all duration-300" style="opacity:1;">BTS 排車管理</span>
     </a>
 
     <!-- ─ 活動管理 ─ -->

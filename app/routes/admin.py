@@ -149,6 +149,14 @@ def dashboard():
         for r in _event_dist_rows
     ]
 
+    # 多活動排車 Dashboard widgets
+    from app.services.event_dispatch_service import (
+        get_today_dispatch_events, get_pending_dispatch_events, get_dispatch_summary
+    )
+    today_dispatch_events   = get_today_dispatch_events()
+    pending_dispatch_events = get_pending_dispatch_events()
+    dispatch_summary        = get_dispatch_summary()
+
     from app.models.ai_group_advice import AiGroupAdvice
     from app.models.concert_data_hub import ConcertDataHub as _Hub
     import datetime as _dt
@@ -235,6 +243,9 @@ def dashboard():
         advisor_top_conf=advisor_top_conf,
         health_summary=health_summary,
         event_distribution=event_distribution,
+        today_dispatch_events=today_dispatch_events,
+        pending_dispatch_events=pending_dispatch_events,
+        dispatch_summary=dispatch_summary,
     )
 
 

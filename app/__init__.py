@@ -35,6 +35,7 @@ from app.models.ai_group_advice import AiGroupAdvice
 from app.models.crawler_source_status import CrawlerSourceStatus
 from app.models.system_health_check import SystemHealthCheck
 from app.models.order_event import OrderEvent
+from app.models.dispatch_event import DispatchEvent, DispatchEventOrder
 
 def create_app():
     app = Flask(__name__)
@@ -68,6 +69,7 @@ def create_app():
     from app.routes.group_advisor import advisor_bp
     from app.routes.crawler_coverage import coverage_bp
     from app.routes.system_health import health_bp
+    from app.routes.event_dispatch import event_dispatch_bp
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -84,6 +86,7 @@ def create_app():
     app.register_blueprint(advisor_bp)
     app.register_blueprint(coverage_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(event_dispatch_bp)
 
     import logging
     from flask import render_template as _rt

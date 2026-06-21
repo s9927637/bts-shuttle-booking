@@ -353,4 +353,48 @@
 </div>
 {% endif %}
 
+<!-- ── Concert Data Hub Widget ── -->
+{% if hub_stats is defined %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+
+  <!-- 總演唱會數 -->
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between">
+    <div>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">演唱會資料池</p>
+      <p class="text-3xl font-semibold text-indigo-700 tracking-tight">{{ hub_stats.total_concerts }}</p>
+      <p class="mt-1 text-xs text-gray-400">Concert Data Hub 總數</p>
+    </div>
+    <a href="{{ url_for('concert_hub.hub_index') }}"
+       class="mt-3 text-xs text-indigo-500 hover:underline">查看 Hub →</a>
+  </div>
+
+  <!-- 高可信度 -->
+  <div class="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between">
+    <div>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">高可信度演唱會</p>
+      <p class="text-3xl font-semibold text-green-600 tracking-tight">{{ hub_stats.high_confidence }}</p>
+      <p class="mt-1 text-xs text-gray-400">可信度分數 ≥ 80</p>
+    </div>
+    <a href="{{ url_for('concert_hub.hub_index') }}"
+       class="mt-3 text-xs text-green-500 hover:underline">查看高可信度 →</a>
+  </div>
+
+  <!-- 待確認衝突 -->
+  <div class="bg-white border border-{% if hub_stats.pending_conflicts > 0 %}red-200{% else %}gray-100{% endif %} rounded-2xl p-5 flex flex-col justify-between">
+    <div>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">待確認衝突</p>
+      <p class="text-3xl font-semibold {% if hub_stats.pending_conflicts > 0 %}text-red-500{% else %}text-gray-400{% endif %} tracking-tight">
+        {{ hub_stats.pending_conflicts }}
+      </p>
+      <p class="mt-1 text-xs text-gray-400">需要人工確認的資料衝突</p>
+    </div>
+    <a href="{{ url_for('concert_hub.hub_conflicts') }}"
+       class="mt-3 text-xs {% if hub_stats.pending_conflicts > 0 %}text-red-500{% else %}text-gray-400{% endif %} hover:underline">
+      查看衝突 →
+    </a>
+  </div>
+
+</div>
+{% endif %}
+
 {% endblock %}

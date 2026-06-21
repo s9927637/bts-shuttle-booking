@@ -114,6 +114,9 @@ def dashboard():
     recommended_groups  = get_recommended_concerts()[:5]
     created_groups_count = count_created_groups()
 
+    from app.services.concert_data_hub_service import get_hub_stats
+    hub_stats = get_hub_stats()
+
     return render_template(
         "admin/dashboard.html",
         stats={
@@ -142,6 +145,7 @@ def dashboard():
         revenue_events=revenue_events,
         recommended_groups=recommended_groups,
         created_groups_count=created_groups_count,
+        hub_stats=hub_stats,
     )
 
 

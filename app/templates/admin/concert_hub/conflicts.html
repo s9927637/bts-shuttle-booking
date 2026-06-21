@@ -1,0 +1,102 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}衝突管理{% endblock %}
+{% block page_title %}演唱會資料衝突管理{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- ── 說明 ── -->
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+    <strong>衝突說明：</strong>
+    場館未填、城市未填、日期未填、或同藝人 7 天內有近似場次，均會標記為衝突。
+    請人工確認後至演唱會管理頁修正。
+  </div>
+
+  <!-- ── 衝突列表 ── -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-700">待確認衝突（{{ conflicts|length }} 筆）</h3>
+      <a href="{{ url_for('concert_hub.hub_index') }}"
+         class="text-xs text-indigo-500 hover:underline">← 返回 Hub</a>
+    </div>
+
+    {% if conflicts %}
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">藝人</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">活動名稱</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">日期</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">來源</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">衝突類型</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">建議修正</th>
+          <th class="px-4 py-3 text-center font-medium text-gray-500">可信度</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for c in conflicts %}
+        <tr class="hover:bg-red-50 transition-colors">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ c.artist_name }}</td>
+          <td class="px-4 py-3 text-gray-700 max-w-xs truncate" title="{{ c.concert_name }}">
+            {{ c.concert_name }}
+          </td>
+          <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
+            {{ c.event_date or '—' }}
+          </td>
+          <td class="px-4 py-3">
+            {% if c.source_types %}
+              {% for st in c.source_types.split(',') %}
+                {% set st = st.strip() %}
+                {% if st == 'KKTIX' %}
+                  <span class="px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700 mr-1">KKTIX</span>
+                {% elif st == 'TIXCRAFT' %}
+                  <span class="px-1.5 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 mr-1">TixCraft</span>
+                {% else %}
+                  <span class="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600 mr-1">{{ st }}</span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <span class="text-gray-300">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-1">
+              {% for ct in c.conflict_types %}
+                {% set ct = ct.strip() %}
+                {% if ct %}
+                  <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                    {{ conflict_label(ct) }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-600">
+            <ul class="list-disc list-inside space-y-0.5">
+              {% for s in c.suggestions %}
+                <li>{{ s }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if c.confidence_score >= 80 %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{{ c.confidence_score }}</span>
+            {% elif c.confidence_score >= 50 %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">{{ c.confidence_score }}</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">{{ c.confidence_score }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center text-gray-400 text-sm">
+      目前沒有需要確認的衝突資料。
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

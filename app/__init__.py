@@ -74,6 +74,8 @@ def create_app():
     from app.routes.system_health import health_bp
     from app.routes.event_dispatch import event_dispatch_bp
     from app.routes.passenger_center import passenger_center_bp
+    from app.routes.activity_template import activity_template_bp
+    from app.models.activity_template import ActivityTemplate, ActivityTemplateSection
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -92,6 +94,7 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(event_dispatch_bp)
     app.register_blueprint(passenger_center_bp)
+    app.register_blueprint(activity_template_bp)
 
     import logging
     from flask import render_template as _rt

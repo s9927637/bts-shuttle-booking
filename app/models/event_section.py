@@ -6,14 +6,21 @@ from app import db
 class EventSection(db.Model):
     __tablename__ = "event_sections"
 
-    TYPES = ['hero', 'highlights', 'process', 'announcement', 'faq', 'cta']
+    TYPES = [
+        'hero', 'highlights', 'vehicle_showcase', 'process',
+        'meeting_point', 'announcement', 'faq', 'terms', 'cta', 'footer',
+    ]
     TYPE_LABELS = {
-        'hero':         'Hero 橫幅',
-        'highlights':   '特色亮點',
-        'process':      '流程說明',
-        'announcement': '公告',
-        'faq':          '常見問題',
-        'cta':          '行動呼籲',
+        'hero':             'Hero 橫幅',
+        'highlights':       '特色亮點',
+        'vehicle_showcase': '車型介紹',
+        'process':          '流程說明',
+        'meeting_point':    '集合地點',
+        'announcement':     '公告',
+        'faq':              '常見問題',
+        'terms':            '注意事項',
+        'cta':              '行動呼籲',
+        'footer':           '頁尾',
     }
     TYPE_DEFAULTS = {
         'hero': {

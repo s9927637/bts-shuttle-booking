@@ -22,10 +22,16 @@
       </a>
       {% endif %}
     </form>
-    <a href="{{ url_for('event_page.ep_create') }}"
-       class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
-      ＋ 建立活動
-    </a>
+    <div class="flex gap-2">
+      <a href="{{ url_for('activity_template.ep_from_template') }}"
+         class="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap">
+        從範本建立
+      </a>
+      <a href="{{ url_for('event_page.ep_create') }}"
+         class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
+        ＋ 建立活動
+      </a>
+    </div>
   </div>
 
   <!-- 統計小卡 -->
@@ -91,7 +97,7 @@
             <a href="/events/{{ p.slug }}" target="_blank"
                class="text-xs text-purple-500 hover:underline font-mono">/events/{{ p.slug }}</a>
           </td>
-          <td class="px-4 py-3 text-right space-x-2">
+          <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
             <a href="{{ url_for('event_page.ep_sections', ep_id=p.id) }}"
                class="text-xs text-indigo-600 hover:underline">區塊</a>
             <a href="{{ url_for('event_page.ep_edit', ep_id=p.id) }}"
@@ -101,6 +107,9 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="text-xs text-amber-600 hover:underline">複製</button>
             </form>
+            <button type="button"
+                    onclick="openSaveAsTemplate({{ p.id }}, '{{ p.artist_name }}')"
+                    class="text-xs text-teal-600 hover:underline">另存範本</button>
             <form method="post" action="{{ url_for('event_page.ep_delete', ep_id=p.id) }}"
                   class="inline" onsubmit="return confirm('確定刪除「{{ p.title }}」？刪除後可至資料庫還原。')">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -121,4 +130,48 @@
   </div>
 
 </div>
+
+<!-- 另存為範本 Modal -->
+<div id="saveAsTemplateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-900">另存為範本</h3>
+      <button type="button" onclick="document.getElementById('saveAsTemplateModal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="saveAsTemplateForm" method="post" action="" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">範本名稱</label>
+        <input type="text" id="templateNameInput" name="template_name"
+               placeholder="例：藤井風標準範本"
+               class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <p class="text-xs text-gray-400">系統將複製此活動的所有啟用區塊建立新範本。</p>
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="document.getElementById('saveAsTemplateModal').classList.add('hidden')"
+                class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
+          取消
+        </button>
+        <button type="submit"
+                class="flex-1 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700">
+          另存為範本
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openSaveAsTemplate(epId, artistName) {
+  document.getElementById('saveAsTemplateForm').action =
+    '/admin/event-pages/' + epId + '/save-as-template';
+  document.getElementById('templateNameInput').value = artistName + ' 標準範本';
+  document.getElementById('saveAsTemplateModal').classList.remove('hidden');
+}
+</script>
 {% endblock %}

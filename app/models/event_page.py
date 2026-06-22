@@ -29,6 +29,16 @@ class EventPage(db.Model):
     thumbnail_image  = db.Column(db.String(500),  nullable=True)
     # Phase 1 V2：主題色
     theme_color      = db.Column(db.String(30),   nullable=True, default='purple')
+    # Phase 2：活動特色欄位（Hero 4格）
+    subtitle         = db.Column(db.String(200),  nullable=True)
+    feat1_title      = db.Column(db.String(60),   nullable=True, default='專屬包車')
+    feat1_sub        = db.Column(db.String(80),   nullable=True, default='直達會場')
+    feat2_title      = db.Column(db.String(60),   nullable=True, default='舒適乘坐')
+    feat2_sub        = db.Column(db.String(80),   nullable=True, default='旅遊艙款')
+    feat3_title      = db.Column(db.String(60),   nullable=True, default='準時接送')
+    feat3_sub        = db.Column(db.String(80),   nullable=True, default='不超行程')
+    feat4_title      = db.Column(db.String(60),   nullable=True, default='安全安心')
+    feat4_sub        = db.Column(db.String(80),   nullable=True, default='專業司機')
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

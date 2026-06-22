@@ -31,7 +31,7 @@
                  value="{{ page.artist_name if page else '' }}"
                  placeholder="例：BTS、藤井風、BLACKPINK"
                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          <p class="text-xs text-gray-400 mt-1">用於自動產生 URL slug（英文效果最佳）</p>
+          <p class="text-xs text-gray-400 mt-1">用於自動產生 URL slug</p>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">狀態</label>
@@ -60,6 +60,15 @@
                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
       </div>
 
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">副標題 / 標語</label>
+        <input type="text" name="subtitle"
+               value="{{ page.subtitle if page else '' }}"
+               placeholder="例：FROM KAOHSIUNG · CONCERT SHUTTLE SERVICE"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        <p class="text-xs text-gray-400 mt-1">顯示在主標題上方，留空則顯示藝人名稱</p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">活動日期</label>
@@ -75,7 +84,27 @@
                  value="{{ page.departure_city if page else '' }}"
                  placeholder="例：高雄、台北"
                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          <p class="text-xs text-gray-400 mt-1">用於自動產生 slug（高雄→kaohsiung）</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">場地</label>
+          <input type="text" name="venue"
+                 value="{{ page.venue if page else '' }}"
+                 placeholder="例：高雄巨蛋"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">類別</label>
+          <select name="category"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+            {% for key, label in [('concert','演唱會'),('sports','球賽'),('festival','節慶'),('exhibition','展覽'),('other','其他')] %}
+            <option value="{{ key }}" {% if page and page.category == key %}selected{% elif not page and key == 'concert' %}selected{% endif %}>
+              {{ label }}
+            </option>
+            {% endfor %}
+          </select>
         </div>
       </div>
     </div>
@@ -99,29 +128,77 @@
       </div>
     </div>
 
-    <!-- ── 活動分類 & 場地 ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">活動分類</h3>
-      <div class="grid grid-cols-2 gap-4">
+    <!-- ── 活動特色（Hero 4格）── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h3 class="text-sm font-semibold text-gray-700">活動特色（Hero 4格）</h3>
+        <span class="text-xs text-gray-400">顯示在 Hero 下方的 4 個特色格子</span>
+      </div>
+
+      {% set feat_rows = [
+        ('1', page.feat1_title if page else '', page.feat1_sub if page else '', '專屬包車', '直達會場'),
+        ('2', page.feat2_title if page else '', page.feat2_sub if page else '', '舒適乘坐', '旅遊艙款'),
+        ('3', page.feat3_title if page else '', page.feat3_sub if page else '', '準時接送', '不超行程'),
+        ('4', page.feat4_title if page else '', page.feat4_sub if page else '', '安全安心', '專業司機'),
+      ] %}
+      {% for idx, val_t, val_s, def_t, def_s in feat_rows %}
+      <div class="grid grid-cols-2 gap-3 items-start">
         <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">類別</label>
-          <select name="category"
-                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
-            {% for key, label in [('concert','演唱會'),('sports','球賽'),('festival','節慶'),('exhibition','展覽'),('other','其他')] %}
-            <option value="{{ key }}" {% if page and page.category == key %}selected{% elif not page and key == 'concert' %}selected{% endif %}>
-              {{ label }}
-            </option>
-            {% endfor %}
-          </select>
+          <label class="block text-xs font-medium text-gray-500 mb-1">特色 {{ idx }}｜標題</label>
+          <input type="text" name="feat{{ idx }}_title"
+                 value="{{ val_t or '' }}"
+                 placeholder="{{ def_t }}"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">場地</label>
-          <input type="text" name="venue"
-                 value="{{ page.venue if page else '' }}"
-                 placeholder="例：高雄巨蛋、台北小巨蛋"
+          <label class="block text-xs font-medium text-gray-500 mb-1">特色 {{ idx }}｜副標</label>
+          <input type="text" name="feat{{ idx }}_sub"
+                 value="{{ val_s or '' }}"
+                 placeholder="{{ def_s }}"
                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
         </div>
       </div>
+      {% endfor %}
+      <p class="text-xs text-gray-400">留空使用預設文字（專屬包車、舒適乘坐、準時接送、安全安心）</p>
+    </div>
+
+    <!-- ── 主視覺 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">主視覺</h3>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Hero 背景圖片 URL <span class="text-gray-300">（建議 16:9 以上寬幅）</span></label>
+        <input type="url" name="banner_image"
+               value="{{ page.banner_image if page else '' }}"
+               placeholder="https://..."
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        {% if page and page.banner_image %}
+        <img src="{{ page.banner_image }}" alt="Banner 預覽"
+             class="mt-2 h-24 rounded-lg object-cover border border-gray-200" />
+        {% endif %}
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">封面圖片 URL（舊版相容）</label>
+        <input type="url" name="cover_image"
+               value="{{ page.cover_image if page else '' }}"
+               placeholder="https://..."
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        {% if page and page.cover_image %}
+        <img src="{{ page.cover_image }}" alt="封面預覽"
+             class="mt-2 h-20 rounded-lg object-cover border border-gray-200" />
+        {% endif %}
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">縮圖 URL（列表用）</label>
+        <input type="url" name="thumbnail_image"
+               value="{{ page.thumbnail_image if page else '' }}"
+               placeholder="https://..."
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+      </div>
+    </div>
+
+    <!-- ── 預約時段（選填）── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">預約時段（選填）</h3>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">預約開放時間</label>
@@ -138,105 +215,9 @@
       </div>
     </div>
 
-    <!-- ── 視覺 ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">主視覺</h3>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1">Hero 橫幅圖片 URL（大圖）</label>
-        <input type="url" name="banner_image"
-               value="{{ page.banner_image if page else '' }}"
-               placeholder="https://... 建議比例 16:9 或更寬"
-               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        {% if page and page.banner_image %}
-        <img src="{{ page.banner_image }}" alt="Banner 預覽"
-             class="mt-2 h-24 rounded-lg object-cover border border-gray-200" />
-        {% endif %}
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1">縮圖 URL（列表用）</label>
-        <input type="url" name="thumbnail_image"
-               value="{{ page.thumbnail_image if page else '' }}"
-               placeholder="https://... 建議比例 16:9"
-               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        {% if page and page.thumbnail_image %}
-        <img src="{{ page.thumbnail_image }}" alt="縮圖預覽"
-             class="mt-2 h-20 rounded-lg object-cover border border-gray-200" />
-        {% endif %}
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1">封面圖片 URL（舊版相容）</label>
-        <input type="url" name="cover_image"
-               value="{{ page.cover_image if page else '' }}"
-               placeholder="https://..."
-               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        {% if page and page.cover_image %}
-        <img src="{{ page.cover_image }}" alt="封面預覽"
-             class="mt-2 h-20 rounded-lg object-cover border border-gray-200" />
-        {% endif %}
-      </div>
-      <!-- 主題色 -->
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-2">主題顏色</label>
-        {% set themes = [
-          ('purple', '#7c3aed', '紫色（BTS）'),
-          ('beige',  '#c4a882', '米色（藤井風）'),
-          ('pink',   '#ec4899', '粉紅（BLACKPINK）'),
-          ('blue',   '#3b82f6', '藍色'),
-          ('green',  '#22c55e', '綠色'),
-          ('red',    '#ef4444', '紅色'),
-          ('orange', '#f97316', '橘色'),
-        ] %}
-        <div class="flex flex-wrap gap-3">
-          {% for value, color, label in themes %}
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="theme_color" value="{{ value }}"
-                   {% if (page and page.theme_color == value) or (not page and value == 'purple') %}checked{% endif %}
-                   class="sr-only peer" />
-            <span class="w-7 h-7 rounded-full border-2 border-transparent peer-checked:border-gray-900 transition-all shadow-sm"
-                  style="background-color: {{ color }};" title="{{ label }}"></span>
-            <span class="text-xs text-gray-600">{{ label }}</span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 活動介紹 ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">活動介紹</h3>
-      <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1">描述</label>
-        <textarea name="description" rows="5"
-                  placeholder="活動說明、包車服務說明等..."
-                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y">{{ page.description if page else '' }}</textarea>
-      </div>
-    </div>
-
-    <!-- ── FAQ ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">常見問題（FAQ）</h3>
-      <div>
-        <textarea name="faq_content" rows="8"
-                  placeholder="Q: 集合地點在哪？&#10;A: 台北車站&#10;&#10;Q: 包含來回嗎？&#10;A: 是的..."
-                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y font-mono">{{ page.faq_content if page else '' }}</textarea>
-        <p class="text-xs text-gray-400 mt-1">格式：每行 Q: 問題 / A: 答案，前台自動解析顯示</p>
-      </div>
-    </div>
-
-    <!-- ── 訂購須知 ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">訂購須知</h3>
-      <div>
-        <textarea name="terms_content" rows="6"
-                  placeholder="1. 預約後請於 48 小時內完成訂金匯款...&#10;2. ..."
-                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y">{{ page.terms_content if page else '' }}</textarea>
-      </div>
-    </div>
-
-    <!-- ── 關聯（選填） ── -->
+    <!-- ── 關聯（選填）── -->
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
       <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">關聯設定（選填）</h3>
-      <p class="text-xs text-gray-400">預留欄位，供未來接入演唱會資料中心與開團管理系統使用。</p>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">演唱會</label>

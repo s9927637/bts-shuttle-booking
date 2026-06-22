@@ -1,156 +1,357 @@
 {% extends "layouts/admin_base.html" %}
-{% block title %}多活動排車中心{% endblock %}
-{% block page_title %}多活動排車中心{% endblock %}
+{% block title %}排車中心{% endblock %}
+{% block page_title %}排車中心{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
 
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">多活動排車中心</h1>
-      <p class="text-sm text-gray-500 mt-1">管理各活動車次，BTS 舊排車資料不受影響</p>
-    </div>
-    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
-            class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      建立車次
-    </button>
-  </div>
+<!-- 活動選擇列 -->
+<div class="flex items-center gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('event_dispatch.ed_index') }}"
+     class="px-3 py-1.5 rounded-xl text-sm font-medium transition-colors
+            {% if not event_filter %}bg-gray-900 text-white{% else %}bg-white border border-gray-200 text-gray-500 hover:text-gray-900{% endif %}">
+    全部
+  </a>
+  <a href="{{ url_for('event_dispatch.ed_index', event_id='bts', date=active_date) }}"
+     class="px-3 py-1.5 rounded-xl text-sm font-medium transition-colors
+            {% if event_filter == 'bts' %}bg-gray-900 text-white{% else %}bg-white border border-gray-200 text-gray-500 hover:text-gray-900{% endif %}">
+    BTS（舊）
+  </a>
+  {% for ep in event_pages %}
+  <a href="{{ url_for('event_dispatch.ed_index', event_id=ep.id, date=active_date) }}"
+     class="px-3 py-1.5 rounded-xl text-sm font-medium transition-colors
+            {% if event_filter == ep.id|string %}bg-gray-900 text-white{% else %}bg-white border border-gray-200 text-gray-500 hover:text-gray-900{% endif %}">
+    {{ ep.artist_name }}
+  </a>
+  {% endfor %}
+</div>
 
-  <!-- Filters -->
-  <form method="get" class="flex gap-2 mb-6 flex-wrap">
-    <select name="event_filter" onchange="this.form.submit()"
-            class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
-      <option value="" {% if not event_filter %}selected{% endif %}>全部活動</option>
-      <option value="bts" {% if event_filter == 'bts' %}selected{% endif %}>BTS 高雄演唱會</option>
-      {% for ep in event_pages %}
-      <option value="{{ ep.id }}" {% if event_filter == ep.id|string %}selected{% endif %}>
-        {{ ep.artist_name }} — {{ ep.title | truncate(25, True, '…') }}
-      </option>
-      {% endfor %}
-    </select>
-  </form>
+<!-- 日期 Tabs + 操作按鈕 -->
+<div class="flex items-center gap-2 mb-6 flex-wrap">
+  {% for d in departure_dates %}
+  <a href="{{ url_for('event_dispatch.ed_index', event_id=event_filter, date=d) }}"
+     class="px-4 py-2 rounded-xl text-sm font-medium transition-colors
+            {% if active_date == d %}bg-gray-900 text-white{% else %}bg-white border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+    {{ d }}
+  </a>
+  {% endfor %}
 
-  <!-- Table -->
-  {% if dispatch_events %}
-  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-100">
-      <thead class="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider">
-        <tr>
-          <th class="px-6 py-3 text-left font-medium">活動</th>
-          <th class="px-6 py-3 text-left font-medium">出車日期</th>
-          <th class="px-6 py-3 text-left font-medium">出發地</th>
-          <th class="px-6 py-3 text-center font-medium">車輛數</th>
-          <th class="px-6 py-3 text-center font-medium">乘客數</th>
-          <th class="px-6 py-3 text-left font-medium">狀態</th>
-          <th class="px-6 py-3 text-left font-medium">建立時間</th>
-          <th class="px-6 py-3 text-right font-medium">操作</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-50">
-        {% for de in dispatch_events %}
-        {% set badge_cls = {
-            "規劃中": "bg-gray-100 text-gray-600",
-            "確認中": "bg-yellow-100 text-yellow-700",
-            "已確認": "bg-green-100 text-green-700",
-            "已出發": "bg-blue-100 text-blue-700",
-            "已完成": "bg-gray-200 text-gray-500",
-            "已取消": "bg-red-100 text-red-600",
-          }.get(de.status, "bg-gray-100 text-gray-600") %}
-        <tr class="hover:bg-gray-50 transition-colors">
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 mb-1">
-              {{ de.artist_name }}
-            </span>
-            <p class="text-sm font-medium text-gray-900">{{ de.event_title | truncate(30, True, '…') }}</p>
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-700">{{ de.dispatch_date }}</td>
-          <td class="px-6 py-4 text-sm text-gray-500">{{ de.departure_city or '—' }}</td>
-          <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ de.vehicle_count }}</td>
-          <td class="px-6 py-4 text-center text-sm font-semibold text-gray-700">{{ de.passenger_count }}</td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ badge_cls }}">
-              {{ de.status }}
-            </span>
-          </td>
-          <td class="px-6 py-4 text-xs text-gray-400">
-            {{ de.created_at.strftime('%m/%d %H:%M') if de.created_at else '—' }}
-          </td>
-          <td class="px-6 py-4 text-right">
-            <a href="{{ url_for('event_dispatch.ed_detail', dispatch_event_id=de.id) }}"
-               class="text-xs font-medium text-blue-600 hover:underline px-2 py-1">查看 →</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="text-center py-16 text-gray-400">
-    <svg class="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+  {% if not departure_dates %}
+  <span class="text-sm text-gray-400 px-2">尚無有效訂單的出發日期</span>
+  {% endif %}
+
+  <!-- 新增車輛 -->
+  <button type="button" onclick="document.getElementById('createModal').classList.remove('hidden')"
+          class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
-    <p class="text-sm">尚無車次紀錄</p>
-    <p class="text-xs mt-1">點擊「建立車次」開始規劃</p>
+    新增車輛
+  </button>
+</div>
+
+{% if not active_date %}
+<div class="flex flex-col items-center justify-center py-24 text-center text-gray-400">
+  <p class="text-sm font-medium">請先選擇活動，系統將顯示對應出發日期。</p>
+</div>
+
+{% else %}
+
+<!-- Kanban Board -->
+<div class="flex gap-6 items-start overflow-x-auto pb-6">
+
+  <!-- 左側：待排車 -->
+  <div class="w-80 shrink-0">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-gray-900">待排車</h2>
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        {{ unassigned|length }} 筆 ／ {{ unassigned|sum(attribute='passenger_count') }} 人
+      </span>
+    </div>
+
+    <div id="unassigned-col"
+         class="space-y-3 min-h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-3"
+         data-dispatch-event-id="">
+
+      {% if unassigned %}
+        {% for order in unassigned %}
+        <div class="order-card bg-white border border-gray-100 rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing"
+             draggable="true"
+             data-order-id="{{ order.id }}"
+             data-passenger-count="{{ order.passenger_count }}">
+          <div class="flex items-start justify-between mb-2">
+            <span class="font-mono text-xs text-gray-400">{{ order.order_no }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+              {{ order.passenger_count }} 人
+            </span>
+          </div>
+          <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ order.departure_date }}</p>
+          {% if order.event_page %}
+          <span class="mt-1 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+            {{ order.event_page.artist_name }}
+          </span>
+          {% else %}
+          <span class="mt-1 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500">BTS</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="flex items-center justify-center h-24 text-xs text-gray-400">
+          無待排訂單
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 右側：各台車 -->
+  {% for item in dispatch_items %}
+  <div class="w-72 shrink-0">
+    <!-- 車輛 Card Header -->
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mb-3 overflow-hidden">
+      <div class="px-4 py-4 border-b border-gray-100">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">車輛 #{{ loop.index }}</span>
+          <div class="flex items-center gap-2">
+            <!-- 狀態 -->
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if item.de.status == '已確認' %}bg-green-100 text-green-700
+              {% elif item.de.status == '已出發' %}bg-blue-100 text-blue-700
+              {% elif item.de.status == '已完成' %}bg-gray-100 text-gray-500
+              {% elif item.de.status == '已取消' %}bg-red-100 text-red-600
+              {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+              {{ item.de.status }}
+            </span>
+            <!-- 刪除 -->
+            <form action="{{ url_for('event_dispatch.ed_delete', dispatch_event_id=item.de.id) }}" method="post"
+                  onsubmit="return confirm('確定刪除此車次？訂單將移回待排車。')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="hidden" name="event_filter" value="{{ event_filter }}" />
+              <input type="hidden" name="date" value="{{ active_date }}" />
+              <button type="submit" class="text-gray-300 hover:text-red-500 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {% if item.de.vehicle %}
+        <p class="text-base font-bold text-gray-900 font-mono">{{ item.de.vehicle.plate_number }}</p>
+        <p class="text-xs text-gray-500 mt-0.5">{{ item.de.vehicle.display_driver_name }}</p>
+        {% else %}
+        <p class="text-sm font-medium text-gray-400 italic">未指定車輛</p>
+        {% endif %}
+
+        {% if item.de.departure_city %}
+        <p class="text-xs text-gray-400 mt-1">出發地：{{ item.de.departure_city }}</p>
+        {% endif %}
+
+        <!-- 更新狀態 -->
+        <form action="{{ url_for('event_dispatch.ed_update_status', dispatch_event_id=item.de.id) }}" method="post" class="mt-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="event_filter" value="{{ event_filter }}" />
+          <input type="hidden" name="date" value="{{ active_date }}" />
+          <select name="status" onchange="this.form.submit()"
+                  class="w-full text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 text-gray-700">
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if item.de.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <!-- 容量條 -->
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs text-gray-400">乘客人數</span>
+          <span class="text-xs font-semibold {% if item.full %}text-red-600{% else %}text-gray-700{% endif %}">
+            {{ item.current }} / {{ item.max }}
+          </span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+          <div class="h-1.5 rounded-full transition-all
+                      {% if item.full %}bg-red-500{% elif item.current >= item.max * 0.75 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+               style="width: {{ [(item.current / item.max * 100)|int, 100]|min if item.max > 0 else 0 }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drag & Drop 區域 -->
+    <div id="dispatch-col-{{ item.de.id }}"
+         class="space-y-2 min-h-24 bg-white border-2 border-dashed border-gray-200 rounded-2xl p-3"
+         data-dispatch-event-id="{{ item.de.id }}"
+         data-current="{{ item.current }}"
+         data-max="{{ item.max }}">
+
+      {% for order in item.orders %}
+      <div class="order-card bg-white border border-gray-100 rounded-xl p-3 shadow-sm cursor-grab active:cursor-grabbing group"
+           draggable="true"
+           data-order-id="{{ order.id }}"
+           data-passenger-count="{{ order.passenger_count }}">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-mono text-xs text-gray-400">{{ order.order_no }}</span>
+            <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+            {% if order.event_page %}
+            <span class="mt-0.5 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+              {{ order.event_page.artist_name }}
+            </span>
+            {% else %}
+            <span class="mt-0.5 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500">BTS</span>
+            {% endif %}
+          </div>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+            {{ order.passenger_count }} 人
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not item.orders %}
+      <div class="flex items-center justify-center h-16 text-xs text-gray-300 drop-target-hint">
+        拖曳訂單至此
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not dispatch_items %}
+  <div class="flex-1 flex flex-col items-center justify-center py-20 text-center text-gray-400">
+    <svg class="w-10 h-10 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2.67-2.67A2 2 0 017.08 13H13zm0 0h2l3-5h-3a1 1 0 00-1 1v4z"/>
+    </svg>
+    <p class="text-sm font-medium text-gray-400">尚無車次</p>
+    <p class="text-xs text-gray-300 mt-1">點「新增車輛」建立第一台車。</p>
   </div>
   {% endif %}
 
 </div>
+{% endif %}
 
-<!-- 建立車次 Modal -->
-<div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold text-gray-900">建立車次</h3>
-      <button onclick="document.getElementById('createModal').classList.add('hidden')"
-              class="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<!-- Modal：建立車次 -->
+<div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 class="text-sm font-semibold text-gray-900">新增排車車輛</h3>
+      <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
-    <form action="{{ url_for('event_dispatch.ed_create') }}" method="post">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">活動 <span class="text-red-400">*</span></label>
-          <select name="event_page_id"
-                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
-            <option value="">BTS 高雄演唱會（舊活動）</option>
-            {% for ep in event_pages %}
-            <option value="{{ ep.id }}">{{ ep.artist_name }} — {{ ep.title | truncate(30, True, '…') }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">出車日期 <span class="text-red-400">*</span></label>
-          <input type="text" name="dispatch_date" required
-                 placeholder="例如：2026/07/19"
-                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">出發地</label>
-          <input type="text" name="departure_city"
-                 placeholder="例如：高雄"
-                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
-          <textarea name="notes" rows="2"
-                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900"></textarea>
-        </div>
+    <form action="{{ url_for('event_dispatch.ed_create') }}" method="post" class="px-6 py-5 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="event_filter" value="{{ event_filter }}" />
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">活動</label>
+        <select name="event_page_id"
+                class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+          <option value="">BTS 高雄演唱會（舊）</option>
+          {% for ep in event_pages %}
+          <option value="{{ ep.id }}" {% if event_filter == ep.id|string %}selected{% endif %}>
+            {{ ep.artist_name }} — {{ ep.title | truncate(30, True, '…') }}
+          </option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="flex justify-end gap-3 mt-5">
-        <button type="button"
-                onclick="document.getElementById('createModal').classList.add('hidden')"
-                class="px-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50">取消</button>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">出車日期 <span class="text-red-400">*</span></label>
+        <input type="text" name="dispatch_date" value="{{ active_date }}" required
+               placeholder="例：8/17"
+               class="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">車輛</label>
+        <select name="vehicle_id"
+                class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+          <option value="">— 未指定 —</option>
+          {% for v in vehicles %}
+          <option value="{{ v.id }}">{{ v.plate_number }} — {{ v.display_driver_name }}（{{ v.seat_limit }}人）</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">出發地</label>
+        <input type="text" name="departure_city" placeholder="例：高雄"
+               class="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          取消
+        </button>
         <button type="submit"
-                class="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-700">建立</button>
+                class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+          建立
+        </button>
       </div>
     </form>
   </div>
 </div>
+
+<!-- Drag & Drop Script -->
+<script>
+const MOVE_URL = "{{ url_for('event_dispatch.ed_move') }}";
+let draggingCard = null;
+
+document.querySelectorAll('.order-card').forEach(card => {
+  card.addEventListener('dragstart', e => {
+    draggingCard = card;
+    card.classList.add('opacity-50');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    draggingCard = null;
+    card.classList.remove('opacity-50');
+    document.querySelectorAll('.drop-zone-active').forEach(el =>
+      el.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50'));
+  });
+});
+
+document.querySelectorAll('[id^="dispatch-col-"], #unassigned-col').forEach(col => {
+  col.addEventListener('dragover', e => {
+    e.preventDefault();
+    col.classList.add('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+  });
+  col.addEventListener('dragleave', e => {
+    if (!col.contains(e.relatedTarget)) {
+      col.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+    }
+  });
+  col.addEventListener('drop', async e => {
+    e.preventDefault();
+    col.classList.remove('drop-zone-active', 'border-indigo-400', 'bg-indigo-50');
+    if (!draggingCard) return;
+
+    const orderId         = draggingCard.dataset.orderId;
+    const dispatchEventId = col.dataset.dispatchEventId || null;
+
+    const res = await fetch(MOVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_id:          parseInt(orderId),
+        dispatch_event_id: dispatchEventId ? parseInt(dispatchEventId) : null,
+      }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      location.reload();
+    } else {
+      alert(data.error || '移動失敗');
+    }
+  });
+});
+</script>
+
 {% endblock %}

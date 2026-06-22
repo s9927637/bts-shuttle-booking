@@ -26,6 +26,9 @@ class DispatchEvent(db.Model):
     event_page_id   = db.Column(db.Integer,
                                 db.ForeignKey("event_pages.id", ondelete="SET NULL"),
                                 nullable=True, index=True)
+    vehicle_id      = db.Column(db.Integer,
+                                db.ForeignKey("vehicles.id", ondelete="SET NULL"),
+                                nullable=True)
     dispatch_date   = db.Column(db.String(50),  nullable=False, index=True)
     departure_city  = db.Column(db.String(100), nullable=True)
     vehicle_count   = db.Column(db.Integer,     nullable=False, default=0)
@@ -36,6 +39,8 @@ class DispatchEvent(db.Model):
     updated_at      = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
     event_page    = db.relationship("EventPage", foreign_keys=[event_page_id],
+                                    backref=db.backref("dispatch_events", lazy="dynamic"))
+    vehicle       = db.relationship("Vehicle", foreign_keys=[vehicle_id],
                                     backref=db.backref("dispatch_events", lazy="dynamic"))
     event_orders  = db.relationship("DispatchEventOrder", backref="dispatch_event",
                                     lazy="dynamic", cascade="all, delete-orphan")
@@ -55,6 +60,24 @@ class DispatchEvent(db.Model):
     @property
     def artist_name(self) -> str:
         return self.event_page.artist_name if self.event_page else "BTS"
+
+    @property
+    def seat_limit(self) -> int:
+        if self.vehicle and self.vehicle.seat_limit:
+            return self.vehicle.seat_limit
+        return 9
+
+    @property
+    def current_pax(self) -> int:
+        return sum(
+            (eo.order.passenger_count or 0)
+            for eo in self.event_orders
+            if eo.order
+        )
+
+    @property
+    def is_full(self) -> bool:
+        return self.current_pax >= self.seat_limit
 
     def recalc(self):
         """根據目前 event_orders 重算 passenger_count。"""

@@ -105,18 +105,126 @@ def create_dispatch_event(
     event_page_id: int | None,
     departure_city: str | None = None,
     notes: str | None = None,
+    vehicle_id: int | None = None,
 ) -> DispatchEvent:
     de = DispatchEvent(
         event_page_id  = event_page_id or None,
         dispatch_date  = dispatch_date,
         departure_city = departure_city,
         notes          = notes,
+        vehicle_id     = vehicle_id or None,
         created_at     = datetime.utcnow(),
         updated_at     = datetime.utcnow(),
     )
     db.session.add(de)
     db.session.flush()
     return de
+
+
+def delete_dispatch_event(dispatch_event_id: int) -> None:
+    """刪除車次，訂單自動回到待排狀態（因 CASCADE DELETE 移除 event_orders）。"""
+    de = DispatchEvent.query.get_or_404(dispatch_event_id)
+    db.session.delete(de)
+
+
+def move_order_between_events(order_id: int, target_event_id: int | None) -> tuple[bool, str]:
+    """
+    移動訂單到另一台車（target_event_id=None 表示移回待排）。
+    不檢查人數上限（由呼叫方決定是否要檢查）。
+    """
+    order = Order.query.get(order_id)
+    if not order:
+        return False, "訂單不存在"
+
+    # 先從目前所在的 DispatchEvent 移除
+    existing = (
+        DispatchEventOrder.query
+        .filter_by(order_id=order_id)
+        .first()
+    )
+    if existing:
+        old_de = existing.dispatch_event
+        db.session.delete(existing)
+        db.session.flush()
+        if old_de:
+            old_de.recalc()
+
+    if target_event_id is None:
+        return True, "已移回待排"
+
+    target = DispatchEvent.query.get(target_event_id)
+    if not target:
+        return False, "目標車次不存在"
+
+    deo = DispatchEventOrder(dispatch_event_id=target_event_id, order_id=order_id)
+    db.session.add(deo)
+    db.session.flush()
+    target.recalc()
+    target.updated_at = datetime.utcnow()
+    return True, "OK"
+
+
+def get_departure_dates_for_event(event_page_id: int | None) -> list[str]:
+    """取得該活動有付款訂單的出發日期清單（去重排序）。"""
+    q = Order.query.filter(
+        Order.payment_status.in_(["訂金已確認", "已完成"])
+    )
+    if event_page_id == 0:
+        q = q.filter(Order.event_page_id.is_(None))
+    elif event_page_id:
+        q = q.filter(Order.event_page_id == event_page_id)
+    rows = q.with_entities(Order.departure_date).distinct().all()
+    dates = sorted({r[0] for r in rows if r[0]})
+    return dates
+
+
+def get_kanban_data(event_page_id: int | None, dispatch_date: str) -> dict:
+    """
+    回傳看板所需資料：
+    - unassigned: 尚未分配的訂單
+    - dispatch_items: [{de, orders, current, max, full}]
+    """
+    # 已分配到這個日期的 DispatchEvent
+    q = DispatchEvent.query.filter_by(dispatch_date=dispatch_date)
+    if event_page_id == 0:
+        q = q.filter(DispatchEvent.event_page_id.is_(None))
+    elif event_page_id is not None:
+        q = q.filter(DispatchEvent.event_page_id == event_page_id)
+    dispatch_events = q.order_by(DispatchEvent.created_at.asc()).all()
+
+    # 已分配的 order_ids
+    assigned_ids = {
+        deo.order_id
+        for de in dispatch_events
+        for deo in de.event_orders
+    }
+
+    # 未分配訂單（限定日期）
+    uq = Order.query.filter(
+        Order.payment_status.in_(["訂金已確認", "已完成"]),
+        Order.departure_date == dispatch_date,
+    )
+    if event_page_id == 0:
+        uq = uq.filter(Order.event_page_id.is_(None))
+    elif event_page_id is not None:
+        uq = uq.filter(Order.event_page_id == event_page_id)
+    unassigned = [o for o in uq.order_by(Order.created_at.asc()).all()
+                  if o.id not in assigned_ids]
+
+    dispatch_items = []
+    for de in dispatch_events:
+        orders = [eo.order for eo in de.event_orders if eo.order]
+        current = sum(o.passenger_count for o in orders)
+        mx = de.seat_limit
+        dispatch_items.append({
+            "de":      de,
+            "orders":  orders,
+            "current": current,
+            "max":     mx,
+            "full":    current >= mx,
+        })
+
+    return {"unassigned": unassigned, "dispatch_items": dispatch_items}
 
 
 def add_order_to_dispatch_event(dispatch_event_id: int, order_id: int) -> tuple[bool, str]:

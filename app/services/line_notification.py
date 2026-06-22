@@ -48,11 +48,19 @@ def send_admin_notification(message: str) -> None:
 
 # ── 通知訊息工廠 ────────────────────────────────────────────────────────────
 
+def _event_label(order) -> str:
+    """從訂單取得活動名稱，供通知訊息使用。"""
+    if order.event_page:
+        return order.event_page.event_display_name
+    return "BTS 高雄演唱會包車"   # fallback：既有 BTS 訂單
+
+
 def notify_new_order(order) -> None:
     """🎉 新訂單建立通知"""
     vehicle_label = "NX200 專屬包車" if order.vehicle_type == "nx200" else "九座商旅車"
     msg = (
         f"🎉 新訂單\n\n"
+        f"【{_event_label(order)}】\n"
         f"訂單編號：{order.order_no}\n"
         f"姓名：{order.contact_name}\n"
         f"日期：{order.departure_date}\n"
@@ -79,6 +87,7 @@ def notify_payment_report(order, payment) -> None:
     """💰 匯款回報送出通知"""
     msg = (
         f"💰 新匯款回報\n\n"
+        f"【{_event_label(order)}】\n"
         f"訂單編號：{order.order_no}\n"
         f"姓名：{order.contact_name}\n"
         f"回報金額：NT${order.deposit_amount:,}\n"
@@ -92,6 +101,7 @@ def notify_deposit_confirmed(order, admin_name: str = "管理員") -> None:
     """✅ 訂金確認通知"""
     msg = (
         f"✅ 訂金已確認\n\n"
+        f"【{_event_label(order)}】\n"
         f"訂單編號：{order.order_no}\n"
         f"姓名：{order.contact_name}\n"
         f"確認人員：{admin_name}"
@@ -103,6 +113,7 @@ def notify_order_cancelled(order) -> None:
     """❌ 訂單取消通知"""
     msg = (
         f"❌ 訂單取消\n\n"
+        f"【{_event_label(order)}】\n"
         f"訂單編號：{order.order_no}\n"
         f"姓名：{order.contact_name}\n"
         f"取消人數：{order.passenger_count} 人"

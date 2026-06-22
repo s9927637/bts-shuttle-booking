@@ -50,6 +50,24 @@
       </select>
     </form>
 
+    <!-- Event filter -->
+    {% if event_pages %}
+    <form method="get" id="event-form">
+      <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+      <input type="hidden" name="status" value="{{ request.args.get('status','') }}">
+      <input type="hidden" name="source" value="{{ request.args.get('source','') }}">
+      <select name="event_id" onchange="document.getElementById('event-form').submit()"
+              class="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900">
+        <option value="" {% if not event_filter %}selected{% endif %}>全部活動</option>
+        {% for ep in event_pages %}
+        <option value="{{ ep.id }}" {% if event_filter == ep.id|string %}selected{% endif %}>
+          {{ ep.artist_name }} — {{ ep.title | truncate(20, True) }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+
   </div>
 
   <div class="flex items-center gap-3">

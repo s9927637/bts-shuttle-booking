@@ -96,6 +96,13 @@
           </div>
           <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
           <p class="text-xs text-gray-400 mt-0.5">{{ order.departure_date }}</p>
+          {% if order.event_page %}
+          <span class="mt-1 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+            {{ order.event_page.artist_name }}
+          </span>
+          {% else %}
+          <span class="mt-1 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500">BTS</span>
+          {% endif %}
         </div>
         {% endfor %}
       {% else %}
@@ -233,6 +240,24 @@
       </div>
     </div>
 
+    <!-- 混車警告 -->
+    {% if item.orders %}
+    {% set ns = namespace(event_ids=[]) %}
+    {% for order in item.orders %}
+      {% if order.event_page_id not in ns.event_ids %}
+        {% set ns.event_ids = ns.event_ids + [order.event_page_id] %}
+      {% endif %}
+    {% endfor %}
+    {% if ns.event_ids|length > 1 %}
+    <div class="mx-3 mb-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2">
+      <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <p class="text-xs font-semibold text-amber-700">⚠️ 不得混車：此車含 {{ ns.event_ids|length }} 個不同活動的訂單</p>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <!-- Drag & Drop 區域 -->
     <div id="dispatch-col-{{ item.dispatch.id }}"
          class="space-y-2 min-h-24 bg-white border-2 border-dashed border-gray-200 rounded-2xl p-3"
@@ -249,6 +274,13 @@
           <div>
             <span class="font-mono text-xs text-gray-400">{{ order.order_no }}</span>
             <p class="text-sm font-semibold text-gray-900">{{ order.contact_name }}</p>
+            {% if order.event_page %}
+            <span class="mt-0.5 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+              {{ order.event_page.artist_name }}
+            </span>
+            {% else %}
+            <span class="mt-0.5 inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500">BTS</span>
+            {% endif %}
           </div>
           <div class="flex items-center gap-1.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">

@@ -27,6 +27,8 @@ class EventPage(db.Model):
     booking_close_at = db.Column(db.DateTime,     nullable=True)
     banner_image     = db.Column(db.String(500),  nullable=True)
     thumbnail_image  = db.Column(db.String(500),  nullable=True)
+    # Phase 1 V2：主題色
+    theme_color      = db.Column(db.String(30),   nullable=True, default='purple')
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
@@ -47,13 +49,33 @@ class EventPage(db.Model):
         'other':      '其他',
     }
 
+    # 主題色 → CSS hex（fallback 到深紫）
+    THEME_CSS = {
+        'purple': '#7c3aed',
+        'beige':  '#c4a882',
+        'pink':   '#ec4899',
+        'blue':   '#3b82f6',
+        'green':  '#22c55e',
+        'red':    '#ef4444',
+        'orange': '#f97316',
+    }
+
     @property
     def category_label(self):
         return self.CATEGORY_LABELS.get(self.category or 'concert', '演唱會')
 
     @property
+    def theme_css_color(self):
+        return self.THEME_CSS.get(self.theme_color or 'purple', '#7c3aed')
+
+    @property
     def display_image(self):
         return self.banner_image or self.cover_image
+
+    @property
+    def event_display_name(self):
+        """供 LINE / 收據顯示用的活動名稱"""
+        return self.title or self.event_name or f"{self.artist_name} 活動包車"
 
     @property
     def is_published(self):

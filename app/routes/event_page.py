@@ -81,6 +81,12 @@ def _require_admin():
 
 # ── 後台：活動列表 ──────────────────────────────────────────────────────────
 
+@event_page_bp.route("/admin/events")
+@event_page_bp.route("/admin/events/")
+def ep_list_alias():
+    return redirect(url_for("event_page.ep_list"))
+
+
 @event_page_bp.route("/admin/event-pages/")
 @event_page_bp.route("/admin/event-pages")
 def ep_list():
@@ -156,6 +162,7 @@ def ep_create():
         description=request.form.get("description", "").strip() or None,
         faq_content=request.form.get("faq_content", "").strip() or None,
         terms_content=request.form.get("terms_content", "").strip() or None,
+        theme_color=request.form.get("theme_color", "purple") or "purple",
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -210,6 +217,7 @@ def ep_edit(ep_id):
     ep.description    = request.form.get("description", "").strip() or None
     ep.faq_content    = request.form.get("faq_content", "").strip() or None
     ep.terms_content  = request.form.get("terms_content", "").strip() or None
+    ep.theme_color    = request.form.get("theme_color", ep.theme_color or "purple") or "purple"
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()

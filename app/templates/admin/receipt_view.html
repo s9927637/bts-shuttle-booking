@@ -40,7 +40,9 @@
     <div class="px-8 py-7 border-b border-gray-100">
       <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs text-gray-400 mb-1">BTS 高雄演唱會來回包車服務</p>
+          <p class="text-xs text-gray-400 mb-1">
+            {{ order.event_page.event_display_name if order.event_page else 'BTS 高雄演唱會包車服務' }}
+          </p>
           <h2 class="text-xl font-bold text-gray-900">
             {{ receipt.type_label }}收據
           </h2>
@@ -72,7 +74,7 @@
       {{ row('訂單編號', order.order_no) }}
       {{ row('姓名', order.contact_name) }}
       {{ row('聯絡電話', order.phone) }}
-      {{ row('活動名稱', 'BTS WORLD TOUR — 高雄') }}
+      {{ row('活動名稱', order.event_page.event_display_name if order.event_page else 'BTS WORLD TOUR — 高雄') }}
       {{ row('搭乘日期', order.departure_date) }}
       {{ row('付款項目', receipt.type_label) }}
       {{ row('付款方式', payment.payment_source | replace('bank_transfer_report','銀行匯款') | replace('admin_confirmed','後台確認') | replace('legacy_customer','舊客戶補單') | replace('cash','現金付款') if payment else '—') }}

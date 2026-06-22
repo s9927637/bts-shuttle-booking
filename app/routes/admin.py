@@ -501,10 +501,13 @@ def payments():
     if guard:
         return guard
 
-    q      = request.args.get("q", "").strip()
-    status = request.args.get("status", "").strip()
-    source = request.args.get("source", "").strip()
-    page   = max(1, request.args.get("page", 1, type=int))
+    from app.models.event_page import EventPage as _EP
+
+    q            = request.args.get("q", "").strip()
+    status       = request.args.get("status", "").strip()
+    source       = request.args.get("source", "").strip()
+    event_filter = request.args.get("event_id", "").strip()
+    page         = max(1, request.args.get("page", 1, type=int))
 
     query = db.session.query(Payment, Order).join(Order, Payment.order_id == Order.id)
 
@@ -521,6 +524,10 @@ def payments():
         query = query.filter(Payment.status == status)
     if source:
         query = query.filter(Payment.payment_source == source)
+    if event_filter == "bts":
+        query = query.filter(Order.event_page_id.is_(None))
+    elif event_filter and event_filter.isdigit():
+        query = query.filter(Order.event_page_id == int(event_filter))
 
     total  = query.count()
     pages  = max(1, (total + PER_PAGE - 1) // PER_PAGE)
@@ -533,6 +540,8 @@ def payments():
         .all()
     )
 
+    event_pages = _EP.query.filter(_EP.deleted_at.is_(None)).order_by(_EP.artist_name, _EP.created_at.desc()).all()
+
     return render_template(
         "admin/payments.html",
         rows=rows,
@@ -540,6 +549,8 @@ def payments():
         page=page,
         pages=pages,
         statuses=PAYMENT_RECORD_STATUSES,
+        event_pages=event_pages,
+        event_filter=event_filter,
     )
 
 

@@ -39,6 +39,9 @@ class EventPage(db.Model):
     feat3_sub        = db.Column(db.String(80),   nullable=True, default='不超行程')
     feat4_title      = db.Column(db.String(60),   nullable=True, default='安全安心')
     feat4_sub        = db.Column(db.String(80),   nullable=True, default='專業司機')
+    # Phase 3：Hero Variant System
+    hero_variant     = db.Column(db.String(30),   nullable=True, default='modern-card')
+    tour_name        = db.Column(db.String(200),  nullable=True)
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

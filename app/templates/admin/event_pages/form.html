@@ -61,6 +61,14 @@
       </div>
 
       <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">巡演名稱 <span class="text-gray-300">（顯示在標題上方，Editorial 版型專用）</span></label>
+        <input type="text" name="tour_name"
+               value="{{ page.tour_name if page else '' }}"
+               placeholder="例：Fujii Kaze Prema World Tour 2026"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+      </div>
+
+      <div>
         <label class="block text-xs font-medium text-gray-500 mb-1">副標題 / 標語</label>
         <input type="text" name="subtitle"
                value="{{ page.subtitle if page else '' }}"
@@ -106,6 +114,54 @@
             {% endfor %}
           </select>
         </div>
+      </div>
+    </div>
+
+    <!-- ── Hero 版型 ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">Hero 版型</h3>
+      {% set cur_variant = page.hero_variant if page and page.hero_variant else 'modern-card' %}
+      <div class="grid grid-cols-3 gap-3">
+
+        <label class="relative cursor-pointer">
+          <input type="radio" name="hero_variant" value="modern-card"
+                 {% if cur_variant == 'modern-card' %}checked{% endif %}
+                 class="sr-only peer" />
+          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">🎴</span>
+              <span class="text-sm font-semibold text-gray-800">Modern Card</span>
+            </div>
+            <p class="text-xs text-gray-500 leading-relaxed">玻璃卡片・四宮格特色・科技感 HUD。適合 BTS、BLACKPINK、K-POP。</p>
+          </div>
+        </label>
+
+        <label class="relative cursor-pointer">
+          <input type="radio" name="hero_variant" value="editorial"
+                 {% if cur_variant == 'editorial' %}checked{% endif %}
+                 class="sr-only peer" />
+          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">📰</span>
+              <span class="text-sm font-semibold text-gray-800">Editorial</span>
+            </div>
+            <p class="text-xs text-gray-500 leading-relaxed">左文右圖・雜誌排版・大字標題。適合藤井風、五月天、文青型演唱會。</p>
+          </div>
+        </label>
+
+        <label class="relative cursor-pointer">
+          <input type="radio" name="hero_variant" value="luxury"
+                 {% if cur_variant == 'luxury' %}checked{% endif %}
+                 class="sr-only peer" />
+          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">✨</span>
+              <span class="text-sm font-semibold text-gray-800">Luxury</span>
+            </div>
+            <p class="text-xs text-gray-500 leading-relaxed">Premium 暗色・金色線條・極簡 CTA。適合周杰倫、張學友、高單價活動。</p>
+          </div>
+        </label>
+
       </div>
     </div>
 

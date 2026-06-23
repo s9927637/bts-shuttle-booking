@@ -15,3 +15,16 @@ class Announcement(db.Model):
     line_target       = db.Column(db.String(50), nullable=True)
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at        = db.Column(db.DateTime, nullable=True, onupdate=datetime.utcnow)
+
+    # 活動隔離：NULL = 全站公告（BTS 相容）
+    event_page_id = db.Column(
+        db.Integer,
+        db.ForeignKey("event_pages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    event_page = db.relationship(
+        "EventPage",
+        foreign_keys=[event_page_id],
+        backref=db.backref("announcements", lazy="dynamic"),
+    )

@@ -1,4 +1,15 @@
 <div>
+  <label class="block text-xs font-medium text-gray-500 mb-1.5">所屬活動</label>
+  <select name="event_page_id"
+          class="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900">
+    <option value="">── 全站公告（不限活動）</option>
+    {% for ep in event_pages %}
+    <option value="{{ ep.id }}" {% if ann and ann.event_page_id == ep.id %}selected{% endif %}>{{ ep.title }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div>
   <label class="block text-xs font-medium text-gray-500 mb-1.5">標題 <span class="text-red-400">*</span></label>
   <input type="text" name="title" required maxlength="255"
          class="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"/>

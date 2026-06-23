@@ -29,3 +29,16 @@ class Payment(db.Model):
     note           = db.Column(db.Text, nullable=True)
     receipt_status = db.Column(db.String(20), nullable=False, default="not_issued")  # not_issued / issued
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 透過 order 推導活動；直接冗餘存一份方便篩選（NULL = BTS 舊資料）
+    event_page_id = db.Column(
+        db.Integer,
+        db.ForeignKey("event_pages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    event_page = db.relationship(
+        "EventPage",
+        foreign_keys=[event_page_id],
+        backref=db.backref("payments", lazy="dynamic"),
+    )

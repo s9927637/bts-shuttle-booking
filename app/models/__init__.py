@@ -9,3 +9,4 @@ from .dispatch import Dispatch, DispatchOrder
 from .receipt import Receipt
 from .audit_log import AuditLog
 from .coupon import Coupon
+from .faq import Faq

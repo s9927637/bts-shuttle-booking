@@ -537,10 +537,11 @@ def payment_report_submit():
 
     try:
         payment = Payment(
-            order_id   = order.id,
-            payer_name = payer_name,
-            bank_last5 = bank_last5,
-            status     = "待確認",
+            order_id      = order.id,
+            payer_name    = payer_name,
+            bank_last5    = bank_last5,
+            status        = "待確認",
+            event_page_id = order.event_page_id,
         )
         order.payment_status = "待確認"
         db.session.add(payment)

@@ -1192,12 +1192,17 @@ def announcements():
     if guard:
         return guard
 
+    from app.models.event_page import EventPage
     page  = max(1, request.args.get("page", 1, type=int))
+    ep_filter = request.args.get("event_page_id", type=int)
     query = Announcement.query.order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+    if ep_filter:
+        query = query.filter(Announcement.event_page_id == ep_filter)
     total = query.count()
     pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
     page  = min(page, pages)
     items = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+    event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.created_at.desc()).all()
 
     return render_template(
         "admin/announcements.html",
@@ -1206,6 +1211,8 @@ def announcements():
         announcement_types=ANNOUNCEMENT_TYPES,
         announcement_statuses=ANNOUNCEMENT_STATUSES,
         line_targets=LINE_TARGETS,
+        event_pages=event_pages,
+        ep_filter=ep_filter,
     )
 
 
@@ -1216,6 +1223,7 @@ def announcement_create():
         return guard
 
     try:
+        ep_id_raw = request.form.get("event_page_id", "").strip()
         a = Announcement(
             title             = request.form["title"].strip(),
             content           = request.form["content"].strip(),
@@ -1224,6 +1232,7 @@ def announcement_create():
             is_pinned         = bool(request.form.get("is_pinned")),
             publish_to_line   = bool(request.form.get("publish_to_line")),
             line_target       = request.form.get("line_target") or None,
+            event_page_id     = int(ep_id_raw) if ep_id_raw.isdigit() else None,
         )
         db.session.add(a)
         db.session.flush()
@@ -1288,6 +1297,86 @@ def announcement_delete(ann_id):
         flash(friendly_error(e, "刪除失敗"), "error")
 
     return redirect(url_for("admin.announcements"))
+
+
+# ── FAQ Management ─────────────────────────────────────────────────────────
+
+@admin_bp.route("/faqs")
+def faqs():
+    guard = require_admin()
+    if guard:
+        return guard
+    from app.models.faq import Faq
+    from app.models.event_page import EventPage
+    ep_filter = request.args.get("event_page_id", type=int)
+    query = Faq.query.order_by(Faq.event_page_id, Faq.sort_order)
+    if ep_filter:
+        query = query.filter(Faq.event_page_id == ep_filter)
+    items = query.all()
+    event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.created_at.desc()).all()
+    return render_template("admin/faqs.html",
+                           faqs=items, event_pages=event_pages, ep_filter=ep_filter)
+
+
+@admin_bp.route("/faqs/create", methods=["POST"])
+def faq_create():
+    guard = require_admin()
+    if guard:
+        return guard
+    from app.models.faq import Faq
+    try:
+        ep_id = int(request.form["event_page_id"])
+        faq = Faq(
+            event_page_id = ep_id,
+            question      = request.form["question"].strip(),
+            answer        = request.form["answer"].strip(),
+            sort_order    = int(request.form.get("sort_order", 0)),
+            is_active     = bool(request.form.get("is_active", True)),
+        )
+        db.session.add(faq)
+        db.session.commit()
+        flash("FAQ 已建立。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(friendly_error(e, "建立失敗"), "error")
+    return redirect(url_for("admin.faqs"))
+
+
+@admin_bp.route("/faqs/<int:faq_id>/update", methods=["POST"])
+def faq_update(faq_id):
+    guard = require_admin()
+    if guard:
+        return guard
+    from app.models.faq import Faq
+    faq = Faq.query.get_or_404(faq_id)
+    try:
+        faq.question   = request.form["question"].strip()
+        faq.answer     = request.form["answer"].strip()
+        faq.sort_order = int(request.form.get("sort_order", faq.sort_order))
+        faq.is_active  = bool(request.form.get("is_active"))
+        db.session.commit()
+        flash("FAQ 已更新。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(friendly_error(e, "更新失敗"), "error")
+    return redirect(url_for("admin.faqs"))
+
+
+@admin_bp.route("/faqs/<int:faq_id>/delete", methods=["POST"])
+def faq_delete(faq_id):
+    guard = require_admin()
+    if guard:
+        return guard
+    from app.models.faq import Faq
+    faq = Faq.query.get_or_404(faq_id)
+    try:
+        db.session.delete(faq)
+        db.session.commit()
+        flash("FAQ 已刪除。", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(friendly_error(e, "刪除失敗"), "error")
+    return redirect(url_for("admin.faqs"))
 
 
 # ── Notifications Log ──────────────────────────────────────────────────────

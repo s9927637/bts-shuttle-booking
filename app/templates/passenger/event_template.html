@@ -184,65 +184,74 @@
        Desktop ≥1024: Left 45% text | Right 55% image
        Mobile <1024: Image top (56vw) → Text below
     ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════
+       VARIANT 2: EDITORIAL  (藤井風 / 五月天 / 文青型)
+       Full-bleed background image, content floats over overlay
+    ═══════════════════════════════════════════════════════════ */
     .ed-hero {
+      position: relative;
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: 45fr 55fr;
+      display: flex;
+      align-items: flex-end;        /* content anchored to bottom-left */
       background: #0d0d0b;
-    }
-    @media (max-width: 1023px) {
-      .ed-hero {
-        grid-template-columns: 1fr;
-        grid-template-rows: 56vw auto;
-        min-height: 0;
-      }
-    }
-    @media (max-width: 639px) {
-      .ed-hero { grid-template-rows: 67vw auto; }
+      overflow: hidden;
     }
 
-    .ed-left {
-      display: flex; flex-direction: column; justify-content: center;
-      padding: 104px 56px 72px 64px; position: relative; z-index: 2;
+    /* Background image layer */
+    .ed-bg {
+      position: absolute; inset: 0; z-index: 0;
     }
-    @media (max-width: 1023px) { .ed-left { padding: 40px 32px 56px; grid-row: 2; } }
-    @media (max-width: 639px)  { .ed-left { padding: 32px 20px 48px; } }
-
-    /* Phase 3: editorial text safe zone */
-    .ed-text-wrap { max-width: 100%; }
-    @media (min-width: 1024px) {
-      /* already in 45% column, no extra constraint needed */
+    .ed-bg picture, .ed-bg img {
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center center;
+      display: block;
     }
-
-    .ed-right {
-      position: relative; overflow: hidden;
-    }
-    @media (max-width: 1023px) { .ed-right { grid-row: 1; } }
-    .ed-right picture, .ed-right img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
-    .ed-right-placeholder {
+    .ed-bg-placeholder {
       width: 100%; height: 100%;
       background: linear-gradient(160deg, #1a1714 0%, #2a2420 100%);
-      min-height: 56vw;
     }
-    .ed-right::after {
-      content: '';
-      position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(to right, rgba(13,13,11,0.25) 0%, transparent 25%);
+
+    /* Overlay: left gradient for readability */
+    .ed-overlay {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background:
+        linear-gradient(to right,  rgba(13,13,11,0.82) 0%, rgba(13,13,11,0.42) 55%, transparent 100%),
+        linear-gradient(to top,    rgba(13,13,11,0.70) 0%, transparent 50%);
     }
     @media (max-width: 1023px) {
-      .ed-right::after {
-        background: linear-gradient(to bottom, transparent 40%, rgba(13,13,11,0.60) 100%);
+      .ed-overlay {
+        background:
+          linear-gradient(to top, rgba(13,13,11,0.88) 0%, rgba(13,13,11,0.50) 50%, transparent 100%);
       }
     }
+
+    /* Content container */
+    .ed-content {
+      position: relative; z-index: 2;
+      width: 100%;
+      padding: 160px 64px 80px;
+    }
+    @media (max-width: 1023px) {
+      .ed-content { padding: 120px 40px 64px; align-self: flex-end; }
+      .ed-hero { align-items: flex-end; }
+    }
+    @media (max-width: 639px) {
+      .ed-content { padding: 100px 24px 56px; }
+    }
+
+    /* Safe zone: cap text width on wide screens */
+    .ed-text-wrap {
+      max-width: 600px;
+    }
+    @media (max-width: 1023px) { .ed-text-wrap { max-width: 500px; } }
+    @media (max-width: 639px)  { .ed-text-wrap { max-width: 100%; } }
 
     .ed-label {
       font-size: 0.64rem; font-weight: 500; letter-spacing: 0.20em;
-      color: #6b6560; text-transform: uppercase; margin-bottom: 18px;
+      color: rgba(242,237,230,0.45); text-transform: uppercase; margin-bottom: 18px;
     }
     .ed-tour {
-      font-size: 0.76rem; color: #5a5550; letter-spacing: 0.04em;
+      font-size: 0.76rem; color: rgba(242,237,230,0.35); letter-spacing: 0.04em;
       font-style: italic; margin-bottom: 12px; line-height: 1.5;
     }
     .ed-title {
@@ -254,19 +263,18 @@
     @media (max-width: 1023px) { .ed-title { font-size: clamp(2.4rem, 8vw, 4rem); margin-bottom: 28px; } }
     @media (max-width: 639px)  { .ed-title { font-size: clamp(2.2rem, 11vw, 3.2rem); margin-bottom: 24px; } }
 
-    .ed-rule { width: 28px; height: 1px; background: rgba(242,237,230,0.15); margin-bottom: 22px; }
+    .ed-rule { width: 28px; height: 1px; background: rgba(242,237,230,0.18); margin-bottom: 22px; }
 
     .ed-info { display: flex; flex-direction: column; gap: 5px; margin-bottom: 24px; }
     .ed-info-date  { font-size: 0.95rem; font-weight: 300; color: #d4cfc8; letter-spacing: 0.06em; }
-    .ed-info-venue { font-size: 0.80rem; color: #7a756e; letter-spacing: 0.03em; }
+    .ed-info-venue { font-size: 0.80rem; color: rgba(212,207,200,0.55); letter-spacing: 0.03em; }
     .ed-info-price { font-size: 0.92rem; font-weight: 600; color: #f2ede6; margin-top: 4px; }
 
     .ed-feats {
-      font-size: 0.70rem; color: #5a5550; letter-spacing: 0.10em;
+      font-size: 0.70rem; color: rgba(242,237,230,0.30); letter-spacing: 0.10em;
       margin-bottom: 36px; line-height: 1.6;
     }
 
-    /* Phase 4: editorial CTA */
     .ed-cta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     @media (max-width: 479px) {
       .ed-cta { flex-direction: column; align-items: stretch; }
@@ -283,12 +291,12 @@
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       padding: 13px 24px; background: transparent; color: #8a857e;
       font-size: 0.875rem; font-weight: 400; border-radius: 3px;
-      text-decoration: none; border: 1px solid rgba(242,237,230,0.15);
+      text-decoration: none; border: 1px solid rgba(242,237,230,0.18);
       transition: border-color 0.18s, color 0.18s; white-space: nowrap;
     }
-    .ed-btn-secondary:hover { border-color: rgba(242,237,230,0.35); color: #c4bfb8; }
+    .ed-btn-secondary:hover { border-color: rgba(242,237,230,0.40); color: #c4bfb8; }
     .ed-deposit {
-      margin-top: 14px; font-size: 0.67rem; color: #4a4540; letter-spacing: 0.04em;
+      margin-top: 14px; font-size: 0.67rem; color: rgba(242,237,230,0.25); letter-spacing: 0.04em;
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -547,8 +555,24 @@
 {% elif variant == 'editorial' %}
 <section class="ed-hero">
 
-  <!-- Left: Text -->
-  <div class="ed-left">
+  <!-- Background Image (full-bleed) -->
+  <div class="ed-bg">
+    {% if img_desktop %}
+    <picture>
+      {% if img_mobile != img_desktop %}<source media="(max-width:639px)"  srcset="{{ img_mobile }}">{% endif %}
+      {% if img_tablet != img_desktop %}<source media="(max-width:1023px)" srcset="{{ img_tablet }}">{% endif %}
+      <img src="{{ img_desktop }}" alt="{{ ep.title }}" loading="eager" />
+    </picture>
+    {% else %}
+    <div class="ed-bg-placeholder"></div>
+    {% endif %}
+  </div>
+
+  <!-- Overlay -->
+  <div class="ed-overlay"></div>
+
+  <!-- Content (floats over overlay) -->
+  <div class="ed-content">
     <div class="ed-text-wrap">
       <p class="ed-label">{{ ep.artist_name }}</p>
       {% if ep.tour_name %}
@@ -589,19 +613,6 @@
       </div>
       <p class="ed-deposit">訂金 NT${{ '{:,}'.format(ep.deposit or 0) }}・尾款搭車當日收取</p>
     </div>
-  </div>
-
-  <!-- Right: Image -->
-  <div class="ed-right">
-    {% if img_desktop %}
-    <picture>
-      {% if img_mobile != img_desktop %}<source media="(max-width:639px)"  srcset="{{ img_mobile }}">{% endif %}
-      {% if img_tablet != img_desktop %}<source media="(max-width:1023px)" srcset="{{ img_tablet }}">{% endif %}
-      <img src="{{ img_desktop }}" alt="{{ ep.title }}" loading="eager" />
-    </picture>
-    {% else %}
-    <div class="ed-right-placeholder"></div>
-    {% endif %}
   </div>
 
 </section>

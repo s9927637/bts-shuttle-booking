@@ -22,3 +22,4 @@ env/
 # 暫存
 *.log
 *.sqlite
+uploads/

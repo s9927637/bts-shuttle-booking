@@ -10,7 +10,7 @@ from datetime import datetime
 
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 
-from app import db
+from app import db, csrf
 from app.models.event_page import EventPage
 from app.models.event_section import EventSection
 from app.models.concert import Concert, EventGroup
@@ -514,6 +514,72 @@ def api_events_statistics_all():
         })
 
     return jsonify({"events": result, "total": len(result)})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Hero Image Upload API
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/api/events/<int:ep_id>/upload-hero", methods=["POST"])
+@csrf.exempt
+def api_upload_hero(ep_id):
+    """上傳 Hero 圖片（desktop / tablet / mobile）"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    ep = EventPage.query.get_or_404(ep_id)
+    slot = request.form.get("slot", "").strip()  # desktop | tablet | mobile
+    file = request.files.get("file")
+
+    from app.services.upload_service import save_hero_image, allowed_file
+    try:
+        url = save_hero_image(file, ep_id, slot)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    # 更新 DB
+    if slot == "desktop":
+        ep.hero_image_desktop = url
+    elif slot == "tablet":
+        ep.hero_image_tablet = url
+    elif slot == "mobile":
+        ep.hero_image_mobile = url
+    else:
+        return jsonify({"error": "無效 slot"}), 400
+
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({"ok": True, "url": url, "slot": slot})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/delete-hero", methods=["POST"])
+@csrf.exempt
+def api_delete_hero(ep_id):
+    """刪除指定 slot Hero 圖片"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(silent=True) or {}
+    slot = data.get("slot", "").strip()
+
+    from app.services.upload_service import delete_hero_image
+    if slot not in ("desktop", "tablet", "mobile"):
+        return jsonify({"error": "無效 slot"}), 400
+
+    delete_hero_image(ep_id, slot)
+
+    if slot == "desktop":
+        ep.hero_image_desktop = None
+    elif slot == "tablet":
+        ep.hero_image_tablet = None
+    elif slot == "mobile":
+        ep.hero_image_mobile = None
+
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -42,6 +42,10 @@ class EventPage(db.Model):
     # Phase 3：Hero Variant System
     hero_variant     = db.Column(db.String(30),   nullable=True, default='modern-card')
     tour_name        = db.Column(db.String(200),  nullable=True)
+    # Phase 4：Responsive Hero Images (fallback: tablet/mobile → desktop → banner_image/cover_image)
+    hero_image_desktop = db.Column(db.String(500), nullable=True)
+    hero_image_tablet  = db.Column(db.String(500), nullable=True)
+    hero_image_mobile  = db.Column(db.String(500), nullable=True)
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
@@ -175,7 +179,25 @@ class EventPage(db.Model):
 
     @property
     def display_image(self):
-        return self.banner_image or self.cover_image
+        return self.hero_image_desktop or self.banner_image or self.cover_image
+
+    @property
+    def display_image_tablet(self):
+        return self.hero_image_tablet or self.display_image
+
+    @property
+    def display_image_mobile(self):
+        return self.hero_image_mobile or self.display_image
+
+    @property
+    def hero_images_status(self):
+        base = self.display_image
+        return {
+            'desktop': bool(self.hero_image_desktop or self.banner_image or self.cover_image),
+            'tablet':  bool(self.hero_image_tablet),
+            'mobile':  bool(self.hero_image_mobile),
+            'base':    base,
+        }
 
     @property
     def event_display_name(self):

@@ -60,6 +60,7 @@
           <th class="px-4 py-3 text-left font-medium text-gray-500">日期 / 城市</th>
           <th class="px-4 py-3 text-right font-medium text-gray-500">票價</th>
           <th class="px-4 py-3 text-left font-medium text-gray-500">狀態</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-500">Hero 圖片</th>
           <th class="px-4 py-3 text-left font-medium text-gray-500">前台網址</th>
           <th class="px-4 py-3 text-right font-medium text-gray-500">操作</th>
         </tr>
@@ -88,6 +89,20 @@
             {% else %}
               <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">{{ p.status }}</span>
             {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% set hs = p.hero_images_status %}
+            <div class="flex flex-col gap-0.5 text-xs">
+              <span class="{% if hs.desktop %}text-green-600{% else %}text-gray-300{% endif %}">
+                {% if hs.desktop %}✓{% else %}✗{% endif %} Desktop
+              </span>
+              <span class="{% if hs.tablet %}text-green-600{% else %}text-gray-300{% endif %}">
+                {% if hs.tablet %}✓{% else %}✗{% endif %} Tablet
+              </span>
+              <span class="{% if hs.mobile %}text-green-600{% else %}text-gray-300{% endif %}">
+                {% if hs.mobile %}✓{% else %}✗{% endif %} Mobile
+              </span>
+            </div>
           </td>
           <td class="px-4 py-3">
             <a href="/events/{{ p.slug }}" target="_blank"

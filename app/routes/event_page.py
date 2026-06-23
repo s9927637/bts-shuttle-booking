@@ -174,6 +174,9 @@ def ep_create():
         feat4_sub=request.form.get("feat4_sub", "").strip() or None,
         hero_variant=request.form.get("hero_variant", "modern-card") or "modern-card",
         tour_name=request.form.get("tour_name", "").strip() or None,
+        hero_image_desktop=request.form.get("hero_image_desktop", "").strip() or None,
+        hero_image_tablet=request.form.get("hero_image_tablet", "").strip() or None,
+        hero_image_mobile=request.form.get("hero_image_mobile", "").strip() or None,
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -238,8 +241,11 @@ def ep_edit(ep_id):
     ep.feat3_sub      = request.form.get("feat3_sub", "").strip() or None
     ep.feat4_title    = request.form.get("feat4_title", "").strip() or None
     ep.feat4_sub      = request.form.get("feat4_sub", "").strip() or None
-    ep.hero_variant   = request.form.get("hero_variant", ep.hero_variant or "modern-card") or "modern-card"
-    ep.tour_name      = request.form.get("tour_name", "").strip() or None
+    ep.hero_variant        = request.form.get("hero_variant", ep.hero_variant or "modern-card") or "modern-card"
+    ep.tour_name           = request.form.get("tour_name", "").strip() or None
+    ep.hero_image_desktop  = request.form.get("hero_image_desktop", "").strip() or None
+    ep.hero_image_tablet   = request.form.get("hero_image_tablet", "").strip() or None
+    ep.hero_image_mobile   = request.form.get("hero_image_mobile", "").strip() or None
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()
@@ -702,6 +708,9 @@ def ep_clone(ep_id):
         feat4_sub=src.feat4_sub,
         hero_variant=src.hero_variant,
         tour_name=src.tour_name,
+        hero_image_desktop=src.hero_image_desktop,
+        hero_image_tablet=src.hero_image_tablet,
+        hero_image_mobile=src.hero_image_mobile,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )

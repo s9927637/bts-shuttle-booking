@@ -121,48 +121,73 @@
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
       <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">Hero 版型</h3>
       {% set cur_variant = page.hero_variant if page and page.hero_variant else 'modern-card' %}
-      <div class="grid grid-cols-3 gap-3">
 
-        <label class="relative cursor-pointer">
-          <input type="radio" name="hero_variant" value="modern-card"
-                 {% if cur_variant == 'modern-card' %}checked{% endif %}
-                 class="sr-only peer" />
-          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg">🎴</span>
-              <span class="text-sm font-semibold text-gray-800">Modern Card</span>
-            </div>
-            <p class="text-xs text-gray-500 leading-relaxed">玻璃卡片・四宮格特色・科技感 HUD。適合 BTS、BLACKPINK、K-POP。</p>
-          </div>
-        </label>
+      <!-- Hidden radio inputs — 負責 form 送出 -->
+      <input type="radio" name="hero_variant" id="hv-modern-card" value="modern-card"
+             {% if cur_variant == 'modern-card' %}checked{% endif %}
+             style="position:absolute;opacity:0;width:0;height:0;" />
+      <input type="radio" name="hero_variant" id="hv-editorial" value="editorial"
+             {% if cur_variant == 'editorial' %}checked{% endif %}
+             style="position:absolute;opacity:0;width:0;height:0;" />
+      <input type="radio" name="hero_variant" id="hv-luxury" value="luxury"
+             {% if cur_variant == 'luxury' %}checked{% endif %}
+             style="position:absolute;opacity:0;width:0;height:0;" />
 
-        <label class="relative cursor-pointer">
-          <input type="radio" name="hero_variant" value="editorial"
-                 {% if cur_variant == 'editorial' %}checked{% endif %}
-                 class="sr-only peer" />
-          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg">📰</span>
-              <span class="text-sm font-semibold text-gray-800">Editorial</span>
-            </div>
-            <p class="text-xs text-gray-500 leading-relaxed">左文右圖・雜誌排版・大字標題。適合藤井風、五月天、文青型演唱會。</p>
-          </div>
-        </label>
+      <div class="grid grid-cols-3 gap-3" id="hero-variant-grid">
 
-        <label class="relative cursor-pointer">
-          <input type="radio" name="hero_variant" value="luxury"
-                 {% if cur_variant == 'luxury' %}checked{% endif %}
-                 class="sr-only peer" />
-          <div class="border-2 rounded-xl p-4 transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 border-gray-200 hover:border-gray-300">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg">✨</span>
-              <span class="text-sm font-semibold text-gray-800">Luxury</span>
-            </div>
-            <p class="text-xs text-gray-500 leading-relaxed">Premium 暗色・金色線條・極簡 CTA。適合周杰倫、張學友、高單價活動。</p>
+        <div class="hv-card cursor-pointer rounded-xl border-2 p-4 transition-all select-none"
+             data-value="modern-card"
+             onclick="selectHeroVariant('modern-card')">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">🎴</span>
+            <span class="text-sm font-semibold text-gray-800">Modern Card</span>
           </div>
-        </label>
+          <p class="text-xs text-gray-500 leading-relaxed">玻璃卡片・四宮格特色・科技感 HUD。適合 BTS、BLACKPINK、K-POP。</p>
+        </div>
+
+        <div class="hv-card cursor-pointer rounded-xl border-2 p-4 transition-all select-none"
+             data-value="editorial"
+             onclick="selectHeroVariant('editorial')">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">📰</span>
+            <span class="text-sm font-semibold text-gray-800">Editorial</span>
+          </div>
+          <p class="text-xs text-gray-500 leading-relaxed">左文右圖・雜誌排版・大字標題。適合藤井風、五月天、文青型演唱會。</p>
+        </div>
+
+        <div class="hv-card cursor-pointer rounded-xl border-2 p-4 transition-all select-none"
+             data-value="luxury"
+             onclick="selectHeroVariant('luxury')">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">✨</span>
+            <span class="text-sm font-semibold text-gray-800">Luxury</span>
+          </div>
+          <p class="text-xs text-gray-500 leading-relaxed">Premium 暗色・金色線條・極簡 CTA。適合周杰倫、張學友、高單價活動。</p>
+        </div>
 
       </div>
+
+      <style>
+        .hv-card          { border-color: #e5e7eb; background: #fff; }
+        .hv-card:hover    { border-color: #d1d5db; }
+        .hv-card.selected { border-color: #7c3aed; background: #f5f3ff; }
+        .hv-card.selected .text-gray-800 { color: #6d28d9; }
+      </style>
+      <script>
+        function selectHeroVariant(value) {
+          // 更新 radio input
+          document.getElementById('hv-' + value).checked = true;
+          // 更新卡片樣式
+          document.querySelectorAll('.hv-card').forEach(function(card) {
+            card.classList.toggle('selected', card.dataset.value === value);
+          });
+        }
+        // 頁面載入時根據預選狀態初始化
+        (function() {
+          var checked = document.querySelector('input[name="hero_variant"]:checked');
+          if (checked) selectHeroVariant(checked.value);
+        })();
+      </script>
     </div>
 
     <!-- ── 定價 ── -->

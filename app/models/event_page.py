@@ -46,6 +46,13 @@ class EventPage(db.Model):
     hero_image_desktop = db.Column(db.String(500), nullable=True)
     hero_image_tablet  = db.Column(db.String(500), nullable=True)
     hero_image_mobile  = db.Column(db.String(500), nullable=True)
+    # Editorial Hero styling
+    hero_title_color    = db.Column(db.String(20), nullable=True)   # e.g. '#2B2B2B'
+    hero_subtitle_color = db.Column(db.String(20), nullable=True)   # e.g. '#6B5A4B'
+    hero_text_color     = db.Column(db.String(20), nullable=True)   # body/info text
+    hero_btn_color      = db.Column(db.String(20), nullable=True)   # CTA button bg
+    hero_overlay        = db.Column(db.String(20), nullable=True)   # 'none'|'light'|'dark'
+    hero_title_size     = db.Column(db.String(10), nullable=True)   # 'sm'|'md'|'lg'|'xl'
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

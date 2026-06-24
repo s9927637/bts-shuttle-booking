@@ -246,6 +246,12 @@ def ep_edit(ep_id):
     ep.hero_image_desktop  = request.form.get("hero_image_desktop", "").strip() or None
     ep.hero_image_tablet   = request.form.get("hero_image_tablet", "").strip() or None
     ep.hero_image_mobile   = request.form.get("hero_image_mobile", "").strip() or None
+    ep.hero_title_color    = request.form.get("hero_title_color", "").strip() or None
+    ep.hero_subtitle_color = request.form.get("hero_subtitle_color", "").strip() or None
+    ep.hero_text_color     = request.form.get("hero_text_color", "").strip() or None
+    ep.hero_btn_color      = request.form.get("hero_btn_color", "").strip() or None
+    ep.hero_overlay        = request.form.get("hero_overlay", "").strip() or None
+    ep.hero_title_size     = request.form.get("hero_title_size", "").strip() or None
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()

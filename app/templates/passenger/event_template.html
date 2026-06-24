@@ -187,13 +187,14 @@
     /* ═══════════════════════════════════════════════════════════
        VARIANT 2: EDITORIAL  (藤井風 / 五月天 / 文青型)
        Full-bleed background image, content floats over overlay
+       Colors driven by inline CSS vars set per-event in the HTML
     ═══════════════════════════════════════════════════════════ */
     .ed-hero {
       position: relative;
       min-height: 100vh;
       display: flex;
-      align-items: flex-end;        /* content anchored to bottom-left */
-      background: #0d0d0b;
+      align-items: flex-end;
+      background: #f5efe8;
       overflow: hidden;
     }
 
@@ -208,21 +209,12 @@
     }
     .ed-bg-placeholder {
       width: 100%; height: 100%;
-      background: linear-gradient(160deg, #1a1714 0%, #2a2420 100%);
+      background: linear-gradient(160deg, #f0e8df 0%, #e8ddd4 100%);
     }
 
-    /* Overlay: left gradient for readability */
+    /* Overlay layer — style applied inline per variant setting */
     .ed-overlay {
       position: absolute; inset: 0; z-index: 1; pointer-events: none;
-      background:
-        linear-gradient(to right,  rgba(13,13,11,0.82) 0%, rgba(13,13,11,0.42) 55%, transparent 100%),
-        linear-gradient(to top,    rgba(13,13,11,0.70) 0%, transparent 50%);
-    }
-    @media (max-width: 1023px) {
-      .ed-overlay {
-        background:
-          linear-gradient(to top, rgba(13,13,11,0.88) 0%, rgba(13,13,11,0.50) 50%, transparent 100%);
-      }
     }
 
     /* Content container */
@@ -232,71 +224,91 @@
       padding: 160px 64px 80px;
     }
     @media (max-width: 1023px) {
-      .ed-content { padding: 120px 40px 64px; align-self: flex-end; }
+      .ed-content { padding: 120px 40px 64px; }
       .ed-hero { align-items: flex-end; }
     }
     @media (max-width: 639px) {
       .ed-content { padding: 100px 24px 56px; }
     }
 
-    /* Safe zone: cap text width on wide screens */
-    .ed-text-wrap {
-      max-width: 600px;
-    }
+    /* Safe zone */
+    .ed-text-wrap { max-width: 600px; }
     @media (max-width: 1023px) { .ed-text-wrap { max-width: 500px; } }
     @media (max-width: 639px)  { .ed-text-wrap { max-width: 100%; } }
 
+    /* Typography — colors injected via inline style */
     .ed-label {
       font-size: 0.64rem; font-weight: 500; letter-spacing: 0.20em;
-      color: rgba(242,237,230,0.45); text-transform: uppercase; margin-bottom: 18px;
+      text-transform: uppercase; margin-bottom: 18px;
+      color: var(--ed-sub, #6B5A4B);
     }
     .ed-tour {
-      font-size: 0.76rem; color: rgba(242,237,230,0.35); letter-spacing: 0.04em;
+      font-size: 0.76rem; letter-spacing: 0.04em;
       font-style: italic; margin-bottom: 12px; line-height: 1.5;
+      color: var(--ed-sub, #6B5A4B);
     }
+    /* Title sizes */
     .ed-title {
-      font-size: clamp(2.6rem, 5vw, 5rem); font-weight: 900;
-      line-height: 0.92; letter-spacing: -0.035em;
-      color: #f2ede6; margin-bottom: 36px;
-      word-break: break-word;
+      font-weight: 900; line-height: 0.92; letter-spacing: -0.035em;
+      margin-bottom: 36px; word-break: break-word;
+      color: var(--ed-title, #2B2B2B);
     }
-    @media (max-width: 1023px) { .ed-title { font-size: clamp(2.4rem, 8vw, 4rem); margin-bottom: 28px; } }
-    @media (max-width: 639px)  { .ed-title { font-size: clamp(2.2rem, 11vw, 3.2rem); margin-bottom: 24px; } }
+    .ed-title-sm { font-size: clamp(1.8rem, 3.5vw, 3rem); }
+    .ed-title-md { font-size: clamp(2.2rem, 4vw,   4rem); }
+    .ed-title-lg { font-size: clamp(2.6rem, 5vw,   5rem); }
+    .ed-title-xl { font-size: clamp(3.2rem, 6.5vw, 7rem); }
+    @media (max-width: 1023px) {
+      .ed-title-sm { font-size: clamp(1.6rem, 6vw,  2.4rem); }
+      .ed-title-md { font-size: clamp(2.0rem, 7vw,  3.2rem); }
+      .ed-title-lg { font-size: clamp(2.4rem, 8vw,  4.0rem); }
+      .ed-title-xl { font-size: clamp(2.8rem, 9vw,  5.0rem); }
+    }
+    @media (max-width: 639px) {
+      .ed-title-sm { font-size: clamp(1.5rem, 9vw,  2.0rem); }
+      .ed-title-md { font-size: clamp(1.8rem, 10vw, 2.6rem); }
+      .ed-title-lg { font-size: clamp(2.2rem, 11vw, 3.2rem); }
+      .ed-title-xl { font-size: clamp(2.6rem, 12vw, 4.0rem); }
+    }
 
-    .ed-rule { width: 28px; height: 1px; background: rgba(242,237,230,0.18); margin-bottom: 22px; }
+    .ed-rule {
+      width: 28px; height: 1px; margin-bottom: 22px;
+      background: var(--ed-text, #4A3F35); opacity: 0.2;
+    }
 
     .ed-info { display: flex; flex-direction: column; gap: 5px; margin-bottom: 24px; }
-    .ed-info-date  { font-size: 0.95rem; font-weight: 300; color: #d4cfc8; letter-spacing: 0.06em; }
-    .ed-info-venue { font-size: 0.80rem; color: rgba(212,207,200,0.55); letter-spacing: 0.03em; }
-    .ed-info-price { font-size: 0.92rem; font-weight: 600; color: #f2ede6; margin-top: 4px; }
+    .ed-info-date  { font-size: 0.95rem; font-weight: 300; letter-spacing: 0.06em; color: var(--ed-text, #4A3F35); }
+    .ed-info-venue { font-size: 0.80rem; letter-spacing: 0.03em; color: var(--ed-text, #4A3F35); opacity: 0.6; }
+    .ed-info-price { font-size: 0.92rem; font-weight: 600; margin-top: 4px; color: var(--ed-title, #2B2B2B); }
 
     .ed-feats {
-      font-size: 0.70rem; color: rgba(242,237,230,0.30); letter-spacing: 0.10em;
+      font-size: 0.70rem; letter-spacing: 0.10em;
       margin-bottom: 36px; line-height: 1.6;
+      color: var(--ed-text, #4A3F35); opacity: 0.45;
     }
 
     .ed-cta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    @media (max-width: 479px) {
-      .ed-cta { flex-direction: column; align-items: stretch; }
-    }
+    @media (max-width: 479px) { .ed-cta { flex-direction: column; align-items: stretch; } }
+
     .ed-btn-primary {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 28px; background: #f2ede6; color: #0d0d0b;
-      font-size: 0.875rem; font-weight: 700; border-radius: 3px;
+      padding: 13px 28px; font-size: 0.875rem; font-weight: 700; border-radius: 3px;
       text-decoration: none; letter-spacing: 0.02em;
       transition: opacity 0.18s; white-space: nowrap;
+      background: var(--ed-btn, #2B2B2B); color: #fff;
     }
-    .ed-btn-primary:hover { opacity: 0.85; }
+    .ed-btn-primary:hover { opacity: 0.82; }
     .ed-btn-secondary {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 24px; background: transparent; color: #8a857e;
-      font-size: 0.875rem; font-weight: 400; border-radius: 3px;
-      text-decoration: none; border: 1px solid rgba(242,237,230,0.18);
-      transition: border-color 0.18s, color 0.18s; white-space: nowrap;
+      padding: 13px 24px; background: transparent; font-size: 0.875rem; font-weight: 400;
+      border-radius: 3px; text-decoration: none; white-space: nowrap;
+      color: var(--ed-text, #4A3F35);
+      border: 1px solid var(--ed-text, #4A3F35);
+      opacity: 0.5; transition: opacity 0.18s;
     }
-    .ed-btn-secondary:hover { border-color: rgba(242,237,230,0.40); color: #c4bfb8; }
+    .ed-btn-secondary:hover { opacity: 0.85; }
     .ed-deposit {
-      margin-top: 14px; font-size: 0.67rem; color: rgba(242,237,230,0.25); letter-spacing: 0.04em;
+      margin-top: 14px; font-size: 0.67rem; letter-spacing: 0.04em;
+      color: var(--ed-text, #4A3F35); opacity: 0.35;
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -553,7 +565,24 @@
    RENDERER 2: EDITORIAL  (藤井風 / 文青 / 雜誌)
 ════════════════════════════════════════════════════════════════ #}
 {% elif variant == 'editorial' %}
-<section class="ed-hero">
+{# ── Editorial: resolve per-event styling ── #}
+{%- set ed_title_c = ep.hero_title_color    or '#2B2B2B' -%}
+{%- set ed_sub_c   = ep.hero_subtitle_color or '#6B5A4B' -%}
+{%- set ed_text_c  = ep.hero_text_color     or '#4A3F35' -%}
+{%- set ed_btn_c   = ep.hero_btn_color      or '#2B2B2B' -%}
+{%- set ed_overlay = ep.hero_overlay        or 'none'    -%}
+{%- set ed_tsize   = 'ed-title-' ~ (ep.hero_title_size or 'lg') -%}
+
+{%- if ed_overlay == 'dark' -%}
+  {%- set overlay_css = 'background:linear-gradient(to right,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.35) 55%,transparent 100%),linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 50%)' -%}
+{%- elif ed_overlay == 'light' -%}
+  {%- set overlay_css = 'background:linear-gradient(to right,rgba(255,255,255,0.70) 0%,rgba(255,255,255,0.25) 55%,transparent 100%),linear-gradient(to top,rgba(255,255,255,0.55) 0%,transparent 45%)' -%}
+{%- else -%}
+  {%- set overlay_css = '' -%}
+{%- endif -%}
+
+<section class="ed-hero"
+         style="--ed-title:{{ ed_title_c }};--ed-sub:{{ ed_sub_c }};--ed-text:{{ ed_text_c }};--ed-btn:{{ ed_btn_c }};">
 
   <!-- Background Image (full-bleed) -->
   <div class="ed-bg">
@@ -568,17 +597,19 @@
     {% endif %}
   </div>
 
-  <!-- Overlay -->
-  <div class="ed-overlay"></div>
+  <!-- Overlay (none / light / dark) -->
+  {% if overlay_css %}
+  <div class="ed-overlay" style="{{ overlay_css }};"></div>
+  {% endif %}
 
-  <!-- Content (floats over overlay) -->
+  <!-- Content -->
   <div class="ed-content">
     <div class="ed-text-wrap">
       <p class="ed-label">{{ ep.artist_name }}</p>
       {% if ep.tour_name %}
       <p class="ed-tour">{{ ep.tour_name }}</p>
       {% endif %}
-      <h1 class="ed-title">{{ ep.title }}</h1>
+      <h1 class="ed-title {{ ed_tsize }}">{{ ep.title }}</h1>
 
       <div class="ed-rule"></div>
 

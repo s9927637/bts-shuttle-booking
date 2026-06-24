@@ -258,7 +258,7 @@
         <p class="text-xs text-gray-400 mt-1">（也可先輸入網址，建立後再改為上傳）</p>
         <div class="mt-4 grid grid-cols-1 gap-3">
           {% for slot_label, slot_name in [('Desktop Hero URL', 'hero_image_desktop'), ('Mobile Hero URL', 'hero_image_mobile')] %}
-          <input type="url" name="{{ slot_name }}" placeholder="{{ slot_label }} https://..."
+          <input type="text" name="{{ slot_name }}" placeholder="{{ slot_label }} https://..."
                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           {% endfor %}
         </div>
@@ -471,42 +471,42 @@
         <div class="px-4 pb-4 pt-3 space-y-3 border-t border-gray-100">
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_desktop URL（手動輸入）</label>
-            <input type="url" name="hero_image_desktop"
+            <input type="text" name="hero_image_desktop"
                    value="{{ page.hero_image_desktop if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_tablet URL</label>
-            <input type="url" name="hero_image_tablet"
+            <input type="text" name="hero_image_tablet"
                    value="{{ page.hero_image_tablet if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_mobile URL</label>
-            <input type="url" name="hero_image_mobile"
+            <input type="text" name="hero_image_mobile"
                    value="{{ page.hero_image_mobile if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">banner_image（舊版）</label>
-            <input type="url" name="banner_image"
+            <input type="text" name="banner_image"
                    value="{{ page.banner_image if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">cover_image（最舊版）</label>
-            <input type="url" name="cover_image"
+            <input type="text" name="cover_image"
                    value="{{ page.cover_image if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">thumbnail_image</label>
-            <input type="url" name="thumbnail_image"
+            <input type="text" name="thumbnail_image"
                    value="{{ page.thumbnail_image if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />

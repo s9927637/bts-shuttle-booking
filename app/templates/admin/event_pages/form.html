@@ -15,9 +15,11 @@
     </a>
   </div>
 
-  <form method="post"
+  <form id="ep-form"
+        method="post"
         action="{{ url_for('event_page.ep_edit', ep_id=page.id) if mode == 'edit' else url_for('event_page.ep_create') }}"
-        class="space-y-6">
+        class="space-y-6"
+        onsubmit="return epFormSubmit(this)">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <!-- ── 基本資訊 ── -->
@@ -581,9 +583,13 @@
          class="px-5 py-2.5 text-sm text-gray-500 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors">
         取消
       </a>
-      <button type="submit"
-              class="px-5 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
-        {{ '儲存變更' if mode == 'edit' else '建立活動' }}
+      <button type="submit" id="ep-submit-btn"
+              class="px-5 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
+        <svg id="ep-submit-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/>
+        </svg>
+        <span id="ep-submit-label">{{ '儲存變更' if mode == 'edit' else '建立活動' }}</span>
       </button>
     </div>
 
@@ -748,6 +754,19 @@ function setPreviewDevice(device) {
     wrap.style.overflowX = 'hidden';
     if (bar) bar.textContent = 'Mobile · 390×844';
   }
+}
+
+/* ── Form Submit Loading State ── */
+function epFormSubmit(form) {
+  const btn     = document.getElementById('ep-submit-btn');
+  const spinner = document.getElementById('ep-submit-spinner');
+  const label   = document.getElementById('ep-submit-label');
+  if (btn) {
+    btn.disabled = true;
+    if (spinner) spinner.classList.remove('hidden');
+    if (label)   label.textContent = '儲存中…';
+  }
+  return true; // allow native form submit
 }
 
 // init iframe scale on load

@@ -184,8 +184,8 @@ def ep_create():
     )
     db.session.add(ep)
     db.session.commit()
-    flash(f"已建立活動「{title}」，網址：/events/{slug}", "success")
-    return redirect(url_for("event_page.ep_list"))
+    flash(f"✓ 已建立活動「{title}」，網址：/events/{slug}　← 現在可上傳 Hero 圖片", "success")
+    return redirect(url_for("event_page.ep_edit", ep_id=ep.id))
 
 
 # ── 後台：編輯活動 ──────────────────────────────────────────────────────────
@@ -250,8 +250,8 @@ def ep_edit(ep_id):
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()
     db.session.commit()
-    flash(f"已更新活動「{ep.title}」。", "success")
-    return redirect(url_for("event_page.ep_list"))
+    flash(f"✓ 已儲存「{ep.title}」", "success")
+    return redirect(url_for("event_page.ep_edit", ep_id=ep.id))
 
 
 # ── 後台：軟刪除 ────────────────────────────────────────────────────────────

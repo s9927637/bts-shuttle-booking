@@ -181,11 +181,15 @@
           document.querySelectorAll('.hv-card').forEach(function(card) {
             card.classList.toggle('selected', card.dataset.value === value);
           });
-          toggleEditorialPanel(value);
+          if (typeof toggleEditorialPanel === 'function') toggleEditorialPanel(value);
         }
         (function() {
           var checked = document.querySelector('input[name="hero_variant"]:checked');
-          if (checked) selectHeroVariant(checked.value);
+          if (checked) {
+            document.querySelectorAll('.hv-card').forEach(function(card) {
+              card.classList.toggle('selected', card.dataset.value === checked.value);
+            });
+          }
         })();
       </script>
     </div>
@@ -257,13 +261,15 @@
         <label class="block text-xs font-medium text-gray-500 mb-2">Overlay 遮罩</label>
         <div class="flex gap-3">
           {% set cur_overlay = page.hero_overlay if page and page.hero_overlay else 'none' %}
-          {% for val, label, desc in [('none','無','直接顯示原圖，適合藤井風夕陽背景'),('light','白色漸層','左側白色淡漸層，提升淺色背景可讀性'),('dark','黑色漸層','左側黑色漸層，用於深色或高對比場景')] %}
-          <label class="flex-1 cursor-pointer">
+          {% for val, lbl, desc in [('none','無','直接顯示原圖，適合藤井風夕陽背景'),('light','白色漸層','左側白色淡漸層，提升淺色背景可讀性'),('dark','黑色漸層','左側黑色漸層，用於深色或高對比場景')] %}
+          <label class="flex-1 cursor-pointer" onclick="selectEdOption('hero_overlay','{{ val }}')">
             <input type="radio" name="hero_overlay" value="{{ val }}"
                    {% if cur_overlay == val %}checked{% endif %}
-                   class="sr-only peer" />
-            <div class="rounded-lg border-2 border-gray-200 p-3 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 transition-all">
-              <p class="text-sm font-semibold text-gray-700 peer-checked:text-amber-700">{{ label }}</p>
+                   class="sr-only" />
+            <div class="ed-option rounded-lg border-2 p-3 text-center transition-all"
+                 data-group="hero_overlay" data-value="{{ val }}"
+                 style="{{ 'border-color:#f59e0b;background:#fffbeb;' if cur_overlay == val else 'border-color:#e5e7eb;background:#fff;' }}">
+              <p class="text-sm font-semibold" style="{{ 'color:#b45309;' if cur_overlay == val else 'color:#374151;' }}">{{ lbl }}</p>
               <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ desc }}</p>
             </div>
           </label>
@@ -276,13 +282,15 @@
         <label class="block text-xs font-medium text-gray-500 mb-2">標題大小</label>
         <div class="flex gap-2">
           {% set cur_size = page.hero_title_size if page and page.hero_title_size else 'lg' %}
-          {% for val, label in [('sm','Small'),('md','Medium'),('lg','Large'),('xl','XL')] %}
-          <label class="cursor-pointer flex-1">
+          {% for val, lbl in [('sm','Small'),('md','Medium'),('lg','Large'),('xl','XL')] %}
+          <label class="cursor-pointer flex-1" onclick="selectEdOption('hero_title_size','{{ val }}')">
             <input type="radio" name="hero_title_size" value="{{ val }}"
                    {% if cur_size == val %}checked{% endif %}
-                   class="sr-only peer" />
-            <div class="rounded-lg border-2 border-gray-200 py-2 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 transition-all">
-              <p class="text-xs font-semibold text-gray-600 peer-checked:text-amber-700">{{ label }}</p>
+                   class="sr-only" />
+            <div class="ed-option rounded-lg border-2 py-2 text-center transition-all"
+                 data-group="hero_title_size" data-value="{{ val }}"
+                 style="{{ 'border-color:#f59e0b;background:#fffbeb;' if cur_size == val else 'border-color:#e5e7eb;background:#fff;' }}">
+              <p class="text-xs font-semibold" style="{{ 'color:#b45309;' if cur_size == val else 'color:#4b5563;' }}">{{ lbl }}</p>
             </div>
           </label>
           {% endfor %}
@@ -878,6 +886,20 @@ function toggleEditorialPanel(variant) {
   const panel = document.getElementById('editorial-style-panel');
   if (!panel) return;
   panel.style.display = variant === 'editorial' ? '' : 'none';
+}
+
+function selectEdOption(groupName, value) {
+  // check the hidden radio
+  var radio = document.querySelector('input[name="' + groupName + '"][value="' + value + '"]');
+  if (radio) radio.checked = true;
+  // update visual state for all cards in this group
+  document.querySelectorAll('.ed-option[data-group="' + groupName + '"]').forEach(function(card) {
+    var selected = card.dataset.value === value;
+    card.style.borderColor = selected ? '#f59e0b' : '#e5e7eb';
+    card.style.background  = selected ? '#fffbeb' : '#fff';
+    var p = card.querySelector('p');
+    if (p) p.style.color = selected ? '#b45309' : (groupName === 'hero_overlay' ? '#374151' : '#4b5563');
+  });
 }
 
 // patch selectHeroVariant to also toggle panel

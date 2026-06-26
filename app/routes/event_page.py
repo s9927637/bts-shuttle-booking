@@ -877,3 +877,230 @@ def events_list():
                            events=events,
                            categories=categories,
                            current_category=category)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BOOKING CONFIG API  /api/events/<ep_id>/booking-*
+# ══════════════════════════════════════════════════════════════════════════════
+
+from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig as _EFC
+
+
+# ── 搭車日期 ──────────────────────────────────────────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/booking-dates", methods=["GET"])
+def api_booking_dates_list(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    dates = EventBookingDate.query.filter_by(event_page_id=ep.id).order_by(EventBookingDate.sort_order).all()
+    return jsonify([{
+        "id": d.id, "date_value": d.date_value, "label": d.label,
+        "sort_order": d.sort_order, "is_active": d.is_active, "capacity": d.capacity
+    } for d in dates])
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/booking-dates", methods=["POST"])
+def api_booking_date_create(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(force=True) or {}
+    date_value = (data.get("date_value") or "").strip()
+    if not date_value:
+        return jsonify({"error": "date_value 必填"}), 400
+    d = EventBookingDate(
+        event_page_id=ep.id,
+        date_value=date_value,
+        label=(data.get("label") or "").strip() or None,
+        sort_order=int(data.get("sort_order") or 0),
+        is_active=bool(data.get("is_active", True)),
+        capacity=int(data["capacity"]) if data.get("capacity") else None,
+    )
+    db.session.add(d)
+    db.session.commit()
+    return jsonify({"id": d.id, "date_value": d.date_value, "label": d.label}), 201
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/booking-dates/<int:date_id>", methods=["PUT"])
+def api_booking_date_update(ep_id, date_id):
+    d = EventBookingDate.query.filter_by(id=date_id, event_page_id=ep_id).first_or_404()
+    data = request.get_json(force=True) or {}
+    if "date_value" in data: d.date_value = data["date_value"].strip()
+    if "label"      in data: d.label      = (data["label"] or "").strip() or None
+    if "sort_order" in data: d.sort_order = int(data["sort_order"])
+    if "is_active"  in data: d.is_active  = bool(data["is_active"])
+    if "capacity"   in data: d.capacity   = int(data["capacity"]) if data["capacity"] else None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/booking-dates/<int:date_id>", methods=["DELETE"])
+def api_booking_date_delete(ep_id, date_id):
+    d = EventBookingDate.query.filter_by(id=date_id, event_page_id=ep_id).first_or_404()
+    db.session.delete(d)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── 上車地點 ──────────────────────────────────────────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/pickup-locations", methods=["GET"])
+def api_locations_list(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    locs = EventPickupLocation.query.filter_by(event_page_id=ep.id).order_by(EventPickupLocation.sort_order).all()
+    return jsonify([{
+        "id": l.id, "name": l.name, "address": l.address,
+        "map_url": l.map_url, "sort_order": l.sort_order, "is_active": l.is_active
+    } for l in locs])
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/pickup-locations", methods=["POST"])
+def api_location_create(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(force=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "name 必填"}), 400
+    loc = EventPickupLocation(
+        event_page_id=ep.id,
+        name=name,
+        address=(data.get("address") or "").strip() or None,
+        map_url=(data.get("map_url") or "").strip() or None,
+        sort_order=int(data.get("sort_order") or 0),
+        is_active=bool(data.get("is_active", True)),
+    )
+    db.session.add(loc)
+    db.session.commit()
+    return jsonify({"id": loc.id, "name": loc.name}), 201
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/pickup-locations/<int:loc_id>", methods=["PUT"])
+def api_location_update(ep_id, loc_id):
+    loc = EventPickupLocation.query.filter_by(id=loc_id, event_page_id=ep_id).first_or_404()
+    data = request.get_json(force=True) or {}
+    if "name"       in data: loc.name       = data["name"].strip()
+    if "address"    in data: loc.address    = (data["address"] or "").strip() or None
+    if "map_url"    in data: loc.map_url    = (data["map_url"] or "").strip() or None
+    if "sort_order" in data: loc.sort_order = int(data["sort_order"])
+    if "is_active"  in data: loc.is_active  = bool(data["is_active"])
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/pickup-locations/<int:loc_id>", methods=["DELETE"])
+def api_location_delete(ep_id, loc_id):
+    loc = EventPickupLocation.query.filter_by(id=loc_id, event_page_id=ep_id).first_or_404()
+    db.session.delete(loc)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── 價格規則 ──────────────────────────────────────────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/price-rules", methods=["GET"])
+def api_price_rules_list(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    rules = EventPriceRule.query.filter_by(event_page_id=ep.id).all()
+    return jsonify([{
+        "id": r.id, "booking_date_id": r.booking_date_id, "location_id": r.location_id,
+        "price": r.price, "deposit": r.deposit, "label": r.label
+    } for r in rules])
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/price-rules", methods=["POST"])
+def api_price_rule_create(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(force=True) or {}
+    price = data.get("price")
+    if price is None:
+        return jsonify({"error": "price 必填"}), 400
+    rule = EventPriceRule(
+        event_page_id=ep.id,
+        booking_date_id=int(data["booking_date_id"]) if data.get("booking_date_id") else None,
+        location_id=int(data["location_id"]) if data.get("location_id") else None,
+        price=int(price),
+        deposit=int(data.get("deposit") or 0),
+        label=(data.get("label") or "").strip() or None,
+    )
+    db.session.add(rule)
+    db.session.commit()
+    return jsonify({"id": rule.id}), 201
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/price-rules/<int:rule_id>", methods=["PUT"])
+def api_price_rule_update(ep_id, rule_id):
+    rule = EventPriceRule.query.filter_by(id=rule_id, event_page_id=ep_id).first_or_404()
+    data = request.get_json(force=True) or {}
+    if "price"           in data: rule.price           = int(data["price"])
+    if "deposit"         in data: rule.deposit         = int(data["deposit"])
+    if "label"           in data: rule.label           = (data["label"] or "").strip() or None
+    if "booking_date_id" in data: rule.booking_date_id = int(data["booking_date_id"]) if data["booking_date_id"] else None
+    if "location_id"     in data: rule.location_id     = int(data["location_id"]) if data["location_id"] else None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/price-rules/<int:rule_id>", methods=["DELETE"])
+def api_price_rule_delete(ep_id, rule_id):
+    rule = EventPriceRule.query.filter_by(id=rule_id, event_page_id=ep_id).first_or_404()
+    db.session.delete(rule)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── 表單欄位設定 ──────────────────────────────────────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/form-config", methods=["GET"])
+def api_form_config_list(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    configs = _EFC.query.filter_by(event_page_id=ep.id).all()
+    return jsonify([{
+        "id": c.id, "field_name": c.field_name,
+        "is_visible": c.is_visible, "is_required": c.is_required,
+        "label_override": c.label_override
+    } for c in configs])
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/form-config", methods=["POST"])
+def api_form_config_upsert(ep_id):
+    """批次更新：傳入 [{field_name, is_visible, is_required, label_override}]"""
+    ep = EventPage.query.get_or_404(ep_id)
+    items = request.get_json(force=True) or []
+    for item in items:
+        field = (item.get("field_name") or "").strip()
+        if not field:
+            continue
+        cfg = _EFC.query.filter_by(event_page_id=ep.id, field_name=field).first()
+        if not cfg:
+            cfg = _EFC(event_page_id=ep.id, field_name=field)
+            db.session.add(cfg)
+        cfg.is_visible  = bool(item.get("is_visible", True))
+        cfg.is_required = bool(item.get("is_required", False))
+        cfg.label_override = (item.get("label_override") or "").strip() or None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── EventPage 擴充欄位儲存（booking_config 頁籤） ────────────────────────────
+
+@event_page_bp.route("/api/events/<int:ep_id>/booking-config", methods=["POST"])
+def api_booking_config_save(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(force=True) or {}
+
+    def _int_or_none(v):
+        try: return int(v) if v not in (None, "") else None
+        except (ValueError, TypeError): return None
+
+    def _str_or_none(v):
+        return v.strip() or None if v else None
+
+    ep.min_group_size        = _int_or_none(data.get("min_group_size")) or 1
+    ep.max_group_size        = _int_or_none(data.get("max_group_size"))
+    ep.max_capacity          = _int_or_none(data.get("max_capacity"))
+    ep.seats_per_vehicle     = _int_or_none(data.get("seats_per_vehicle")) or 9
+    ep.deposit_required      = bool(data.get("deposit_required", True))
+    ep.balance_payment_method = _str_or_none(data.get("balance_payment_method")) or "transfer"
+    ep.purchase_notes        = _str_or_none(data.get("purchase_notes"))
+    ep.cancellation_policy   = _str_or_none(data.get("cancellation_policy"))
+    ep.riding_rules          = _str_or_none(data.get("riding_rules"))
+
+    db.session.commit()
+    return jsonify({"ok": True})

@@ -151,6 +151,27 @@ def booking():
     deposit_per = (event_page.deposit or DEPOSIT_PER_PERSON)  if event_page else DEPOSIT_PER_PERSON
     balance_per = price_per - deposit_per
 
+    # 活動搭車日期 / 地點 / 表單設定
+    ep_booking_dates    = []
+    ep_pickup_locations = []
+    ep_price_rules_json = {}   # {date_id: {loc_id: {price, deposit}}}
+    ep_form_config      = {}   # {field_name: {visible, required, label}}
+    if event_page:
+        from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
+        import json as _json
+        ep_booking_dates    = EventBookingDate.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventBookingDate.sort_order).all()
+        ep_pickup_locations = EventPickupLocation.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventPickupLocation.sort_order).all()
+        for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
+            dk = str(rule.booking_date_id or 'any')
+            lk = str(rule.location_id or 'any')
+            ep_price_rules_json.setdefault(dk, {})[lk] = {'price': rule.price, 'deposit': rule.deposit}
+        for fc in EventFormConfig.query.filter_by(event_page_id=event_page.id).all():
+            ep_form_config[fc.field_name] = {
+                'visible':  fc.is_visible,
+                'required': fc.is_required,
+                'label':    fc.label_override,
+            }
+
     return render_template("passenger/booking.html",
                            price_per_person=price_per,
                            deposit_per_person=deposit_per,
@@ -164,6 +185,10 @@ def booking():
                            passenger_liff_id=PASSENGER_LIFF_ID,
                            prefill_friend_code=friend_code,
                            event_page=event_page,
+                           ep_booking_dates=ep_booking_dates,
+                           ep_pickup_locations=ep_pickup_locations,
+                           ep_price_rules_json=ep_price_rules_json,
+                           ep_form_config=ep_form_config,
                            form={})
 
 
@@ -193,14 +218,47 @@ def booking_submit():
         dep = form_data["departure_date"]
 
         if event_page:
-            # 活動模式：使用活動定價，不驗證固定場次清單
+            # 活動模式：驗證預約時間窗口
+            from datetime import datetime as _dt
+            now = _dt.utcnow()
+            if event_page.booking_open_at and now < event_page.booking_open_at:
+                raise ValueError("預約尚未開放，請稍後再試。")
+            if event_page.booking_close_at and now > event_page.booking_close_at:
+                raise ValueError("預約已截止，感謝您的關注。")
+
             if not dep:
                 raise ValueError("請填寫出發日期。")
-            price_per   = event_page.price   or PRICE_PER_PERSON
-            deposit_per = event_page.deposit or DEPOSIT_PER_PERSON
+
+            # 取得上車地點（存快照名稱）
+            pickup_location_val = request.form.get("pickup_location", "").strip() or None
+
+            # 查詢價格規則（優先順序：日期+地點 > 日期 > 地點 > 全局）
+            from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule
+            booking_date_obj = EventBookingDate.query.filter_by(event_page_id=event_page.id, date_value=dep, is_active=True).first()
+            location_obj = None
+            if pickup_location_val:
+                location_obj = EventPickupLocation.query.filter_by(event_page_id=event_page.id, name=pickup_location_val, is_active=True).first()
+
+            rule = None
+            if booking_date_obj and location_obj:
+                rule = EventPriceRule.query.filter_by(event_page_id=event_page.id, booking_date_id=booking_date_obj.id, location_id=location_obj.id).first()
+            if not rule and booking_date_obj:
+                rule = EventPriceRule.query.filter_by(event_page_id=event_page.id, booking_date_id=booking_date_obj.id, location_id=None).first()
+            if not rule and location_obj:
+                rule = EventPriceRule.query.filter_by(event_page_id=event_page.id, booking_date_id=None, location_id=location_obj.id).first()
+            if not rule:
+                rule = EventPriceRule.query.filter_by(event_page_id=event_page.id, booking_date_id=None, location_id=None).first()
+
+            if rule:
+                price_per   = rule.price
+                deposit_per = rule.deposit
+            else:
+                price_per   = event_page.price   or PRICE_PER_PERSON
+                deposit_per = event_page.deposit or DEPOSIT_PER_PERSON
             balance_per = price_per - deposit_per
         else:
             # 原 BTS 模式：驗證場次
+            pickup_location_val = None
             if dep not in AVAILABLE_DATES:
                 raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
             price_per   = PRICE_PER_PERSON
@@ -218,6 +276,14 @@ def booking_submit():
         else:
             vehicle_type    = "minibus"
             passenger_count = int(form_data["passenger_count"])
+            # 活動模式：驗證人數限制
+            if event_page:
+                min_g = event_page.min_group_size or 1
+                max_g = event_page.max_group_size
+                if passenger_count < min_g:
+                    raise ValueError(f"最少需預約 {min_g} 人。")
+                if max_g and passenger_count > max_g:
+                    raise ValueError(f"每次最多預約 {max_g} 人。")
             total_amount    = passenger_count * price_per
             deposit_amount  = passenger_count * deposit_per
             balance_amount  = passenger_count * balance_per
@@ -276,6 +342,7 @@ def booking_submit():
             coupon_code       = applied_coupon.code if applied_coupon else None,
             discount_amount   = discount_amount,
             event_page_id     = event_page.id if event_page else None,
+            pickup_location   = pickup_location_val if event_page else None,
         )
         if applied_coupon:
             applied_coupon.use_count += 1
@@ -320,6 +387,19 @@ def booking_submit():
         flash(msg, "error")
         price_per   = (event_page.price   or PRICE_PER_PERSON)   if event_page else PRICE_PER_PERSON
         deposit_per = (event_page.deposit or DEPOSIT_PER_PERSON)  if event_page else DEPOSIT_PER_PERSON
+        # 重新查詢活動設定，供表單重新渲染
+        _ep_booking_dates = _ep_pickup_locations = []
+        _ep_price_rules_json = _ep_form_config = {}
+        if event_page:
+            from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
+            _ep_booking_dates    = EventBookingDate.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventBookingDate.sort_order).all()
+            _ep_pickup_locations = EventPickupLocation.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventPickupLocation.sort_order).all()
+            for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
+                dk = str(rule.booking_date_id or 'any')
+                lk = str(rule.location_id or 'any')
+                _ep_price_rules_json.setdefault(dk, {})[lk] = {'price': rule.price, 'deposit': rule.deposit}
+            for fc in EventFormConfig.query.filter_by(event_page_id=event_page.id).all():
+                _ep_form_config[fc.field_name] = {'visible': fc.is_visible, 'required': fc.is_required, 'label': fc.label_override}
         return render_template("passenger/booking.html",
                                price_per_person=price_per,
                                deposit_per_person=deposit_per,
@@ -332,6 +412,10 @@ def booking_submit():
                                departure_options=DEPARTURE_OPTIONS,
                                passenger_liff_id=PASSENGER_LIFF_ID,
                                event_page=event_page,
+                               ep_booking_dates=_ep_booking_dates,
+                               ep_pickup_locations=_ep_pickup_locations,
+                               ep_price_rules_json=_ep_price_rules_json,
+                               ep_form_config=_ep_form_config,
                                form=form_data)
 
 

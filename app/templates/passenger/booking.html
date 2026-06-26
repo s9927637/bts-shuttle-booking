@@ -62,7 +62,20 @@
             出發日期 <span class="text-red-400">*</span>
           </label>
           {% if event_page %}
-          {# 活動模式：鎖定日期，使用者不可修改 #}
+          {% if ep_booking_dates %}
+          {# 活動模式：多搭車日期，讓使用者選擇 #}
+          <select id="departure_date" name="departure_date" required
+                  class="input-dark" onchange="onDateChange(this.value)">
+            <option value="">— 選擇搭車日期 —</option>
+            {% for bd in ep_booking_dates %}
+            <option value="{{ bd.date_value }}"
+                    {% if form.departure_date == bd.date_value %}selected{% endif %}>
+              {{ bd.label or bd.date_value }}
+            </option>
+            {% endfor %}
+          </select>
+          {% else %}
+          {# 活動模式：單一日期，鎖定 #}
           <input type="hidden" name="departure_date" value="{{ event_page.event_date or '' }}" />
           <div class="input-dark flex items-center gap-2 cursor-not-allowed opacity-70">
             <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,6 +84,7 @@
             <span class="text-sm text-white">{{ event_page.event_date or '依活動日期' }}</span>
             <span class="ml-auto text-xs text-gray-500">已鎖定</span>
           </div>
+          {% endif %}
           {% else %}
           <select id="departure_date" name="departure_date" required
                   class="input-dark">
@@ -97,8 +111,35 @@
         </div>
       </div>
 
+      {% if ep_pickup_locations %}
       <div>
-        <label for="remark" class="block mb-1.5 text-xs font-medium text-gray-400">備註</label>
+        <label class="block mb-1.5 text-xs font-medium text-gray-400">
+          上車地點 <span class="text-red-400">*</span>
+        </label>
+        <select id="pickup_location" name="pickup_location" required
+                class="input-dark" onchange="onLocationChange(this.value)">
+          <option value="">— 選擇上車地點 —</option>
+          {% for loc in ep_pickup_locations %}
+          <option value="{{ loc.name }}"
+                  data-address="{{ loc.address or '' }}"
+                  data-map="{{ loc.map_url or '' }}"
+                  {% if form.get('pickup_location') == loc.name %}selected{% endif %}>
+            {{ loc.name }}{% if loc.address %} — {{ loc.address }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <p id="location-map-link" class="hidden mt-1.5 text-xs text-purple-400">
+          <a id="location-map-a" href="#" target="_blank" rel="noopener" class="underline underline-offset-2">
+            ➜ 在 Google Maps 查看
+          </a>
+        </p>
+      </div>
+      {% endif %}
+
+      <div>
+        <label for="remark" class="block mb-1.5 text-xs font-medium text-gray-400">
+          {% if ep_form_config.get('remark', {}).get('label') %}{{ ep_form_config['remark']['label'] }}{% else %}備註{% endif %}
+        </label>
         <textarea id="remark" name="remark" rows="3"
                   placeholder="特殊需求或其他說明…"
                   class="input-dark resize-none">{{ form.remark or '' }}</textarea>
@@ -129,15 +170,19 @@
                  value="{{ form.phone or '' }}"
                  class="input-dark" />
         </div>
+        {% if not ep_form_config.get('emergency_phone', {}).get('visible') == False %}
         <div>
           <label for="emergency_phone" class="block mb-1.5 text-xs font-medium text-gray-400">
-            緊急聯絡電話
+            {% if ep_form_config.get('emergency_phone', {}).get('label') %}{{ ep_form_config['emergency_phone']['label'] }}{% else %}緊急聯絡電話{% endif %}
+            {% if ep_form_config.get('emergency_phone', {}).get('required') %}<span class="text-red-400">*</span>{% endif %}
           </label>
           <input type="tel" id="emergency_phone" name="emergency_phone"
                  placeholder="0987-654-321"
                  value="{{ form.emergency_phone or '' }}"
+                 {% if ep_form_config.get('emergency_phone', {}).get('required') %}required{% endif %}
                  class="input-dark" />
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -300,6 +345,21 @@
       </ul>
     </div>
 
+    <!-- 活動購票須知（有設定才顯示） -->
+    {% if event_page and event_page.purchase_notes %}
+    <div class="rounded-xl px-4 py-3.5" style="background:rgba(88,28,135,0.18);">
+      <p class="text-xs font-semibold text-purple-300 mb-1.5">訂購須知</p>
+      <div class="text-xs text-gray-400 leading-relaxed whitespace-pre-line">{{ event_page.purchase_notes }}</div>
+    </div>
+    {% endif %}
+
+    {% if event_page and event_page.riding_rules %}
+    <div class="rounded-xl px-4 py-3.5" style="background:rgba(30,41,59,0.6);">
+      <p class="text-xs font-semibold text-gray-300 mb-1.5">搭車注意事項</p>
+      <div class="text-xs text-gray-400 leading-relaxed whitespace-pre-line">{{ event_page.riding_rules }}</div>
+    </div>
+    {% endif %}
+
     <!-- ── 服務條款同意區塊 ──────────────────────────────────────────── -->
     <div id="terms-block" class="flex items-center gap-3 py-1 transition-all duration-200">
       <button type="button" id="terms-checkbox"
@@ -415,17 +475,79 @@
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-  const PRICE   = {{ price_per_person }};
-  const DEPOSIT = {{ deposit_per_person }};
-  const BALANCE = {{ balance_per_person }};
+  let PRICE   = {{ price_per_person }};
+  let DEPOSIT = {{ deposit_per_person }};
+  let BALANCE = {{ balance_per_person }};
+  const BASE_PRICE   = {{ price_per_person }};
+  const BASE_DEPOSIT = {{ deposit_per_person }};
   const NX200_PAX     = {{ nx200_pax }};
   const NX200_TOTAL   = {{ nx200_total }};
   const NX200_DEPOSIT = {{ nx200_deposit }};
-  const NX200_BALANCE = {{ nx200_balance }};
+  const NX200_BALANCE = {{ nx200_balance | default(0) }};
 
+  // 活動價格規則：{dateId|'any': {locId|'any': {price, deposit}}}
+  const EP_PRICE_RULES = {{ ep_price_rules_json | tojson | safe }};
+  // 活動搭車日期 ID 對照：date_value -> id
+  const EP_DATE_IDS = {
+    {% for bd in ep_booking_dates %}"{{ bd.date_value }}": {{ bd.id }},{% endfor %}
+  };
+  // 活動上車地點 ID 對照：name -> {id, map_url}
+  const EP_LOC_IDS = {
+    {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
+  };
+
+  let _activeDateId   = null;
+  let _activeLocId    = null;
   let currentVehicle = 'minibus';
   let _appliedDiscount = 0;
   let _termsAccepted = false;
+
+  function _lookupPriceRule(dateId, locId) {
+    const dk = dateId ? String(dateId) : 'any';
+    const lk = locId  ? String(locId)  : 'any';
+    if (EP_PRICE_RULES[dk] && EP_PRICE_RULES[dk][lk]) return EP_PRICE_RULES[dk][lk];
+    if (EP_PRICE_RULES[dk] && EP_PRICE_RULES[dk]['any']) return EP_PRICE_RULES[dk]['any'];
+    if (EP_PRICE_RULES['any'] && EP_PRICE_RULES['any'][lk]) return EP_PRICE_RULES['any'][lk];
+    if (EP_PRICE_RULES['any'] && EP_PRICE_RULES['any']['any']) return EP_PRICE_RULES['any']['any'];
+    return null;
+  }
+
+  function _applyPriceRule() {
+    const rule = _lookupPriceRule(_activeDateId, _activeLocId);
+    if (rule) {
+      PRICE   = rule.price;
+      DEPOSIT = rule.deposit;
+      BALANCE = PRICE - DEPOSIT;
+    } else {
+      PRICE   = BASE_PRICE;
+      DEPOSIT = BASE_DEPOSIT;
+      BALANCE = PRICE - DEPOSIT;
+    }
+    const ppEl = document.getElementById('price_per_person_display');
+    if (ppEl) ppEl.textContent = 'NT$ ' + PRICE.toLocaleString();
+    const paxEl = document.getElementById('passenger_count');
+    if (paxEl) calcTotal(paxEl.value);
+  }
+
+  function onDateChange(dateValue) {
+    _activeDateId = EP_DATE_IDS[dateValue] || null;
+    _applyPriceRule();
+  }
+
+  function onLocationChange(locName) {
+    const info = EP_LOC_IDS[locName];
+    _activeLocId = info ? info.id : null;
+    // 顯示 Google Maps 連結
+    const mapLink = document.getElementById('location-map-link');
+    const mapA    = document.getElementById('location-map-a');
+    if (mapLink && mapA && info && info.map) {
+      mapA.href = info.map;
+      mapLink.classList.remove('hidden');
+    } else if (mapLink) {
+      mapLink.classList.add('hidden');
+    }
+    _applyPriceRule();
+  }
 
   function selectVehicle(type) {
     currentVehicle = type;

@@ -59,6 +59,18 @@ class EventPage(db.Model):
     logo_image          = db.Column(db.String(500), nullable=True)   # URL to logo image (PNG/SVG/WebP)
     logo_text           = db.Column(db.String(100), nullable=True)   # fallback text when no image
     logo_link           = db.Column(db.String(200), nullable=True)   # click target, defaults to /events/<slug>
+    # Phase 7: Booking Config — capacity
+    min_group_size      = db.Column(db.Integer, nullable=True, default=1)
+    max_group_size      = db.Column(db.Integer, nullable=True)        # NULL = 無限制
+    max_capacity        = db.Column(db.Integer, nullable=True)        # 全活動總座位上限，NULL = 無限制
+    seats_per_vehicle   = db.Column(db.Integer, nullable=True, default=9)
+    # Phase 7: Booking Config — deposit & payment
+    deposit_required    = db.Column(db.Boolean,  nullable=False, default=True)
+    balance_payment_method = db.Column(db.String(50), nullable=True, default='transfer')  # 'transfer'|'cash'|'any'
+    # Phase 9: 購票說明文字
+    purchase_notes      = db.Column(db.Text, nullable=True)
+    cancellation_policy = db.Column(db.Text, nullable=True)
+    riding_rules        = db.Column(db.Text, nullable=True)
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

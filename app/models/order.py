@@ -29,6 +29,9 @@ class Order(db.Model):
     terms_version     = db.Column(db.String(10), nullable=True)
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 活動專屬欄位（NULL = 原 BTS 訂單，向前相容）
+    pickup_location     = db.Column(db.String(100), nullable=True)   # 上車地點名稱（快照，不存 FK）
+
     # 活動頁串接（NULL = 原 BTS 訂單，不影響既有資料）
     event_page_id = db.Column(
         db.Integer,

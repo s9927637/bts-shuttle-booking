@@ -96,6 +96,12 @@ def create_app():
     app.register_blueprint(passenger_center_bp)
     app.register_blueprint(activity_template_bp)
 
+    # Register Jinja filters
+    from app.utils.css_scope import scope_css as _scope_css
+    @app.template_filter('scope_css')
+    def _scope_css_filter(raw_css, slug):
+        return _scope_css(raw_css, slug)
+
     import logging
     from flask import render_template as _rt
 

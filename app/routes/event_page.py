@@ -177,6 +177,7 @@ def ep_create():
         hero_image_desktop=request.form.get("hero_image_desktop", "").strip() or None,
         hero_image_tablet=request.form.get("hero_image_tablet", "").strip() or None,
         hero_image_mobile=request.form.get("hero_image_mobile", "").strip() or None,
+        custom_css=request.form.get("custom_css", "").strip() or None,
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -252,6 +253,15 @@ def ep_edit(ep_id):
     ep.hero_btn_color      = request.form.get("hero_btn_color", "").strip() or None
     ep.hero_overlay        = request.form.get("hero_overlay", "").strip() or None
     ep.hero_title_size     = request.form.get("hero_title_size", "").strip() or None
+    # Custom CSS — validate before saving
+    raw_css = request.form.get("custom_css", "").strip()
+    if raw_css:
+        from app.utils.css_scope import validate_css
+        css_errors = validate_css(raw_css)
+        if css_errors:
+            flash("Custom CSS 錯誤：" + " ".join(css_errors), "error")
+            return redirect(url_for("event_page.ep_edit", ep_id=ep.id))
+    ep.custom_css = raw_css or None
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()

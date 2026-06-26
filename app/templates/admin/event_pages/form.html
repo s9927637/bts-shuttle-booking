@@ -673,6 +673,106 @@
     </div>
     {% endif %}
 
+    <!-- ══════════════════════════════════════════════════════════════
+         外觀設定：Event Custom CSS
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4" id="custom-css-panel">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">活動專屬 CSS</h3>
+          <p class="text-xs text-gray-400 mt-0.5">只影響此活動頁，系統自動加上 Scope，不影響全站或其他活動</p>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="exportCSS()"
+                  class="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            ↓ 匯出
+          </button>
+          <label class="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+            ↑ 匯入
+            <input type="file" id="css-import-file" accept=".css,text/css" class="hidden" onchange="importCSS(this)" />
+          </label>
+          <button type="button" onclick="resetCSS()"
+                  class="px-3 py-1.5 text-xs text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+            重設
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero 可用 Class 參考（Phase 5） -->
+      <details class="group">
+        <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-700 select-none flex items-center gap-1">
+          <span class="group-open:rotate-90 transition-transform inline-block">▶</span>
+          Hero 可用 Class 參考
+        </summary>
+        <div class="mt-2 bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 leading-relaxed grid grid-cols-2 gap-x-4">
+          <div>
+            <p class="text-gray-400 mb-1">── 容器 ──</p>
+            <p>.hero</p>
+            <p>.hero-overlay</p>
+            <p>.hero-content</p>
+          </div>
+          <div>
+            <p class="text-gray-400 mb-1">── 文字 ──</p>
+            <p>.hero-title</p>
+            <p>.hero-subtitle</p>
+            <p>.hero-meta</p>
+            <p>.hero-price</p>
+          </div>
+          <div class="mt-2">
+            <p class="text-gray-400 mb-1">── 功能格 ──</p>
+            <p>.hero-feature</p>
+          </div>
+          <div class="mt-2">
+            <p class="text-gray-400 mb-1">── CTA ──</p>
+            <p>.hero-button</p>
+            <p>.hero-button-secondary</p>
+            <p>.hero-image</p>
+          </div>
+        </div>
+      </details>
+
+      <!-- CSS 安全警告區 -->
+      <div id="css-error-banner" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700"></div>
+
+      <!-- CodeMirror Editor -->
+      <div class="rounded-lg border border-gray-200 overflow-hidden" style="font-size:13px">
+        <textarea id="custom-css-raw" name="custom_css" class="hidden">{{ page.custom_css or '' if page else '' }}</textarea>
+        <div id="css-editor-mount"></div>
+      </div>
+
+      <!-- 行數 / 狀態列 -->
+      <div class="flex items-center justify-between text-xs text-gray-400">
+        <span id="css-status">就緒</span>
+        <span id="css-char-count">0 字元</span>
+      </div>
+
+      <!-- 即時預覽（Phase 6） -->
+      {% if mode == 'edit' and page %}
+      <details id="css-preview-details">
+        <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-700 select-none flex items-center gap-1 mt-1">
+          <span id="css-preview-arrow" class="transition-transform inline-block">▶</span>
+          即時預覽（開啟後 CSS 變更即時同步）
+        </summary>
+        <div class="mt-3 space-y-2">
+          <div class="flex gap-2 text-xs">
+            <button type="button" onclick="setPreviewSize('desktop')"
+                    class="preview-size-btn px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50" data-size="desktop">Desktop</button>
+            <button type="button" onclick="setPreviewSize('tablet')"
+                    class="preview-size-btn px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50" data-size="tablet">Tablet</button>
+            <button type="button" onclick="setPreviewSize('mobile')"
+                    class="preview-size-btn px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50" data-size="mobile">Mobile</button>
+          </div>
+          <div class="rounded-lg border border-gray-200 overflow-hidden bg-gray-100 flex justify-center" style="height:480px">
+            <iframe id="css-preview-frame"
+                    src="/events/{{ page.slug }}"
+                    style="width:100%;height:100%;border:none;transform-origin:top left;background:#fff"
+                    title="活動預覽"></iframe>
+          </div>
+        </div>
+      </details>
+      {% endif %}
+    </div>
+
     <!-- 操作按鈕 -->
     <div class="flex gap-3 justify-end">
       <a href="{{ url_for('event_page.ep_list') }}"
@@ -944,5 +1044,188 @@ window.addEventListener('load', function() {
     });
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════
+   Event Custom CSS — CodeMirror 5 Editor + Phase 4/6/7/8
+═══════════════════════════════════════════════════════════════════ */
+(function () {
+  // ── Load CodeMirror from CDN ─────────────────────────────────────
+  const CM_VER = '5.65.16';
+  const CDN    = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/' + CM_VER;
+  let cmLoaded = 0;
+  let editor = null;
+
+  function loadScript(src, cb) {
+    const s = document.createElement('script');
+    s.src = src; s.onload = cb; document.head.appendChild(s);
+  }
+  function loadLink(href) {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+  }
+
+  // Load CSS
+  loadLink(CDN + '/codemirror.min.css');
+  loadLink(CDN + '/theme/dracula.min.css');
+  loadLink(CDN + '/addon/hint/show-hint.min.css');
+
+  // Load JS sequentially (CSS mode depends on core)
+  loadScript(CDN + '/codemirror.min.js', function () {
+    loadScript(CDN + '/mode/css/css.min.js', function () {
+      loadScript(CDN + '/addon/edit/closebrackets.min.js', function () {
+        loadScript(CDN + '/addon/edit/matchbrackets.min.js', function () {
+          loadScript(CDN + '/addon/hint/show-hint.min.js', function () {
+            loadScript(CDN + '/addon/hint/css-hint.min.js', initEditor);
+          });
+        });
+      });
+    });
+  });
+
+  // ── UNSAFE selector patterns (Phase 4) ───────────────────────────
+  const UNSAFE_RE = /(?:^|,)\s*(?:body|html|\*|:root)\s*(?:\{|,|$)/mi;
+  const IMPORT_RE = /@import\b/i;
+
+  function validateCSS(css) {
+    const errs = [];
+    if (IMPORT_RE.test(css)) errs.push('@import 不允許使用（避免載入外部資源）。');
+    if (UNSAFE_RE.test(css)) errs.push('偵測到全站 Selector（body / html / * / :root），請改用活動區域 class，例如 .hero-title { … }');
+    return errs;
+  }
+
+  // ── Preview helpers (Phase 6) ─────────────────────────────────────
+  const SIZES = { desktop: '100%', tablet: '768px', mobile: '390px' };
+  let currentSize = 'desktop';
+
+  window.setPreviewSize = function (size) {
+    currentSize = size;
+    const frame = document.getElementById('css-preview-frame');
+    if (!frame) return;
+    const wrap = frame.parentElement;
+    frame.style.width = SIZES[size] || '100%';
+    document.querySelectorAll('.preview-size-btn').forEach(function (b) {
+      b.classList.toggle('bg-purple-100', b.dataset.size === size);
+      b.classList.toggle('border-purple-400', b.dataset.size === size);
+      b.classList.toggle('text-purple-700', b.dataset.size === size);
+    });
+  };
+
+  function pushPreviewCSS(rawCSS) {
+    const frame = document.getElementById('css-preview-frame');
+    if (!frame || !frame.contentDocument) return;
+    try {
+      const slug = frame.src.split('/events/')[1] || '';
+      const scope = 'body[data-event="' + slug + '"]';
+      // simple scope: prepend scope to each non-empty selector block
+      const scoped = rawCSS.replace(/([^{}@]+)\{/g, function (m, sel) {
+        const trimmed = sel.trim();
+        if (!trimmed) return m;
+        const parts = trimmed.split(',').map(function (s) { return scope + ' ' + s.trim(); });
+        return parts.join(', ') + '{';
+      });
+      let styleEl = frame.contentDocument.getElementById('__custom-css-preview');
+      if (!styleEl) {
+        styleEl = frame.contentDocument.createElement('style');
+        styleEl.id = '__custom-css-preview';
+        frame.contentDocument.head.appendChild(styleEl);
+      }
+      styleEl.textContent = scoped;
+    } catch (e) { /* cross-origin guard */ }
+  }
+
+  // ── Export / Import / Reset (Phase 7 & 8) ────────────────────────
+  window.exportCSS = function () {
+    if (!editor) return;
+    const blob = new Blob([editor.getValue()], { type: 'text/css' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'custom.css';
+    a.click();
+  };
+
+  window.importCSS = function (input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      if (editor) editor.setValue(e.target.result);
+    };
+    reader.readAsText(file);
+    input.value = '';
+  };
+
+  window.resetCSS = function () {
+    if (!confirm('確定要清除此活動的 Custom CSS？此操作在儲存前可復原（重新整理頁面即還原）。')) return;
+    if (editor) editor.setValue('');
+  };
+
+  // ── Init CodeMirror ───────────────────────────────────────────────
+  function initEditor() {
+    const mount   = document.getElementById('css-editor-mount');
+    const rawTA   = document.getElementById('custom-css-raw');
+    const errBanner = document.getElementById('css-error-banner');
+    const statusEl  = document.getElementById('css-status');
+    const countEl   = document.getElementById('css-char-count');
+    if (!mount || !rawTA || typeof CodeMirror === 'undefined') return;
+
+    editor = CodeMirror(mount, {
+      value:          rawTA.value,
+      mode:           'css',
+      theme:          'dracula',
+      lineNumbers:    true,
+      autoCloseBrackets: true,
+      matchBrackets:  true,
+      extraKeys:      { 'Ctrl-Space': 'autocomplete' },
+      indentUnit:     2,
+      tabSize:        2,
+      indentWithTabs: false,
+      lineWrapping:   false,
+    });
+
+    // Sync to hidden textarea on every change
+    let debounceTimer;
+    editor.on('change', function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        const val = editor.getValue();
+        rawTA.value = val;
+        // Character count
+        if (countEl) countEl.textContent = val.length + ' 字元';
+        // Validate (Phase 4)
+        const errs = validateCSS(val);
+        if (errBanner) {
+          if (errs.length) {
+            errBanner.textContent = '⚠ ' + errs.join(' ');
+            errBanner.classList.remove('hidden');
+            if (statusEl) statusEl.textContent = '⚠ 有安全問題';
+          } else {
+            errBanner.classList.add('hidden');
+            if (statusEl) statusEl.textContent = '就緒';
+          }
+        }
+        // Live preview (Phase 6)
+        pushPreviewCSS(val);
+      }, 300);
+    });
+
+    // Initial sync
+    const initVal = rawTA.value;
+    if (countEl) countEl.textContent = initVal.length + ' 字元';
+
+    // Preview arrow toggle
+    const previewDetails = document.getElementById('css-preview-details');
+    const previewArrow   = document.getElementById('css-preview-arrow');
+    if (previewDetails && previewArrow) {
+      previewDetails.addEventListener('toggle', function () {
+        previewArrow.style.transform = previewDetails.open ? 'rotate(90deg)' : '';
+        if (previewDetails.open) {
+          // Trigger initial preview push when panel opens
+          pushPreviewCSS(editor.getValue());
+          setPreviewSize(currentSize);
+        }
+      });
+    }
+  }
+})();
 </script>
 {% endblock %}

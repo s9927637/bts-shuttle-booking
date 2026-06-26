@@ -53,6 +53,8 @@ class EventPage(db.Model):
     hero_btn_color      = db.Column(db.String(20), nullable=True)   # CTA button bg
     hero_overlay        = db.Column(db.String(20), nullable=True)   # 'none'|'light'|'dark'
     hero_title_size     = db.Column(db.String(10), nullable=True)   # 'sm'|'md'|'lg'|'xl'
+    # Phase 5: Event Custom CSS
+    custom_css          = db.Column(db.Text, nullable=True)          # raw CSS scoped at render time
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

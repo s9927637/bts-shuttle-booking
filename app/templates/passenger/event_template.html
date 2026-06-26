@@ -392,9 +392,13 @@
     @media (max-width: 479px) {
       .bottom-cta-btn { width: 100%; max-width: 360px; }
     }
+
   </style>
+  {%- if ep.custom_css %}
+  <style id="event-custom-css">{{ ep.custom_css | scope_css(ep.slug) | safe }}</style>
+  {%- endif %}
 </head>
-<body>
+<body data-event="{{ ep.slug }}">
 
 <!-- ══ NAV ══════════════════════════════════════════════════════ -->
 <nav class="ev-nav">
@@ -461,7 +465,7 @@
       {% if ep.tour_name %}
       <p style="font-size:0.73rem;color:#a78bfa;letter-spacing:0.05em;margin-top:3px;margin-bottom:4px;">{{ ep.tour_name }}</p>
       {% endif %}
-      <h1 class="mc-title">{{ ep.title }}</h1>
+      <h1 class="mc-title hero-title">{{ ep.title }}</h1>
 
       <div class="mc-pills">
         {% if ep.event_date %}
@@ -512,7 +516,7 @@
       ] %}
       <div class="mc-feats">
         {% for ft, fs in feats %}
-        <div class="mc-feat">
+        <div class="mc-feat hero-feature">
           <div class="mc-feat-icon">
             <svg class="w-4 h-4" style="color:#c4b5fd;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icons[loop.index0] }}"/>
@@ -528,7 +532,7 @@
           <span class="mc-price-val">NT${{ '{:,}'.format(ep.deposit or 0) }}</span>
           <span class="mc-price-unit">訂金 / 人</span>
         </div>
-        <a href="/events/{{ ep.slug }}/booking" class="mc-btn">
+        <a href="/events/{{ ep.slug }}/booking" class="mc-btn hero-button">
           立即預約
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
@@ -599,7 +603,7 @@
 
   <!-- Overlay (none / light / dark) -->
   {% if overlay_css %}
-  <div class="ed-overlay" style="{{ overlay_css }};"></div>
+  <div class="ed-overlay hero-overlay" style="{{ overlay_css }};"></div>
   {% endif %}
 
   <!-- Content -->
@@ -609,11 +613,11 @@
       {% if ep.tour_name %}
       <p class="ed-tour">{{ ep.tour_name }}</p>
       {% endif %}
-      <h1 class="ed-title {{ ed_tsize }}">{{ ep.title }}</h1>
+      <h1 class="ed-title hero-title {{ ed_tsize }}">{{ ep.title }}</h1>
 
       <div class="ed-rule"></div>
 
-      <div class="ed-info">
+      <div class="ed-info hero-meta">
         {% if ep.event_date %}
         <p class="ed-info-date">{{ ep.event_date }}</p>
         {% endif %}
@@ -622,7 +626,7 @@
         {% elif ep.departure_city %}
         <p class="ed-info-venue">出發：{{ ep.departure_city }}</p>
         {% endif %}
-        <p class="ed-info-price">NT${{ '{:,}'.format(ep.price or 0) }} / 人</p>
+        <p class="ed-info-price hero-price">NT${{ '{:,}'.format(ep.price or 0) }} / 人</p>
       </div>
 
       {% set feat_line_parts = [] %}
@@ -634,13 +638,13 @@
       <p class="ed-feats">{{ feat_line_parts | join('　·　') }}</p>
 
       <div class="ed-cta">
-        <a href="/events/{{ ep.slug }}/booking" class="ed-btn-primary">
+        <a href="/events/{{ ep.slug }}/booking" class="ed-btn-primary hero-button">
           立即預約
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
           </svg>
         </a>
-        <a href="/events/{{ ep.slug }}/orders" class="ed-btn-secondary">查詢訂單</a>
+        <a href="/events/{{ ep.slug }}/orders" class="ed-btn-secondary hero-button-secondary">查詢訂單</a>
       </div>
       <p class="ed-deposit">訂金 NT${{ '{:,}'.format(ep.deposit or 0) }}・尾款搭車當日收取</p>
     </div>
@@ -656,7 +660,7 @@
   {% if img_desktop %}
   <div class="lx-bg" style="background-image:url('{{ img_desktop }}');"></div>
   {% endif %}
-  <div class="lx-overlay"></div>
+  <div class="lx-overlay hero-overlay"></div>
 
   <div class="lx-inner">
     <div class="lx-accent">
@@ -669,7 +673,7 @@
     <p style="font-size:0.70rem;color:#5a4e38;letter-spacing:0.12em;margin-bottom:22px;text-transform:uppercase;">{{ ep.tour_name }}</p>
     {% endif %}
 
-    <h1 class="lx-title">{{ ep.title }}</h1>
+    <h1 class="lx-title hero-title">{{ ep.title }}</h1>
 
     <div class="lx-info">
       {% if ep.event_date %}
@@ -680,11 +684,11 @@
       {% elif ep.departure_city %}
       <p class="lx-venue">{{ ep.departure_city }}</p>
       {% endif %}
-      <p class="lx-price">NT${{ '{:,}'.format(ep.price or 0) }} / 人</p>
+      <p class="lx-price hero-price">NT${{ '{:,}'.format(ep.price or 0) }} / 人</p>
     </div>
 
     <div class="lx-cta">
-      <a href="/events/{{ ep.slug }}/booking" class="lx-btn">
+      <a href="/events/{{ ep.slug }}/booking" class="lx-btn hero-button">
         立即預約
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>

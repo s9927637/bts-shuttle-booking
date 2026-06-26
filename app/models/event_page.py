@@ -55,6 +55,10 @@ class EventPage(db.Model):
     hero_title_size     = db.Column(db.String(10), nullable=True)   # 'sm'|'md'|'lg'|'xl'
     # Phase 5: Event Custom CSS
     custom_css          = db.Column(db.Text, nullable=True)          # raw CSS scoped at render time
+    # Phase 6: Brand Identity
+    logo_image          = db.Column(db.String(500), nullable=True)   # URL to logo image (PNG/SVG/WebP)
+    logo_text           = db.Column(db.String(100), nullable=True)   # fallback text when no image
+    logo_link           = db.Column(db.String(200), nullable=True)   # click target, defaults to /events/<slug>
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

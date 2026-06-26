@@ -119,6 +119,103 @@
       </div>
     </div>
 
+    <!-- ══ 品牌設定（Brand Identity）══ -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5" id="brand-panel">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">品牌設定</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Navbar Logo、品牌文字與連結，每個活動可獨立設定</p>
+        </div>
+      </div>
+
+      <!-- Logo 上傳 -->
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">Logo 圖片 <span class="text-gray-300">（PNG / SVG / WebP，建議高度 32px，上限 4 MB）</span></label>
+        {% if mode == 'edit' and page %}
+        <div class="flex items-center gap-4">
+          <!-- 預覽 -->
+          <div id="logo-preview-wrap" class="{{ 'hidden' if not page.logo_image else '' }}">
+            <div class="flex items-center gap-3 p-3 bg-gray-900 rounded-lg">
+              <img id="logo-preview-img"
+                   src="{{ page.logo_image or '' }}"
+                   alt="Logo 預覽"
+                   class="h-8 object-contain max-w-[160px]" />
+              <button type="button" onclick="deleteLogo()"
+                      class="text-xs text-red-400 hover:text-red-300 transition-colors">✕ 移除</button>
+            </div>
+          </div>
+          <!-- 上傳按鈕 -->
+          <label id="logo-upload-label"
+                 class="{{ 'hidden' if page.logo_image else '' }} cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            上傳 Logo
+            <input type="file" id="logo-file-input" accept=".png,.svg,.webp,.jpg,.jpeg,image/png,image/svg+xml,image/webp,image/jpeg"
+                   class="hidden" onchange="uploadLogo(this)" />
+          </label>
+          <span id="logo-upload-status" class="text-xs text-gray-400"></span>
+        </div>
+        {% else %}
+        <p class="text-xs text-gray-400">儲存活動後即可上傳 Logo 圖片</p>
+        {% endif %}
+      </div>
+
+      <!-- Logo 文字 -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">
+            Logo 文字
+            <span class="text-gray-300">（無圖片時顯示；有圖片時作為 alt）</span>
+          </label>
+          <input type="text" name="logo_text"
+                 value="{{ page.logo_text or '' if page else '' }}"
+                 placeholder="{{ (page.artist_name + ' Shuttle') if page else '例：KAZE Shuttle' }}"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">
+            Logo 連結
+            <span class="text-gray-300">（留空則預設回到活動首頁）</span>
+          </label>
+          <input type="text" name="logo_link"
+                 value="{{ page.logo_link or '' if page else '' }}"
+                 placeholder="{{ ('/events/' + page.slug) if page else '/events/<slug>' }}"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono text-xs" />
+        </div>
+      </div>
+
+      <!-- Navbar 即時預覽 -->
+      <div class="rounded-lg overflow-hidden" style="background:#060312;padding:10px 16px;">
+        <div class="flex items-center gap-2.5">
+          <div id="brand-preview-logo">
+            {% if page and page.logo_image %}
+            <img src="{{ page.logo_image }}" class="h-8 object-contain max-w-[160px]"
+                 style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />
+            {% else %}
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center"
+                   style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+              </div>
+              <span id="brand-preview-text" class="text-sm font-semibold text-white tracking-tight">
+                {{ page.logo_text if page and page.logo_text else ((page.artist_name + ' Shuttle') if page else 'Artist Shuttle') }}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-1 ml-auto">
+            <span class="px-3 py-1 text-xs text-white opacity-60">預約</span>
+            <span class="px-3 py-1 text-xs text-white opacity-60">查詢訂單</span>
+            <span class="px-3 py-1 text-xs text-white opacity-60">匯款回報</span>
+            <span class="px-3 py-1 text-xs text-white opacity-60">最新公告</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Hero 版型 ── -->
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
       <h3 class="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-3">Hero 版型</h3>
@@ -981,6 +1078,88 @@ function updateColorSwatches() {
   if (tx) tx.style.color     = textC;
   if (b)  b.style.background = btnC;
 }
+
+/* ── Brand Identity — Logo Upload / Delete / Live Preview ── */
+{% if mode == 'edit' and page %}
+const EP_ID = {{ page.id }};
+
+function uploadLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('logo-upload-status');
+  if (status) status.textContent = '上傳中…';
+  const fd = new FormData();
+  fd.append('file', file);
+  fetch('/api/events/' + EP_ID + '/upload-logo', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        // show preview, hide upload button
+        const wrap  = document.getElementById('logo-preview-wrap');
+        const img   = document.getElementById('logo-preview-img');
+        const label = document.getElementById('logo-upload-label');
+        if (img)  img.src = d.url;
+        if (wrap) wrap.classList.remove('hidden');
+        if (label) label.classList.add('hidden');
+        if (status) status.textContent = '✓ 上傳成功';
+        updateBrandPreview(d.url, null);
+      } else {
+        if (status) status.textContent = '✗ ' + (d.error || '上傳失敗');
+      }
+    })
+    .catch(function(){ if (status) status.textContent = '✗ 網路錯誤'; });
+  input.value = '';
+}
+
+function deleteLogo() {
+  if (!confirm('確定移除 Logo 圖片？')) return;
+  fetch('/api/events/' + EP_ID + '/delete-logo', { method: 'POST' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        const wrap  = document.getElementById('logo-preview-wrap');
+        const label = document.getElementById('logo-upload-label');
+        const img   = document.getElementById('logo-preview-img');
+        if (wrap)  wrap.classList.add('hidden');
+        if (label) label.classList.remove('hidden');
+        if (img)   img.src = '';
+        updateBrandPreview(null, document.querySelector('[name=logo_text]')?.value || '');
+      }
+    });
+}
+{% else %}
+function uploadLogo() {}
+function deleteLogo() {}
+{% endif %}
+
+function updateBrandPreview(imgUrl, text) {
+  const container = document.getElementById('brand-preview-logo');
+  if (!container) return;
+  if (imgUrl) {
+    container.innerHTML = '<img src="' + imgUrl + '" class="h-8 object-contain max-w-[160px]" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />';
+  } else {
+    const label = text || (document.querySelector('[name=artist_name]')?.value || '') + ' Shuttle';
+    container.innerHTML =
+      '<div class="flex items-center gap-2">' +
+      '<div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);">' +
+      '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg></div>' +
+      '<span class="text-sm font-semibold text-white tracking-tight">' + label + '</span></div>';
+  }
+}
+
+// Live text preview when typing logo_text
+(function(){
+  const logoTextInput = document.querySelector('[name=logo_text]');
+  const logoImg = document.getElementById('logo-preview-img');
+  if (logoTextInput) {
+    logoTextInput.addEventListener('input', function() {
+      if (!logoImg || !logoImg.src || logoImg.src === window.location.href) {
+        updateBrandPreview(null, this.value);
+      }
+    });
+  }
+})();
 
 function toggleEditorialPanel(variant) {
   const panel = document.getElementById('editorial-style-panel');

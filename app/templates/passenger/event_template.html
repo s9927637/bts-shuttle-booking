@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ ep.title }} — BTS Shuttle</title>
+  <title>{{ ep.title }} — {{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</title>
   <meta name="description" content="{{ ep.description[:120] if ep.description else ep.title }}" />
 
   {# ── Phase 7: SEO / OG Tags ── #}
@@ -403,14 +403,22 @@
 <!-- ══ NAV ══════════════════════════════════════════════════════ -->
 <nav class="ev-nav">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-    <a href="/" class="flex items-center gap-2.5 shrink-0">
+    {%- set nav_link = ep.logo_link or ('/events/' + ep.slug) %}
+    <a href="{{ nav_link }}" class="flex items-center gap-2.5 shrink-0">
+      {%- if ep.logo_image %}
+      <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}"
+           class="h-8 w-auto max-w-[160px] object-contain" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />
+      {%- else %}
       <div class="w-7 h-7 rounded-lg flex items-center justify-center"
            style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);">
         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
         </svg>
       </div>
-      <span class="text-sm font-semibold text-white tracking-tight hidden sm:inline">{{ ep.artist_name }} Shuttle</span>
+      <span class="text-sm font-semibold text-white tracking-tight hidden sm:inline">
+        {{ ep.logo_text or (ep.artist_name + ' Shuttle') }}
+      </span>
+      {%- endif %}
     </a>
     <div class="hidden md:flex items-center gap-1">
       <a href="/events/{{ ep.slug }}/booking"    class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">預約</a>

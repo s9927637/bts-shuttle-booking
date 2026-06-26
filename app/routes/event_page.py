@@ -178,6 +178,8 @@ def ep_create():
         hero_image_tablet=request.form.get("hero_image_tablet", "").strip() or None,
         hero_image_mobile=request.form.get("hero_image_mobile", "").strip() or None,
         custom_css=request.form.get("custom_css", "").strip() or None,
+        logo_text=request.form.get("logo_text", "").strip() or None,
+        logo_link=request.form.get("logo_link", "").strip() or None,
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -262,6 +264,8 @@ def ep_edit(ep_id):
             flash("Custom CSS 錯誤：" + " ".join(css_errors), "error")
             return redirect(url_for("event_page.ep_edit", ep_id=ep.id))
     ep.custom_css = raw_css or None
+    ep.logo_text  = request.form.get("logo_text", "").strip() or None
+    ep.logo_link  = request.form.get("logo_link", "").strip() or None
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()
@@ -593,6 +597,40 @@ def api_delete_hero(ep_id):
     elif slot == "mobile":
         ep.hero_image_mobile = None
 
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/upload-logo", methods=["POST"])
+@csrf.exempt
+def api_upload_logo(ep_id):
+    """上傳活動 Logo（PNG/SVG/WebP）"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    ep = EventPage.query.get_or_404(ep_id)
+    file = request.files.get("file")
+    from app.services.upload_service import save_logo_image
+    try:
+        url = save_logo_image(file, ep_id)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    ep.logo_image = url
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True, "url": url})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/delete-logo", methods=["POST"])
+@csrf.exempt
+def api_delete_logo(ep_id):
+    """刪除活動 Logo"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    ep = EventPage.query.get_or_404(ep_id)
+    from app.services.upload_service import delete_logo_image
+    delete_logo_image(ep_id)
+    ep.logo_image = None
     ep.updated_at = datetime.utcnow()
     db.session.commit()
     return jsonify({"ok": True})

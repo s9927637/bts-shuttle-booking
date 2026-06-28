@@ -180,6 +180,7 @@ def ep_create():
         custom_css=request.form.get("custom_css", "").strip() or None,
         logo_text=request.form.get("logo_text", "").strip() or None,
         logo_link=request.form.get("logo_link", "").strip() or None,
+        theme_navbar=request.form.get("theme_navbar", "auto").strip() or "auto",
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -266,6 +267,17 @@ def ep_edit(ep_id):
     ep.custom_css = raw_css or None
     ep.logo_text  = request.form.get("logo_text", "").strip() or None
     ep.logo_link  = request.form.get("logo_link", "").strip() or None
+    # Phase 10: Theme System
+    def _hex(key):
+        v = request.form.get(key, "").strip()
+        return v if v and v.startswith('#') and len(v) in (4, 7) else None
+    ep.theme_primary_color   = _hex("theme_primary_color")
+    ep.theme_secondary_color = _hex("theme_secondary_color")
+    ep.theme_bg_color        = _hex("theme_bg_color")
+    ep.theme_text_color      = _hex("theme_text_color")
+    ep.theme_btn_color       = _hex("theme_btn_color")
+    ep.theme_btn_text_color  = _hex("theme_btn_text_color")
+    ep.theme_navbar          = request.form.get("theme_navbar", "auto").strip() or "auto"
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()

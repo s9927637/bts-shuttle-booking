@@ -771,6 +771,142 @@
     {% endif %}
 
     <!-- ══════════════════════════════════════════════════════════════
+         Appearance：Theme System（Phase 10）
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4" id="theme-panel">
+      <div class="border-b border-gray-100 pb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Appearance — 活動主題色</h3>
+        <p class="text-xs text-gray-400 mt-0.5">設定後套用至活動首頁、預約、查詢訂單、匯款回報、最新公告</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+        <!-- Primary Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Primary Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_primary_color" id="tp-primary"
+                   value="{{ page.theme_primary_color or page.theme_tokens.primary if page else '#9333ea' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-primary-hex"
+                   value="{{ page.theme_primary_color or page.theme_tokens.primary if page else '#9333ea' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#9333ea" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">按鈕、連結、強調色</p>
+        </div>
+
+        <!-- Button Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Button Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_btn_color" id="tp-btn"
+                   value="{{ page.theme_btn_color or page.theme_tokens.primary if page else '#9333ea' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-btn-hex"
+                   value="{{ page.theme_btn_color or page.theme_tokens.primary if page else '#9333ea' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#9333ea" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">CTA 按鈕底色</p>
+        </div>
+
+        <!-- Button Text Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Button Text Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_btn_text_color" id="tp-btn-text"
+                   value="{{ page.theme_btn_text_color or '#ffffff' if page else '#ffffff' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-btn-text-hex"
+                   value="{{ page.theme_btn_text_color or '#ffffff' if page else '#ffffff' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#ffffff" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">CTA 按鈕文字色</p>
+        </div>
+
+        <!-- Background Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Background Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_bg_color" id="tp-bg"
+                   value="{{ page.theme_bg_color or '#060312' if page else '#060312' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-bg-hex"
+                   value="{{ page.theme_bg_color or '#060312' if page else '#060312' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#060312" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">頁面底色（預約等子頁）</p>
+        </div>
+
+        <!-- Text Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Text Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_text_color" id="tp-text"
+                   value="{{ page.theme_text_color or '#ffffff' if page else '#ffffff' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-text-hex"
+                   value="{{ page.theme_text_color or '#ffffff' if page else '#ffffff' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#ffffff" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">內頁主文字色</p>
+        </div>
+
+        <!-- Secondary Color -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">Secondary Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" name="theme_secondary_color" id="tp-secondary"
+                   value="{{ page.theme_secondary_color or page.theme_tokens.secondary if page else '#a855f7' }}"
+                   class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+            <input type="text" id="tp-secondary-hex"
+                   value="{{ page.theme_secondary_color or page.theme_tokens.secondary if page else '#a855f7' }}"
+                   class="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg font-mono"
+                   placeholder="#a855f7" maxlength="7" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">副色（特色小字、標籤）</p>
+        </div>
+      </div>
+
+      <!-- Navbar Theme -->
+      <div class="pt-2 border-t border-gray-100">
+        <label class="block text-xs font-medium text-gray-600 mb-2">Navbar Theme</label>
+        <div class="flex gap-3">
+          {%- set cur_navbar = page.theme_navbar or 'auto' if page else 'auto' %}
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="theme_navbar" value="auto" {% if cur_navbar == 'auto' %}checked{% endif %} class="text-indigo-600" />
+            <span class="text-xs text-gray-700">Auto<span class="text-gray-400">（透明漸層）</span></span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="theme_navbar" value="light" {% if cur_navbar == 'light' %}checked{% endif %} class="text-indigo-600" />
+            <span class="text-xs text-gray-700">Light<span class="text-gray-400">（白底深字）</span></span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="theme_navbar" value="dark" {% if cur_navbar == 'dark' %}checked{% endif %} class="text-indigo-600" />
+            <span class="text-xs text-gray-700">Dark<span class="text-gray-400">（黑底白字）</span></span>
+          </label>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">Auto：Navbar 透明（適合 Hero 全圖活動）；Light/Dark 固定不透明</p>
+      </div>
+
+      <!-- Live Preview -->
+      <div class="pt-2 border-t border-gray-100">
+        <div id="theme-preview-bar"
+             class="rounded-xl border border-gray-100 overflow-hidden flex items-center gap-3 px-5 py-3"
+             style="background:#060312;">
+          <div id="tp-preview-btn"
+               class="px-5 py-2 rounded-lg text-sm font-semibold"
+               style="background:#9333ea; color:#ffffff;">立即預約</div>
+          <span id="tp-preview-text" class="text-sm" style="color:#ffffff;">主文字預覽</span>
+          <span id="tp-preview-sub" class="text-xs" style="color:#a855f7;">副色預覽</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
          外觀設定：Event Custom CSS
     ═══════════════════════════════════════════════════════════════ -->
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4" id="custom-css-panel">
@@ -1864,4 +2000,38 @@ window.addEventListener('load', function() {
 })();
 </script>
 {% endif %}
+
+<!-- ── Theme Panel JS: color picker ↔ hex 同步 + live preview ── -->
+<script>
+(function () {
+  var pairs = [
+    ['tp-primary',   'tp-primary-hex',   'tp-preview-btn',  'background'],
+    ['tp-btn',       'tp-btn-hex',        'tp-preview-btn',  'background'],
+    ['tp-btn-text',  'tp-btn-text-hex',   'tp-preview-btn',  'color'],
+    ['tp-bg',        'tp-bg-hex',         'theme-preview-bar','background'],
+    ['tp-text',      'tp-text-hex',       'tp-preview-text', 'color'],
+    ['tp-secondary', 'tp-secondary-hex',  'tp-preview-sub',  'color'],
+  ];
+
+  function syncFromPicker(colorId, hexId, previewId, prop) {
+    var picker = document.getElementById(colorId);
+    var hex    = document.getElementById(hexId);
+    var prev   = document.getElementById(previewId);
+    if (!picker || !hex) return;
+    picker.addEventListener('input', function () {
+      hex.value = picker.value;
+      if (prev) prev.style[prop] = picker.value;
+    });
+    hex.addEventListener('input', function () {
+      var v = hex.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        picker.value = v;
+        if (prev) prev.style[prop] = v;
+      }
+    });
+  }
+
+  pairs.forEach(function (p) { syncFromPicker(p[0], p[1], p[2], p[3]); });
+})();
+</script>
 {% endblock %}

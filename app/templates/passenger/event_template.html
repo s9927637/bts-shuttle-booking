@@ -18,14 +18,53 @@
 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
   <style>
+    {%- set rt = ep.resolved_theme %}
+    /* ── Event Theme CSS Variables ── */
+    :root {
+      --ev-primary:   {{ rt.primary }};
+      --ev-secondary: {{ rt.secondary }};
+      --ev-bg:        {{ rt.bg }};
+      --ev-text:      {{ rt.text }};
+      --ev-btn-color: {{ rt.btn_color }};
+      --ev-btn-text:  {{ rt.btn_text }};
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
-    body { background: #060312; color: #fff; overflow-x: hidden; }
+    body { background: var(--ev-bg); color: #fff; overflow-x: hidden; }
     img  { display: block; max-width: 100%; }
 
     /* ═══════════════════════════════════════
        SHARED NAV
     ═══════════════════════════════════════ */
+    {%- if rt.navbar == 'light' %}
+    .ev-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .ev-nav a, .ev-nav button { color: #1a1a1a !important; }
+    .ev-nav a:hover { background: rgba(0,0,0,0.06) !important; }
+    .ev-mobile-panel {
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(0,0,0,0.07);
+    }
+    .ev-mobile-panel a { color: #1a1a1a !important; }
+    {%- elif rt.navbar == 'dark' %}
+    .ev-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(10,10,10,0.97);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ev-mobile-panel {
+      background: rgba(10,10,10,0.98);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    {%- else %}
     .ev-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 50;
       background: linear-gradient(to bottom, rgba(0,0,0,0.60), rgba(0,0,0,0));
@@ -35,6 +74,7 @@
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid rgba(255,255,255,0.07);
     }
+    {%- endif %}
 
     /* ═══════════════════════════════════════════════════════════
        VARIANT 1: MODERN CARD  (BTS / KPOP)
@@ -133,7 +173,7 @@
       border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .mc-pill-main  { font-size: 0.85rem; font-weight: 600; color: #fff; }
-    .mc-pill-label { font-size: 0.70rem; color: #a78bfa; margin-top: 2px; }
+    .mc-pill-label { font-size: 0.70rem; color: var(--ev-secondary, #a78bfa); margin-top: 2px; }
 
     /* ── Feature grid ── */
     .mc-feats {
@@ -154,7 +194,7 @@
       border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .mc-feat-title { font-size: 0.78rem; font-weight: 700; color: #fff; }
-    .mc-feat-sub   { font-size: 0.68rem; color: #a78bfa; margin-top: 2px; }
+    .mc-feat-sub   { font-size: 0.68rem; color: var(--ev-secondary, #a78bfa); margin-top: 2px; }
 
     /* ── Phase 4: CTA row ── */
     .mc-cta-row {
@@ -164,19 +204,19 @@
     @media (max-width: 479px) {
       .mc-cta-row { flex-direction: column; align-items: flex-start; gap: 12px; }
     }
-    .mc-price-val  { font-size: 1.5rem; font-weight: 800; color: #e9d5ff; }
-    .mc-price-unit { font-size: 0.78rem; color: #a78bfa; }
+    .mc-price-val  { font-size: 1.5rem; font-weight: 800; color: var(--ev-btn-text, #e9d5ff); }
+    .mc-price-unit { font-size: 0.78rem; color: var(--ev-secondary, #a78bfa); }
     .mc-btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 13px 28px;
-      background: linear-gradient(135deg,#7c3aed 0%,#9333ea 100%);
-      color: #fff; font-size: 0.88rem; font-weight: 700;
+      background: var(--ev-btn-color);
+      color: var(--ev-btn-text); font-size: 0.88rem; font-weight: 700;
       border-radius: 12px; text-decoration: none;
-      box-shadow: 0 8px 28px rgba(124,58,237,0.40);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.30);
       transition: opacity 0.18s, transform 0.14s;
       white-space: nowrap; flex-shrink: 0;
     }
-    .mc-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .mc-btn:hover { opacity: 0.9; transform: translateY(-1px); color: var(--ev-btn-text); }
     @media (max-width: 479px) { .mc-btn { width: 100%; justify-content: center; } }
 
     /* ═══════════════════════════════════════════════════════════
@@ -294,9 +334,9 @@
       padding: 13px 28px; font-size: 0.875rem; font-weight: 700; border-radius: 3px;
       text-decoration: none; letter-spacing: 0.02em;
       transition: opacity 0.18s; white-space: nowrap;
-      background: var(--ed-btn, #2B2B2B); color: #fff;
+      background: var(--ev-btn-color, var(--ed-btn, #2B2B2B)); color: var(--ev-btn-text, #fff);
     }
-    .ed-btn-primary:hover { opacity: 0.82; }
+    .ed-btn-primary:hover { opacity: 0.82; color: var(--ev-btn-text, #fff); }
     .ed-btn-secondary {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       padding: 13px 24px; background: transparent; font-size: 0.875rem; font-weight: 400;
@@ -471,7 +511,7 @@
     <div class="mc-text-wrap">
       <p class="mc-sub">{{ ep.subtitle or ep.artist_name }}</p>
       {% if ep.tour_name %}
-      <p style="font-size:0.73rem;color:#a78bfa;letter-spacing:0.05em;margin-top:3px;margin-bottom:4px;">{{ ep.tour_name }}</p>
+      <p style="font-size:0.73rem;color:var(--ev-secondary,#a78bfa);letter-spacing:0.05em;margin-top:3px;margin-bottom:4px;">{{ ep.tour_name }}</p>
       {% endif %}
       <h1 class="mc-title hero-title">{{ ep.title }}</h1>
 
@@ -547,7 +587,7 @@
           </svg>
         </a>
         {% if ep.balance > 0 %}
-        <span style="font-size:0.75rem;color:#a78bfa;">尾款 NT${{ '{:,}'.format(ep.balance) }} 搭車當日</span>
+        <span style="font-size:0.75rem;color:var(--ev-secondary,#a78bfa);">尾款 NT${{ '{:,}'.format(ep.balance) }} 搭車當日</span>
         {% endif %}
       </div>
     </div>
@@ -734,7 +774,7 @@
 {% else %}
 <section class="bottom-cta" style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
   <h2>準備好出發了嗎？</h2>
-  <p style="color:#a78bfa;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
+  <p style="color:var(--ev-secondary,#a78bfa);">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
   <a href="/events/{{ ep.slug }}/booking" class="mc-btn bottom-cta-btn"
      style="padding:15px 44px;font-size:0.95rem;">
     立即預約包車

@@ -71,6 +71,14 @@ class EventPage(db.Model):
     purchase_notes      = db.Column(db.Text, nullable=True)
     cancellation_policy = db.Column(db.Text, nullable=True)
     riding_rules        = db.Column(db.Text, nullable=True)
+    # Phase 10: Theme System — 自定義主題色（優先於舊版 theme_color 字串）
+    theme_primary_color   = db.Column(db.String(20), nullable=True)   # e.g. '#B8894D'
+    theme_secondary_color = db.Column(db.String(20), nullable=True)
+    theme_bg_color        = db.Column(db.String(20), nullable=True)   # 頁面底色
+    theme_text_color      = db.Column(db.String(20), nullable=True)   # 內頁文字色
+    theme_btn_color       = db.Column(db.String(20), nullable=True)   # CTA 按鈕底色
+    theme_btn_text_color  = db.Column(db.String(20), nullable=True)   # CTA 按鈕文字
+    theme_navbar          = db.Column(db.String(10), nullable=True, default='auto')  # 'auto'|'light'|'dark'
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
@@ -193,6 +201,20 @@ class EventPage(db.Model):
     @property
     def category_label(self):
         return self.CATEGORY_LABELS.get(self.category or 'concert', '演唱會')
+
+    @property
+    def resolved_theme(self) -> dict:
+        """優先使用 Phase 10 自定義色；若未設定則 fallback 到 THEME_TOKENS。"""
+        base = self.theme_tokens
+        return {
+            'primary':   self.theme_primary_color   or base['primary'],
+            'secondary': self.theme_secondary_color  or base['secondary'],
+            'bg':        self.theme_bg_color         or '#060312',
+            'text':      self.theme_text_color       or '#ffffff',
+            'btn_color': self.theme_btn_color        or base['primary'],
+            'btn_text':  self.theme_btn_text_color   or '#ffffff',
+            'navbar':    self.theme_navbar           or 'auto',
+        }
 
     @property
     def theme_css_color(self):

@@ -1,5 +1,63 @@
 {% extends "layouts/base.html" %}
-{% block title %}填寫預約 — BTS Shuttle{% endblock %}
+{% block title %}填寫預約 — {{ event_page.title if event_page else 'BTS Shuttle' }}{% endblock %}
+
+{% block extra_head %}
+{% if event_page %}
+{%- set rt = event_page.resolved_theme -%}
+<style>
+  :root {
+    --ev-primary:       {{ rt.primary }};
+    --ev-primary-hover: {{ rt.primary }};
+    --ev-btn-color:     {{ rt.btn_color }};
+    --ev-btn-text:      {{ rt.btn_text }};
+    --ev-bg:            {{ rt.bg }};
+    --ev-text:          {{ rt.text }};
+    --ev-nav-active-bg: {{ rt.primary }};
+    --ev-input-focus:   {{ rt.primary }};
+    --ev-accent-muted:  {{ rt.primary }}22;
+    {%- if rt.navbar == 'light' %}
+    --ev-nav-bg:        #ffffff;
+    --ev-nav-text:      #1a1a1a;
+    --ev-nav-border:    rgba(0,0,0,0.08);
+    {%- elif rt.navbar == 'dark' %}
+    --ev-nav-bg:        #111111;
+    --ev-nav-text:      #ffffff;
+    --ev-nav-border:    rgba(255,255,255,0.08);
+    {%- else %}
+    --ev-nav-bg:        {{ rt.bg }};
+    --ev-nav-text:      {{ rt.text }};
+    --ev-nav-border:    rgba(128,128,128,0.15);
+    {%- endif %}
+  }
+  /* 讓 nav-item 文字使用 nav-text 色 */
+  .nav-item { color: var(--ev-nav-text); opacity: 0.7; }
+  .nav-item:hover { color: var(--ev-nav-text); opacity: 1; }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block nav_brand %}
+{% if event_page %}
+{%- set nav_link = event_page.logo_link or ('/events/' + event_page.slug) %}
+<a href="{{ nav_link }}" class="flex items-center gap-2.5 shrink-0">
+  {%- if event_page.logo_image %}
+  <img src="{{ event_page.logo_image }}" alt="{{ event_page.logo_text or event_page.artist_name }}"
+       class="h-7 w-auto max-w-[140px] object-contain" />
+  {%- else %}
+  <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
+    <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+    </svg>
+  </div>
+  <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">
+    {{ event_page.logo_text or (event_page.artist_name + ' Shuttle') }}
+  </span>
+  {%- endif %}
+</a>
+{% else %}
+{{ super() }}
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="page-container">

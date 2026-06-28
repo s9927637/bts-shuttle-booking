@@ -6,19 +6,33 @@
   <title>{% block title %}BTS Shuttle{% endblock %}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
   <style>
+    /* ── BTS Theme CSS Variables (default; overridable by event pages) ── */
+    :root {
+      --ev-primary:       #9333ea;
+      --ev-primary-hover: #7e22ce;
+      --ev-btn-color:     #9333ea;
+      --ev-btn-text:      #ffffff;
+      --ev-bg:            #000000;
+      --ev-text:          #ffffff;
+      --ev-nav-bg:        #000000;
+      --ev-nav-text:      #ffffff;
+      --ev-nav-border:    rgba(255,255,255,0.10);
+      --ev-nav-active-bg: #9333ea;
+      --ev-input-focus:   #9333ea;
+      --ev-accent-muted:  rgba(147,51,234,0.15);
+    }
+
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
 
-    /* ── Dark background — force black regardless of Tailwind CDN coverage ── */
-    html, body { background-color: #000000 !important; color: #ffffff; }
-    main { background-color: #000000; min-height: 100vh; }
+    html, body { background-color: var(--ev-bg) !important; color: var(--ev-text); }
+    main { background-color: var(--ev-bg); min-height: 100vh; }
 
-    /* ── Typography: all gray/slate text → white on dark background ── */
+    /* ── Typography ── */
     .text-gray-100, .text-gray-200, .text-gray-300, .text-gray-400, .text-gray-500,
     .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900,
     .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500,
-    .text-slate-600, .text-slate-700 { color: #ffffff !important; }
+    .text-slate-600, .text-slate-700 { color: var(--ev-text) !important; }
 
-    /* ── Placeholder: white at 50% opacity ── */
     input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.45) !important; }
     .input-dark::placeholder { color: rgba(255,255,255,0.45) !important; }
 
@@ -30,50 +44,54 @@
       background: #111827; border: 1px solid #1f2937; border-radius: 1rem; padding: 1.25rem;
     }
     .section-title {
-      font-size: 0.875rem; font-weight: 600; color: #ffffff;
+      font-size: 0.875rem; font-weight: 600; color: var(--ev-text);
     }
     .btn-primary {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
       width: 100%; padding: 0.875rem 1.5rem; border-radius: 0.75rem;
-      background: #9333ea; color: #ffffff; font-size: 0.875rem; font-weight: 600;
-      transition: background 0.15s; border: none; cursor: pointer; text-decoration: none;
+      background: var(--ev-btn-color); color: var(--ev-btn-text);
+      font-size: 0.875rem; font-weight: 600;
+      transition: opacity 0.15s; border: none; cursor: pointer; text-decoration: none;
     }
-    .btn-primary:hover { background: #7e22ce; color: #ffffff; }
+    .btn-primary:hover { opacity: 0.88; color: var(--ev-btn-text); }
     .btn-secondary {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
       width: 100%; padding: 0.75rem 1.5rem; border-radius: 0.75rem;
-      background: transparent; color: #c084fc; font-size: 0.875rem; font-weight: 600;
-      border: 1px solid #9333ea; transition: background 0.15s; cursor: pointer; text-decoration: none;
+      background: transparent; color: var(--ev-primary); font-size: 0.875rem; font-weight: 600;
+      border: 1px solid var(--ev-primary); transition: background 0.15s; cursor: pointer; text-decoration: none;
     }
-    .btn-secondary:hover { background: rgba(147,51,234,0.12); color: #c084fc; }
+    .btn-secondary:hover { background: var(--ev-accent-muted); color: var(--ev-primary); }
     .input-dark {
       width: 100%; padding: 0.75rem 1rem; border-radius: 0.75rem;
       background: #1f2937; border: 1px solid #374151; color: #ffffff;
       font-size: 0.875rem; outline: none;
     }
     .input-dark::placeholder { color: #6b7280; }
-    .input-dark:focus { border-color: #9333ea; box-shadow: 0 0 0 2px rgba(147,51,234,0.25); }
+    .input-dark:focus { border-color: var(--ev-input-focus); box-shadow: 0 0 0 2px rgba(147,51,234,0.25); }
     .row-divider { border-top: 1px solid #1f2937; padding-top: 0.625rem; margin-top: 0; }
-    /* ── Navbar always black on non-home pages ── */
-    body > nav { background-color: #000000 !important; }
+    /* ── Navbar ── */
+    body > nav { background-color: var(--ev-nav-bg) !important; border-bottom-color: var(--ev-nav-border) !important; }
     .nav-item { color: #9ca3af; }
-    .nav-item:hover { color: #ffffff; background: rgba(147,51,234,0.15); }
-    .nav-active { color: #ffffff !important; background: #9333ea !important; }
+    .nav-item:hover { color: var(--ev-nav-text); background: var(--ev-accent-muted); }
+    .nav-active { color: var(--ev-btn-text) !important; background: var(--ev-nav-active-bg) !important; }
   </style>
+  {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-black text-white antialiased min-h-screen flex flex-col">
 
   <!-- Navbar -->
-  <nav class="sticky top-0 z-40 bg-black" style="background-color:#000000 !important; border-bottom:1px solid rgba(255,255,255,0.10);">
+  <nav class="sticky top-0 z-40" style="background-color:var(--ev-nav-bg) !important; border-bottom:1px solid var(--ev-nav-border);">
     <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      {% block nav_brand %}
       <a href="/" class="flex items-center gap-2.5">
-        <div class="w-7 h-7 bg-purple-600 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
+          <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
           </svg>
         </div>
-        <span class="text-sm font-semibold tracking-tight text-white">BTS 演唱會包車預約</span>
+        <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">BTS 演唱會包車預約</span>
       </a>
+      {% endblock %}
 
       <!-- Desktop links -->
       <div class="hidden md:flex items-center gap-1">

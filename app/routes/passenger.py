@@ -555,6 +555,14 @@ def order_search():
         .limit(3).all()
     )
 
+    event_slug = request.args.get("event_slug", "").strip()
+    event_page_ctx = None
+    if event_slug:
+        from app.models.event_page import EventPage as _EP
+        _ep = _EP.query.filter_by(slug=event_slug).filter(_EP.deleted_at.is_(None)).first()
+        if _ep and _ep.is_published:
+            event_page_ctx = _ep
+
     return render_template(
         "passenger/order_search.html",
         order_no=order_no,
@@ -570,6 +578,7 @@ def order_search():
         group_total_pax=group_total_pax,
         passenger_liff_id=PASSENGER_LIFF_ID,
         important_announcements=important_announcements,
+        event_page=event_page_ctx,
     )
 
 
@@ -590,6 +599,14 @@ def payment_report():
     if group_id:
         group_orders = Order.query.filter_by(group_id=group_id)\
                                   .order_by(Order.created_at.asc()).all()
+    event_slug_pr = request.args.get("event_slug", "").strip()
+    event_page_pr = None
+    if event_slug_pr:
+        from app.models.event_page import EventPage as _EP2
+        _ep2 = _EP2.query.filter_by(slug=event_slug_pr).filter(_EP2.deleted_at.is_(None)).first()
+        if _ep2 and _ep2.is_published:
+            event_page_pr = _ep2
+
     return render_template("passenger/payment_report.html",
                            prefill_order_no=prefill_order_no,
                            line_user_id=line_user_id,
@@ -597,7 +614,8 @@ def payment_report():
                            group_id=group_id,
                            group_orders=group_orders,
                            show_group=show_group,
-                           passenger_liff_id=PASSENGER_LIFF_ID)
+                           passenger_liff_id=PASSENGER_LIFF_ID,
+                           event_page=event_page_pr)
 
 
 @passenger_bp.route("/payment/report", methods=["POST"])

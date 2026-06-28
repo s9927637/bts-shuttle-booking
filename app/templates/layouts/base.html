@@ -93,21 +93,23 @@
       </a>
       {% endblock %}
 
-      <!-- Desktop links -->
+      <!-- Desktop links (event-aware) -->
+      {%- set _ep = event_page if event_page is defined else None %}
+      {%- set _slug = _ep.slug if _ep else None %}
       <div class="hidden md:flex items-center gap-1">
-        <a href="/booking"
+        <a href="{{ '/events/' + _slug + '/booking' if _slug else '/booking' }}"
            class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/book' in request.path %}nav-active{% endif %}">
           預約
         </a>
-        <a href="/orders/search"
+        <a href="{{ '/events/' + _slug + '/orders' if _slug else '/orders/search' }}"
            class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/orders' in request.path %}nav-active{% endif %}">
           查詢訂單
         </a>
-        <a href="/payment/report"
+        <a href="{{ '/events/' + _slug + '/remittance' if _slug else '/payment/report' }}"
            class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/payment' in request.path %}nav-active{% endif %}">
           匯款回報
         </a>
-        <a href="/announcements"
+        <a href="{{ '/events/' + _slug + '/news' if _slug else '/announcements' }}"
            class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/announcements' in request.path %}nav-active{% endif %}">
           最新公告
         </a>
@@ -133,29 +135,29 @@
        style="background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"
        onclick="closeNavMenu()"></div>
 
-  <!-- Mobile menu panel (fixed, below navbar) -->
+  <!-- Mobile menu panel (fixed, below navbar, event-aware) -->
   <div id="mobile-menu"
        class="hidden fixed left-0 right-0 z-40 md:hidden"
-       style="top:56px; background:#000000; border-bottom:1px solid rgba(255,255,255,0.10);">
+       style="top:56px; background:var(--ev-nav-bg,#000000); border-bottom:1px solid var(--ev-nav-border,rgba(255,255,255,0.10));">
     <div class="px-4 py-3 space-y-1">
-      <a href="/booking"
+      <a href="{{ '/events/' + _slug + '/booking' if _slug else '/booking' }}"
          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/book' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+                {% if '/book' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
         預約
       </a>
-      <a href="/orders/search"
+      <a href="{{ '/events/' + _slug + '/orders' if _slug else '/orders/search' }}"
          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/orders' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+                {% if '/orders' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
         查詢訂單
       </a>
-      <a href="/payment/report"
+      <a href="{{ '/events/' + _slug + '/remittance' if _slug else '/payment/report' }}"
          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/payment' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+                {% if '/payment' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
         匯款回報
       </a>
-      <a href="/announcements"
+      <a href="{{ '/events/' + _slug + '/news' if _slug else '/announcements' }}"
          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/announcements' in request.path %}text-white bg-purple-600{% else %}text-gray-300 hover:bg-gray-900 hover:text-white{% endif %}">
+                {% if '/announcements' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
         最新公告
       </a>
     </div>

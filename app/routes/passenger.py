@@ -489,6 +489,15 @@ def order_search():
     order_no     = request.args.get("order_no", "").strip().upper()
     phone4       = request.args.get("phone4", "").strip()
 
+    # 先解析 event context，讓後續查詢可以 scope
+    event_slug = request.args.get("event_slug", "").strip()
+    event_page_ctx = None
+    if event_slug:
+        from app.models.event_page import EventPage as _EP
+        _ep = _EP.query.filter_by(slug=event_slug).filter(_EP.deleted_at.is_(None)).first()
+        if _ep and _ep.is_published:
+            event_page_ctx = _ep
+
     orders   = []
     order    = None
     vehicle  = None
@@ -500,9 +509,10 @@ def order_search():
         # Priority 1：LINE 身分驗證，直接用 line_user_id 查詢
         mode     = "line"
         searched = True
-        orders   = (Order.query
-                    .filter_by(line_user_id=line_user_id)
-                    .order_by(Order.created_at.desc()).all())
+        q = Order.query.filter_by(line_user_id=line_user_id)
+        if event_page_ctx:
+            q = q.filter(Order.event_page_id == event_page_ctx.id)
+        orders = q.order_by(Order.created_at.desc()).all()
 
     elif order_no or phone4:
         # Priority 2：必須同時提供 訂單編號 + 手機後四碼
@@ -518,12 +528,13 @@ def order_search():
         elif len(phone4) != 4 or not phone4.isdigit():
             error = "手機後四碼請輸入 4 位數字"
         else:
-            order = (Order.query
-                     .filter(
-                         Order.order_no == order_no,
-                         Order.phone.endswith(phone4),
-                     )
-                     .first())
+            q = Order.query.filter(
+                Order.order_no == order_no,
+                Order.phone.endswith(phone4),
+            )
+            if event_page_ctx:
+                q = q.filter(Order.event_page_id == event_page_ctx.id)
+            order = q.first()
             if not order:
                 error = "查無符合資料，請確認訂單編號、手機後四碼是否正確"
             elif order.vehicle_id:
@@ -555,14 +566,6 @@ def order_search():
         .limit(3).all()
     )
 
-    event_slug = request.args.get("event_slug", "").strip()
-    event_page_ctx = None
-    if event_slug:
-        from app.models.event_page import EventPage as _EP
-        _ep = _EP.query.filter_by(slug=event_slug).filter(_EP.deleted_at.is_(None)).first()
-        if _ep and _ep.is_published:
-            event_page_ctx = _ep
-
     return render_template(
         "passenger/order_search.html",
         order_no=order_no,
@@ -590,15 +593,8 @@ def payment_report():
     line_user_id     = request.args.get("line_user_id", "")
     group_id         = request.args.get("group_id", "")
     show_group       = request.args.get("show_group", "")   # "created" / "joined" / ""
-    line_orders = []
-    if line_user_id:
-        line_orders = Order.query.filter_by(line_user_id=line_user_id)\
-                                 .filter(Order.payment_status.in_(["待付款", "待確認"]))\
-                                 .order_by(Order.created_at.desc()).all()
-    group_orders = []
-    if group_id:
-        group_orders = Order.query.filter_by(group_id=group_id)\
-                                  .order_by(Order.created_at.asc()).all()
+
+    # 先解析 event context
     event_slug_pr = request.args.get("event_slug", "").strip()
     event_page_pr = None
     if event_slug_pr:
@@ -606,6 +602,19 @@ def payment_report():
         _ep2 = _EP2.query.filter_by(slug=event_slug_pr).filter(_EP2.deleted_at.is_(None)).first()
         if _ep2 and _ep2.is_published:
             event_page_pr = _ep2
+
+    line_orders = []
+    if line_user_id:
+        q = Order.query.filter_by(line_user_id=line_user_id)\
+                       .filter(Order.payment_status.in_(["待付款", "待確認"]))
+        if event_page_pr:
+            q = q.filter(Order.event_page_id == event_page_pr.id)
+        line_orders = q.order_by(Order.created_at.desc()).all()
+
+    group_orders = []
+    if group_id:
+        group_orders = Order.query.filter_by(group_id=group_id)\
+                                  .order_by(Order.created_at.asc()).all()
 
     return render_template("passenger/payment_report.html",
                            prefill_order_no=prefill_order_no,

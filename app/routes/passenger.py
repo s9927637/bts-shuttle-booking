@@ -135,30 +135,19 @@ def book():
 # ── 新預約表單 ───────────────────────────────────────────────────────────────
 
 @passenger_bp.route("/booking", methods=["GET"])
-def booking():
-    friend_code = request.args.get("friend_code", "").strip() or None
-
-    # 活動頁模式：?event_id=<id>
-    event_page = None
-    event_id = request.args.get("event_id", type=int)
-    if event_id:
-        from app.models.event_page import EventPage
-        ep = EventPage.query.get(event_id)
-        if ep and ep.is_published:
-            event_page = ep
+def _render_booking_page(event_page=None, friend_code=None, form=None):
+    """共用 booking render 邏輯，供 /booking 和 /events/<slug>/booking 共用。"""
+    from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
 
     price_per   = (event_page.price   or PRICE_PER_PERSON)   if event_page else PRICE_PER_PERSON
     deposit_per = (event_page.deposit or DEPOSIT_PER_PERSON)  if event_page else DEPOSIT_PER_PERSON
     balance_per = price_per - deposit_per
 
-    # 活動搭車日期 / 地點 / 表單設定
     ep_booking_dates    = []
     ep_pickup_locations = []
-    ep_price_rules_json = {}   # {date_id: {loc_id: {price, deposit}}}
-    ep_form_config      = {}   # {field_name: {visible, required, label}}
+    ep_price_rules_json = {}
+    ep_form_config      = {}
     if event_page:
-        from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
-        import json as _json
         ep_booking_dates    = EventBookingDate.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventBookingDate.sort_order).all()
         ep_pickup_locations = EventPickupLocation.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventPickupLocation.sort_order).all()
         for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
@@ -189,7 +178,22 @@ def booking():
                            ep_pickup_locations=ep_pickup_locations,
                            ep_price_rules_json=ep_price_rules_json,
                            ep_form_config=ep_form_config,
-                           form={})
+                           form=form or {})
+
+
+def booking():
+    friend_code = request.args.get("friend_code", "").strip() or None
+
+    # 活動頁模式：?event_id=<id> 或 ?ep=<slug>（向後相容）
+    event_page = None
+    event_id = request.args.get("event_id", type=int)
+    if event_id:
+        from app.models.event_page import EventPage
+        ep = EventPage.query.get(event_id)
+        if ep and ep.is_published:
+            event_page = ep
+
+    return _render_booking_page(event_page=event_page, friend_code=friend_code)
 
 
 @passenger_bp.route("/booking", methods=["POST"])
@@ -387,36 +391,7 @@ def booking_submit():
         flash(msg, "error")
         price_per   = (event_page.price   or PRICE_PER_PERSON)   if event_page else PRICE_PER_PERSON
         deposit_per = (event_page.deposit or DEPOSIT_PER_PERSON)  if event_page else DEPOSIT_PER_PERSON
-        # 重新查詢活動設定，供表單重新渲染
-        _ep_booking_dates = _ep_pickup_locations = []
-        _ep_price_rules_json = _ep_form_config = {}
-        if event_page:
-            from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
-            _ep_booking_dates    = EventBookingDate.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventBookingDate.sort_order).all()
-            _ep_pickup_locations = EventPickupLocation.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventPickupLocation.sort_order).all()
-            for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
-                dk = str(rule.booking_date_id or 'any')
-                lk = str(rule.location_id or 'any')
-                _ep_price_rules_json.setdefault(dk, {})[lk] = {'price': rule.price, 'deposit': rule.deposit}
-            for fc in EventFormConfig.query.filter_by(event_page_id=event_page.id).all():
-                _ep_form_config[fc.field_name] = {'visible': fc.is_visible, 'required': fc.is_required, 'label': fc.label_override}
-        return render_template("passenger/booking.html",
-                               price_per_person=price_per,
-                               deposit_per_person=deposit_per,
-                               balance_per_person=price_per - deposit_per,
-                               nx200_pax=NX200_PAX,
-                               nx200_total=NX200_TOTAL,
-                               nx200_deposit=NX200_DEPOSIT,
-                               nx200_balance=NX200_BALANCE,
-                               nx200_available=_nx200_available(),
-                               departure_options=DEPARTURE_OPTIONS,
-                               passenger_liff_id=PASSENGER_LIFF_ID,
-                               event_page=event_page,
-                               ep_booking_dates=_ep_booking_dates,
-                               ep_pickup_locations=_ep_pickup_locations,
-                               ep_price_rules_json=_ep_price_rules_json,
-                               ep_form_config=_ep_form_config,
-                               form=form_data)
+        return _render_booking_page(event_page=event_page, form=form_data)
 
 
 # ── 訂單明細 ────────────────────────────────────────────────────────────────

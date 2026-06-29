@@ -122,7 +122,7 @@
 
     <p class="text-center text-xs text-gray-500">
       需要查詢訂單？
-      <a href="/orders/search{% if line_user_id %}?line_user_id={{ line_user_id }}{% endif %}"
+      <a href="{{ '/events/' + event_page.slug + '/orders' if event_page else '/orders/search' }}{% if line_user_id %}?line_user_id={{ line_user_id }}{% endif %}"
          class="font-medium text-purple-400 hover:text-purple-300 transition-colors">前往訂單查詢</a>
     </p>
 

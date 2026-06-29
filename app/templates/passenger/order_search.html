@@ -215,7 +215,7 @@
             查看訂單
           </a>
           {% if o.payment_status == '待付款' %}
-          <a href="/payment/report?order_no={{ o.order_no }}&line_user_id={{ line_user_id }}"
+          <a href="{{ '/events/' + event_page.slug + '/remittance' if event_page else '/payment/report' }}?order_no={{ o.order_no }}&line_user_id={{ line_user_id }}"
              class="btn-secondary" style="width:auto; padding: 0.5rem 1rem; font-size:0.75rem;">
             前往匯款回報
           </a>
@@ -334,7 +334,7 @@
           查看訂單詳情
         </a>
         {% if order.payment_status == '待付款' %}
-        <a href="/payment/report?order_no={{ order.order_no }}{% if line_user_id %}&line_user_id={{ line_user_id }}{% endif %}"
+        <a href="{{ '/events/' + event_page.slug + '/remittance' if event_page else '/payment/report' }}?order_no={{ order.order_no }}{% if line_user_id %}&line_user_id={{ line_user_id }}{% endif %}"
            class="btn-secondary" style="font-size:0.8rem; padding:0.6rem 1rem;">
           前往匯款回報
         </a>

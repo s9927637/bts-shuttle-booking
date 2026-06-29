@@ -359,8 +359,9 @@ def event_booking(slug):
     ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
     if ep.status != "已發布" and not session.get("admin_id"):
         abort(404)
-    from flask import redirect, url_for
-    return redirect(url_for("passenger.booking", event_id=ep.id))
+    from app.routes.passenger import _render_booking_page
+    friend_code = request.args.get("friend_code", "").strip() or None
+    return _render_booking_page(event_page=ep, friend_code=friend_code)
 
 
 # ── 前台：活動查詢訂單 /events/<slug>/orders（redirect）────────────────────

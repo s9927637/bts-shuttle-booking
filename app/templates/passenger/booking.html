@@ -32,6 +32,23 @@
   /* 讓 nav-item 文字使用 nav-text 色 */
   .nav-item { color: var(--ev-nav-text); opacity: 0.7; }
   .nav-item:hover { color: var(--ev-nav-text); opacity: 1; }
+
+  /* ── 覆蓋 booking.html 內 hardcoded purple → event theme ── */
+  .bg-purple-950\/40, .bg-purple-950\/30, .bg-purple-950\/20 {
+    background-color: color-mix(in srgb, var(--ev-primary) 12%, transparent) !important;
+  }
+  .border-purple-800\/50, .border-purple-700\/50, .border-purple-900\/50 {
+    border-color: color-mix(in srgb, var(--ev-primary) 35%, transparent) !important;
+  }
+  .border-purple-600 { border-color: var(--ev-primary) !important; }
+  .border-purple-500 { border-color: var(--ev-primary) !important; }
+  .bg-purple-600    { background-color: var(--ev-primary) !important; }
+  .text-purple-300  { color: color-mix(in srgb, var(--ev-primary) 70%, #fff) !important; }
+  .text-purple-400  { color: var(--ev-primary) !important; }
+  .text-purple-600  { color: var(--ev-primary) !important; }
+  .focus\:ring-purple-600:focus { --tw-ring-color: var(--ev-primary) !important; }
+  .text-purple-600.focus\:ring-purple-600 { accent-color: var(--ev-primary); }
+  input[type=checkbox], input[type=radio] { accent-color: var(--ev-primary); }
 </style>
 {% endif %}
 {% endblock %}
@@ -63,8 +80,17 @@
 <div class="page-container">
 
   <div class="mb-10">
+    {% if event_page %}
+    <h1 class="text-3xl font-bold tracking-tight" style="color:var(--ev-text,#fff);">
+      {{ event_page.title }}
+    </h1>
+    <p class="mt-2 text-sm opacity-60" style="color:var(--ev-text,#fff);">
+      {{ event_page.artist_name }}{% if event_page.event_date %} · {{ event_page.event_date }}{% endif %}{% if event_page.departure_city %} · 出發地：{{ event_page.departure_city }}{% endif %}
+    </p>
+    {% else %}
     <h1 class="text-3xl font-bold text-white tracking-tight">填寫預約資料</h1>
     <p class="mt-2 text-sm text-gray-400">請確認所有資料正確後送出，完成後請至「匯款回報」完成付款。</p>
+    {% endif %}
   </div>
 
   <!-- 朋友邀請提示 -->

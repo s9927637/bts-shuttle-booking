@@ -90,7 +90,7 @@
   </div>
 
   <!-- Search Form -->
-  <form id="search-form" method="get" action="/orders/search" class="space-y-3 mb-10 hidden">
+  <form id="search-form" method="get" action="{{ '/events/' + event_page.slug + '/orders' if event_page else '/orders/search' }}" class="space-y-3 mb-10 hidden">
     <div>
       <label class="block text-xs font-medium text-gray-400 mb-1.5">訂單編號 <span class="text-red-400">*</span></label>
       <input type="text" name="order_no" value="{{ order_no or '' }}"

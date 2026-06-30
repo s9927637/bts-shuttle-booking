@@ -364,26 +364,26 @@ def event_booking(slug):
     return _render_booking_page(event_page=ep, friend_code=friend_code)
 
 
-# ── 前台：活動查詢訂單 /events/<slug>/orders（redirect）────────────────────
+# ── 前台：活動查詢訂單 /events/<slug>/orders ────────────────────────────────
 
 @event_page_bp.route("/events/<slug>/orders")
 def event_orders(slug):
     ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
     if ep.status != "已發布" and not session.get("admin_id"):
         abort(404)
-    from flask import redirect, url_for
-    return redirect(url_for("passenger.order_search") + f"?event_slug={ep.slug}")
+    from app.routes.passenger import _render_order_search_page
+    return _render_order_search_page(event_page=ep)
 
 
-# ── 前台：活動匯款回報 /events/<slug>/remittance（redirect）─────────────────
+# ── 前台：活動匯款回報 /events/<slug>/remittance ────────────────────────────
 
 @event_page_bp.route("/events/<slug>/remittance")
 def event_remittance(slug):
     ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
     if ep.status != "已發布" and not session.get("admin_id"):
         abort(404)
-    from flask import redirect, url_for
-    return redirect(url_for("passenger.payment_report") + f"?event_slug={ep.slug}")
+    from app.routes.passenger import _render_payment_report_page
+    return _render_payment_report_page(event_page=ep)
 
 
 # ── 後台：活動統計頁 /admin/events/statistics ────────────────────────────────

@@ -456,41 +456,30 @@ def order_lookup():
     return redirect(url_for("passenger.order_search"))
 
 
-@passenger_bp.route("/orders/search")
-def order_search():
+def _render_order_search_page(event_page=None):
+    """共用：渲染訂單查詢頁（BTS 模式 event_page=None；活動模式傳入 EventPage）"""
     from app.models.vehicle import Vehicle
 
     line_user_id = request.args.get("line_user_id", "").strip()
     order_no     = request.args.get("order_no", "").strip().upper()
     phone4       = request.args.get("phone4", "").strip()
 
-    # 先解析 event context，讓後續查詢可以 scope
-    event_slug = request.args.get("event_slug", "").strip()
-    event_page_ctx = None
-    if event_slug:
-        from app.models.event_page import EventPage as _EP
-        _ep = _EP.query.filter_by(slug=event_slug).filter(_EP.deleted_at.is_(None)).first()
-        if _ep and _ep.is_published:
-            event_page_ctx = _ep
-
     orders   = []
     order    = None
     vehicle  = None
     searched = False
     error    = None
-    mode     = "form"  # "line" or "form"
+    mode     = "form"
 
     if line_user_id:
-        # Priority 1：LINE 身分驗證，直接用 line_user_id 查詢
         mode     = "line"
         searched = True
         q = Order.query.filter_by(line_user_id=line_user_id)
-        if event_page_ctx:
-            q = q.filter(Order.event_page_id == event_page_ctx.id)
+        if event_page:
+            q = q.filter(Order.event_page_id == event_page.id)
         orders = q.order_by(Order.created_at.desc()).all()
 
     elif order_no or phone4:
-        # Priority 2：必須同時提供 訂單編號 + 手機後四碼
         searched = True
         missing = []
         if not order_no:
@@ -507,22 +496,20 @@ def order_search():
                 Order.order_no == order_no,
                 Order.phone.endswith(phone4),
             )
-            if event_page_ctx:
-                q = q.filter(Order.event_page_id == event_page_ctx.id)
+            if event_page:
+                q = q.filter(Order.event_page_id == event_page.id)
             order = q.first()
             if not order:
                 error = "查無符合資料，請確認訂單編號、手機後四碼是否正確"
             elif order.vehicle_id:
                 vehicle = Vehicle.query.get(order.vehicle_id)
 
-    # LINE 模式只有一筆 → 轉為單筆顯示
     if mode == "line" and len(orders) == 1:
         order  = orders[0]
         orders = []
         if order.vehicle_id:
             vehicle = Vehicle.query.get(order.vehicle_id)
 
-    # 群組成員資訊（單筆訂單模式）
     group_member_count = 0
     group_total_pax   = 0
     if order and order.group_id:
@@ -530,15 +517,21 @@ def order_search():
         group_member_count = len(g_orders)
         group_total_pax   = sum(o.passenger_count for o in g_orders)
 
-    # 重要/緊急公告（顯示於頁面頂部，最多 3 筆）
-    important_announcements = (
-        Announcement.query
-        .filter(
-            Announcement.status == "已發布",
-            Announcement.announcement_type.in_(["重要公告", "緊急公告"]),
+    # 活動模式：只顯示該活動公告；BTS 模式：顯示全站重要公告
+    ann_q = Announcement.query.filter(
+        Announcement.status == "已發布",
+        Announcement.announcement_type.in_(["重要公告", "緊急公告"]),
+    )
+    if event_page:
+        ann_q = ann_q.filter(
+            db.or_(
+                Announcement.event_page_id == event_page.id,
+                Announcement.event_page_id.is_(None),
+            )
         )
-        .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
-        .limit(3).all()
+    important_announcements = (
+        ann_q.order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+             .limit(3).all()
     )
 
     return render_template(
@@ -556,34 +549,38 @@ def order_search():
         group_total_pax=group_total_pax,
         passenger_liff_id=PASSENGER_LIFF_ID,
         important_announcements=important_announcements,
-        event_page=event_page_ctx,
+        event_page=event_page,
     )
+
+
+@passenger_bp.route("/orders/search")
+def order_search():
+    # 保留 event_slug QueryString 向下相容（舊書籤），新流量走 /events/<slug>/orders
+    event_page_ctx = None
+    event_slug = request.args.get("event_slug", "").strip()
+    if event_slug:
+        from app.models.event_page import EventPage as _EP
+        _ep = _EP.query.filter_by(slug=event_slug).filter(_EP.deleted_at.is_(None)).first()
+        if _ep and _ep.is_published:
+            event_page_ctx = _ep
+    return _render_order_search_page(event_page=event_page_ctx)
 
 
 # ── 匯款回報 ────────────────────────────────────────────────────────────────
 
-@passenger_bp.route("/payment/report", methods=["GET"])
-def payment_report():
+def _render_payment_report_page(event_page=None):
+    """共用：渲染匯款回報頁（BTS 模式 event_page=None；活動模式傳入 EventPage）"""
     prefill_order_no = request.args.get("order_no", "")
     line_user_id     = request.args.get("line_user_id", "")
     group_id         = request.args.get("group_id", "")
-    show_group       = request.args.get("show_group", "")   # "created" / "joined" / ""
-
-    # 先解析 event context
-    event_slug_pr = request.args.get("event_slug", "").strip()
-    event_page_pr = None
-    if event_slug_pr:
-        from app.models.event_page import EventPage as _EP2
-        _ep2 = _EP2.query.filter_by(slug=event_slug_pr).filter(_EP2.deleted_at.is_(None)).first()
-        if _ep2 and _ep2.is_published:
-            event_page_pr = _ep2
+    show_group       = request.args.get("show_group", "")
 
     line_orders = []
     if line_user_id:
         q = Order.query.filter_by(line_user_id=line_user_id)\
                        .filter(Order.payment_status.in_(["待付款", "待確認"]))
-        if event_page_pr:
-            q = q.filter(Order.event_page_id == event_page_pr.id)
+        if event_page:
+            q = q.filter(Order.event_page_id == event_page.id)
         line_orders = q.order_by(Order.created_at.desc()).all()
 
     group_orders = []
@@ -599,7 +596,20 @@ def payment_report():
                            group_orders=group_orders,
                            show_group=show_group,
                            passenger_liff_id=PASSENGER_LIFF_ID,
-                           event_page=event_page_pr)
+                           event_page=event_page)
+
+
+@passenger_bp.route("/payment/report", methods=["GET"])
+def payment_report():
+    # 保留 event_slug QueryString 向下相容，新流量走 /events/<slug>/remittance
+    event_page_pr = None
+    event_slug_pr = request.args.get("event_slug", "").strip()
+    if event_slug_pr:
+        from app.models.event_page import EventPage as _EP2
+        _ep2 = _EP2.query.filter_by(slug=event_slug_pr).filter(_EP2.deleted_at.is_(None)).first()
+        if _ep2 and _ep2.is_published:
+            event_page_pr = _ep2
+    return _render_payment_report_page(event_page=event_page_pr)
 
 
 @passenger_bp.route("/payment/report", methods=["POST"])

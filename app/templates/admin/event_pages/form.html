@@ -438,6 +438,113 @@
       </div>
     </div>
 
+    <!-- ── Phase 11: Hero Layout（Height / Vertical Align / Content Width）── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Hero Layout</h3>
+        <span class="text-xs text-gray-400">Hero 結束後預設直接結束頁面</span>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">Hero Height</label>
+        <div class="flex gap-3">
+          {% set cur_hh = page.hero_height if page and page.hero_height else 'full' %}
+          {% for val, lbl in [('full','Full Screen（100vh）'),('auto','Auto Height')] %}
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="hero_height" value="{{ val }}" {% if cur_hh == val %}checked{% endif %}
+                   class="sr-only peer" />
+            <div class="rounded-lg border-2 py-2 text-center text-xs font-semibold transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 border-gray-200 text-gray-500">
+              {{ lbl }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">Hero Vertical Align</label>
+        <div class="flex gap-3">
+          {% set cur_hv = page.hero_valign if page and page.hero_valign else 'center' %}
+          {% for val, lbl in [('top','Top'),('center','Center'),('bottom','Bottom')] %}
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="hero_valign" value="{{ val }}" {% if cur_hv == val %}checked{% endif %}
+                   class="sr-only peer" />
+            <div class="rounded-lg border-2 py-2 text-center text-xs font-semibold transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 border-gray-200 text-gray-500">
+              {{ lbl }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">Hero Content Width</label>
+        <div class="flex gap-3">
+          {% set cur_hw = page.hero_width if page and page.hero_width else 'medium' %}
+          {% for val, lbl in [('small','Small'),('medium','Medium'),('large','Large'),('full','Full')] %}
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="hero_width" value="{{ val }}" {% if cur_hw == val %}checked{% endif %}
+                   class="sr-only peer" />
+            <div class="rounded-lg border-2 py-2 text-center text-xs font-semibold transition-all peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 border-gray-200 text-gray-500">
+              {{ lbl }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phase 11: CTA Section & Activity Footer ── -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h3 class="text-sm font-semibold text-gray-700">CTA Section ＆ Activity Footer</h3>
+        <span class="text-xs text-gray-400">預設關閉，不啟用則 Hero 後直接結束頁面</span>
+      </div>
+
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" name="cta_enabled" value="1"
+               {% if page and page.cta_enabled %}checked{% endif %}
+               class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400" />
+        <span class="text-sm text-gray-700">啟用 CTA Section（Hero 後顯示「準備好出發了嗎？」區塊）</span>
+      </label>
+
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" name="footer_enabled" value="1"
+               {% if page and page.footer_enabled %}checked{% endif %}
+               class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400" />
+        <span class="text-sm text-gray-700">啟用 Activity Footer（顯示於頁面最下方）</span>
+      </label>
+
+      <div class="grid grid-cols-1 gap-3 pt-1">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Footer 文字（留空使用預設 Copyright）</label>
+          <input type="text" name="footer_text" value="{{ page.footer_text if page else '' }}"
+                 placeholder="© 2026 藤井風 Shuttle"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">隱私權政策連結</label>
+            <input type="text" name="footer_privacy_url" value="{{ page.footer_privacy_url if page else '' }}"
+                   placeholder="https://..."
+                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">服務條款連結</label>
+            <input type="text" name="footer_terms_url" value="{{ page.footer_terms_url if page else '' }}"
+                   placeholder="https://..."
+                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">聯絡我們連結</label>
+            <input type="text" name="footer_contact_url" value="{{ page.footer_contact_url if page else '' }}"
+                   placeholder="https://..."
+                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Hero Media Manager ── -->
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
       <div class="flex items-center justify-between border-b border-gray-100 pb-3">

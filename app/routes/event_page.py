@@ -181,6 +181,15 @@ def ep_create():
         logo_text=request.form.get("logo_text", "").strip() or None,
         logo_link=request.form.get("logo_link", "").strip() or None,
         theme_navbar=request.form.get("theme_navbar", "auto").strip() or "auto",
+        hero_height=request.form.get("hero_height", "full").strip() or "full",
+        hero_valign=request.form.get("hero_valign", "center").strip() or "center",
+        hero_width=request.form.get("hero_width", "medium").strip() or "medium",
+        cta_enabled=bool(request.form.get("cta_enabled")),
+        footer_enabled=bool(request.form.get("footer_enabled")),
+        footer_text=request.form.get("footer_text", "").strip() or None,
+        footer_privacy_url=request.form.get("footer_privacy_url", "").strip() or None,
+        footer_terms_url=request.form.get("footer_terms_url", "").strip() or None,
+        footer_contact_url=request.form.get("footer_contact_url", "").strip() or None,
         concert_id=int(request.form.get("concert_id") or 0) or None,
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
@@ -278,6 +287,16 @@ def ep_edit(ep_id):
     ep.theme_btn_color       = _hex("theme_btn_color")
     ep.theme_btn_text_color  = _hex("theme_btn_text_color")
     ep.theme_navbar          = request.form.get("theme_navbar", "auto").strip() or "auto"
+    # Phase 11: Hero Landing Page
+    ep.hero_height    = request.form.get("hero_height", ep.hero_height or "full").strip() or "full"
+    ep.hero_valign    = request.form.get("hero_valign", ep.hero_valign or "center").strip() or "center"
+    ep.hero_width     = request.form.get("hero_width", ep.hero_width or "medium").strip() or "medium"
+    ep.cta_enabled    = bool(request.form.get("cta_enabled"))
+    ep.footer_enabled = bool(request.form.get("footer_enabled"))
+    ep.footer_text         = request.form.get("footer_text", "").strip() or None
+    ep.footer_privacy_url  = request.form.get("footer_privacy_url", "").strip() or None
+    ep.footer_terms_url    = request.form.get("footer_terms_url", "").strip() or None
+    ep.footer_contact_url  = request.form.get("footer_contact_url", "").strip() or None
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()

@@ -433,12 +433,55 @@
       .bottom-cta-btn { width: 100%; max-width: 360px; }
     }
 
+    /* ═══════════════════════════════════════
+       Phase 11: HERO LAYOUT CONTROLS
+       Height / Vertical Align / Content Width — 由 event_pages 欄位驅動，
+       不影響任何未設定活動（預設 full / center / medium，等同原本行為）
+    ═══════════════════════════════════════ */
+    body[data-hero-height="auto"] .mc-hero,
+    body[data-hero-height="auto"] .ed-hero,
+    body[data-hero-height="auto"] .lx-hero { min-height: 0; }
+
+    body[data-hero-valign="top"]    .mc-content { justify-content: flex-start; }
+    body[data-hero-valign="bottom"] .mc-content { justify-content: flex-end; }
+    body[data-hero-valign="top"]    .ed-hero { align-items: flex-start; }
+    body[data-hero-valign="center"] .ed-hero { align-items: center; }
+    body[data-hero-valign="bottom"] .ed-hero { align-items: flex-end; }
+    body[data-hero-valign="top"]    .lx-hero { align-items: flex-start; }
+    body[data-hero-valign="bottom"] .lx-hero { align-items: flex-end; }
+
+    body[data-hero-width="small"]  .mc-text-wrap, body[data-hero-width="small"]  .ed-text-wrap { max-width: 420px; }
+    body[data-hero-width="large"]  .mc-text-wrap, body[data-hero-width="large"]  .ed-text-wrap { max-width: 760px; }
+    body[data-hero-width="full"]   .mc-text-wrap, body[data-hero-width="full"]   .ed-text-wrap { max-width: none; }
+    body[data-hero-width="small"]  .lx-inner { max-width: 600px; }
+    body[data-hero-width="large"]  .lx-inner { max-width: 980px; }
+    body[data-hero-width="full"]   .lx-inner { max-width: none; }
+
+    /* ═══════════════════════════════════════
+       Phase 11: ACTIVITY FOOTER
+    ═══════════════════════════════════════ */
+    .ev-footer {
+      padding: 32px 24px; text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: var(--ev-bg);
+    }
+    .ev-footer p { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-bottom: 10px; }
+    .ev-footer-links { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
+    .ev-footer-links a {
+      font-size: 0.78rem; color: rgba(255,255,255,0.55);
+      text-decoration: none; transition: color .2s;
+    }
+    .ev-footer-links a:hover { color: #fff; }
+
   </style>
   {%- if ep.custom_css %}
   <style id="event-custom-css">{{ ep.custom_css | scope_css(ep.slug) | safe }}</style>
   {%- endif %}
 </head>
-<body data-event="{{ ep.slug }}">
+<body data-event="{{ ep.slug }}"
+      data-hero-height="{{ ep.hero_height or 'full' }}"
+      data-hero-valign="{{ ep.hero_valign or 'center' }}"
+      data-hero-width="{{ ep.hero_width or 'medium' }}">
 
 <!-- ══ NAV ══════════════════════════════════════════════════════ -->
 <nav class="ev-nav">
@@ -749,40 +792,56 @@
 
 {% endif %}
 
-<!-- ══ BOTTOM CTA ════════════════════════════════════════════════ -->
-{% if variant == 'editorial' %}
-<section class="bottom-cta" style="background:#0d0d0b;border-top:1px solid rgba(242,237,230,0.06);">
-  <h2 style="color:#f2ede6;">準備好出發了嗎？</h2>
-  <p style="color:#5a5550;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
-  <a href="/events/{{ ep.slug }}/booking" class="ed-btn-primary bottom-cta-btn"
-     style="padding:15px 44px;font-size:0.95rem;">
-    立即預約包車
-    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-    </svg>
-  </a>
-</section>
-{% elif variant == 'luxury' %}
-<section class="bottom-cta" style="background:#080604;border-top:1px solid rgba(212,175,55,0.1);">
-  <h2 style="color:#f5f0e4;">準備好出發了嗎？</h2>
-  <p style="color:#4a4035;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
-  <a href="/events/{{ ep.slug }}/booking" class="lx-btn bottom-cta-btn"
-     style="padding:16px 56px;font-size:0.9rem;">
-    立即預約包車
-  </a>
-</section>
-{% else %}
-<section class="bottom-cta" style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
-  <h2>準備好出發了嗎？</h2>
-  <p style="color:var(--ev-secondary,#a78bfa);">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
-  <a href="/events/{{ ep.slug }}/booking" class="mc-btn bottom-cta-btn"
-     style="padding:15px 44px;font-size:0.95rem;">
-    立即預約包車
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-    </svg>
-  </a>
-</section>
+<!-- ══ CTA SECTION（僅管理員啟用時 Render，預設 Hero 結束即結束頁面）══ -->
+{% if ep.cta_enabled %}
+  {% if variant == 'editorial' %}
+  <section class="bottom-cta" style="background:#0d0d0b;border-top:1px solid rgba(242,237,230,0.06);">
+    <h2 style="color:#f2ede6;">準備好出發了嗎？</h2>
+    <p style="color:#5a5550;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
+    <a href="/events/{{ ep.slug }}/booking" class="ed-btn-primary bottom-cta-btn"
+       style="padding:15px 44px;font-size:0.95rem;">
+      立即預約包車
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    </a>
+  </section>
+  {% elif variant == 'luxury' %}
+  <section class="bottom-cta" style="background:#080604;border-top:1px solid rgba(212,175,55,0.1);">
+    <h2 style="color:#f5f0e4;">準備好出發了嗎？</h2>
+    <p style="color:#4a4035;">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
+    <a href="/events/{{ ep.slug }}/booking" class="lx-btn bottom-cta-btn"
+       style="padding:16px 56px;font-size:0.9rem;">
+      立即預約包車
+    </a>
+  </section>
+  {% else %}
+  <section class="bottom-cta" style="background:#0a0518;border-top:1px solid rgba(255,255,255,0.05);">
+    <h2>準備好出發了嗎？</h2>
+    <p style="color:var(--ev-secondary,#a78bfa);">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
+    <a href="/events/{{ ep.slug }}/booking" class="mc-btn bottom-cta-btn"
+       style="padding:15px 44px;font-size:0.95rem;">
+      立即預約包車
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    </a>
+  </section>
+  {% endif %}
+{% endif %}
+
+<!-- ══ ACTIVITY FOOTER（依活動設定顯示，未設定則不 Render）══ -->
+{% if ep.footer_enabled %}
+<footer class="ev-footer">
+  <p>{{ ep.footer_text or ('© ' + (ep.event_date[:4] if ep.event_date and ep.event_date[:4].isdigit() else '') + ' ' + (ep.logo_text or ep.artist_name) + ' Shuttle') }}</p>
+  {% if ep.footer_privacy_url or ep.footer_terms_url or ep.footer_contact_url %}
+  <div class="ev-footer-links">
+    {% if ep.footer_privacy_url %}<a href="{{ ep.footer_privacy_url }}">隱私權政策</a>{% endif %}
+    {% if ep.footer_terms_url %}<a href="{{ ep.footer_terms_url }}">服務條款</a>{% endif %}
+    {% if ep.footer_contact_url %}<a href="{{ ep.footer_contact_url }}">聯絡我們</a>{% endif %}
+  </div>
+  {% endif %}
+</footer>
 {% endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>

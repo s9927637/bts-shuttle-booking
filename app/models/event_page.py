@@ -79,6 +79,16 @@ class EventPage(db.Model):
     theme_btn_color       = db.Column(db.String(20), nullable=True)   # CTA 按鈕底色
     theme_btn_text_color  = db.Column(db.String(20), nullable=True)   # CTA 按鈕文字
     theme_navbar          = db.Column(db.String(10), nullable=True, default='auto')  # 'auto'|'light'|'dark'
+    # Phase 11: Hero Landing Page — Hero Layout 設定 + CTA 開關 + Activity Footer
+    hero_height   = db.Column(db.String(10), nullable=True, default='full')   # 'full'（100vh）|'auto'
+    hero_valign   = db.Column(db.String(10), nullable=True, default='center') # 'top'|'center'|'bottom'
+    hero_width    = db.Column(db.String(10), nullable=True, default='medium') # 'small'|'medium'|'large'|'full'
+    cta_enabled   = db.Column(db.Boolean,    nullable=True, default=False)    # Hero 後是否顯示 CTA Section
+    footer_enabled = db.Column(db.Boolean,   nullable=True, default=False)    # 是否顯示 Activity Footer
+    footer_text    = db.Column(db.String(200), nullable=True)                 # Copyright 文字
+    footer_privacy_url = db.Column(db.String(300), nullable=True)
+    footer_terms_url   = db.Column(db.String(300), nullable=True)
+    footer_contact_url = db.Column(db.String(300), nullable=True)
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)

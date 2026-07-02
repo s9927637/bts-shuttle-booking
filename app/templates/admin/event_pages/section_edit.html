@@ -53,7 +53,27 @@
   "subtitle": "台北直達高雄",
   "buttonText": "立即預約"
 }{% elif sec.type == 'highlights' %}{
-  "items": ["舒適直達", "散場接送", "專屬車隊"]
+  "columns": 3,
+  "items": [
+    {"icon": "🚗", "title": "舒適直達", "description": "免轉乘，一車到底"},
+    {"icon": "🕐", "title": "散場接送", "description": "演出結束準時發車"}
+  ]
+}{% elif sec.type == 'schedule' %}{
+  "event_date": "2026.08.30",
+  "meet_time": "17:30",
+  "depart_time": "18:00",
+  "end_time": "22:30 散場後發車"
+}{% elif sec.type == 'pickup' %}{
+  "point": "高雄巨蛋 3 號出口",
+  "address": "高雄市左營區博愛二路757號",
+  "map_url": "https://www.google.com/maps/embed?pb=..."
+}{% elif sec.type == 'pricing' %}{
+  "price": 2000,
+  "deposit": 300,
+  "balance": 1700
+}{% elif sec.type == 'gallery' %}{
+  "images": ["https://.../1.jpg", "https://.../2.jpg"],
+  "youtube": "dQw4w9WgXcQ"
 }{% elif sec.type == 'process' %}{
   "steps": ["提交預約", "支付訂金", "等待成團", "出發通知"]
 }{% elif sec.type == 'faq' %}{
@@ -62,13 +82,51 @@
     {"question": "可以退款嗎？", "answer": "出發前 7 天可申請退款"}
   ]
 }{% elif sec.type == 'cta' %}{
-  "title": "立即預約",
-  "buttonText": "立即預約"
+  "title": "準備好出發了嗎？",
+  "buttonText": "立即預約包車"
 }{% elif sec.type == 'announcement' %}{
-  "content": "注意事項：請務必攜帶票券入場。"
+  "limit": 5
+}{% elif sec.type == 'sponsor' %}{
+  "logos": ["https://.../logo1.png", "https://.../logo2.png"]
+}{% elif sec.type == 'footer' %}{
+  "text": "© 2026 藤井風 Shuttle"
 }{% else %}{
   "key": "value"
 }{% endif %}</pre>
+      </div>
+
+      <!-- Phase 3: 響應式顯示 + 主題 -->
+      <div class="border-t border-gray-100 pt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-2">響應式顯示</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" name="show_desktop" value="1" {% if sec.visible_desktop %}checked{% endif %}
+                     class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-400" />
+              Desktop
+            </label>
+            <label class="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" name="show_tablet" value="1" {% if sec.visible_tablet %}checked{% endif %}
+                     class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-400" />
+              Tablet
+            </label>
+            <label class="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" name="show_mobile" value="1" {% if sec.visible_mobile %}checked{% endif %}
+                     class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-400" />
+              Mobile
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Theme</label>
+          <select name="theme_style"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+            {% for val in theme_styles %}
+            <option value="{{ val }}" {% if sec.theme_style_resolved == val %}selected{% endif %}>{{ theme_style_labels[val] }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
     </div>
 

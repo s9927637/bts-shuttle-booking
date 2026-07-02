@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>即時預覽 — {{ ep.title }}</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f3f4f6; }
+    .pv-toolbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e7eb;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .pv-toolbar h1 { font-size: 0.9rem; font-weight: 700; color: #111827; margin: 0; flex: 1; }
+    .pv-btn {
+      padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px;
+      border: 1px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer;
+      transition: all .15s;
+    }
+    .pv-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .pv-back { color: #6366f1; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+    .pv-stage { display: flex; justify-content: center; padding: 32px 16px; }
+    .pv-frame-wrap {
+      background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      overflow: hidden; transition: width .25s ease;
+    }
+    #pv-frame { display: block; width: 100%; height: 85vh; border: 0; }
+  </style>
+</head>
+<body>
+
+  <div class="pv-toolbar">
+    <a href="{{ url_for('event_page.ep_sections', ep_id=ep.id) }}" class="pv-back">← 返回區塊管理</a>
+    <h1>{{ ep.title }} — 即時預覽</h1>
+    <button class="pv-btn active" data-w="1280" onclick="setViewport(this,1280)">Desktop</button>
+    <button class="pv-btn" data-w="768" onclick="setViewport(this,768)">Tablet</button>
+    <button class="pv-btn" data-w="375" onclick="setViewport(this,375)">Mobile</button>
+    <button class="pv-btn" onclick="document.getElementById('pv-frame').contentWindow.location.reload()">↻ 重新整理</button>
+  </div>
+
+  <div class="pv-stage">
+    <div class="pv-frame-wrap" id="pv-frame-wrap" style="width:1280px;max-width:100%;">
+      <iframe id="pv-frame" src="/events/{{ ep.slug }}"></iframe>
+    </div>
+  </div>
+
+  <script>
+    function setViewport(btn, width) {
+      document.querySelectorAll('.pv-btn[data-w]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('pv-frame-wrap').style.width = width + 'px';
+    }
+  </script>
+
+</body>
+</html>

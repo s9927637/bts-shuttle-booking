@@ -458,6 +458,60 @@
     body[data-hero-width="full"]   .lx-inner { max-width: none; }
 
     /* ═══════════════════════════════════════
+       Phase 3: LANDING PAGE BUILDER — Section Renderer
+    ═══════════════════════════════════════ */
+    .lb-section { padding: 64px 24px; }
+    .lb-inner { max-width: 960px; margin: 0 auto; }
+    .lb-section h2.lb-title { font-size: 1.35rem; font-weight: 800; color: var(--ev-text,#fff); margin-bottom: 28px; text-align: center; }
+
+    .lb-theme-default     { background: var(--ev-bg); }
+    .lb-theme-primary     { background: color-mix(in srgb, var(--ev-primary) 12%, var(--ev-bg)); }
+    .lb-theme-secondary   { background: color-mix(in srgb, var(--ev-secondary) 12%, var(--ev-bg)); }
+    .lb-theme-transparent { background: transparent; }
+
+    @media (min-width:1024px) { .lb-section[data-show-desktop="false"] { display:none !important; } }
+    @media (max-width:1023px) and (min-width:640px) { .lb-section[data-show-tablet="false"] { display:none !important; } }
+    @media (max-width:639px) { .lb-section[data-show-mobile="false"] { display:none !important; } }
+
+    .lb-highlights-grid { display: grid; gap: 20px; }
+    .lb-highlight-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; text-align: center;
+    }
+    .lb-highlight-card .icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .lb-highlight-card .t { font-size: 0.95rem; font-weight: 700; color: var(--ev-text,#fff); margin-bottom: 4px; }
+    .lb-highlight-card .d { font-size: 0.78rem; color: rgba(255,255,255,0.55); }
+
+    .lb-schedule-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; text-align: center; }
+    .lb-schedule-item { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 20px; }
+    .lb-schedule-item .l { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+    .lb-schedule-item .v { font-size: 1.05rem; font-weight: 700; color: var(--ev-text,#fff); }
+
+    .lb-pickup { display: grid; gap: 24px; }
+    .lb-pickup iframe { width: 100%; height: 320px; border: 0; border-radius: 16px; }
+    .lb-pickup .info p { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .lb-pickup .info .label { font-size: 0.72rem; color: rgba(255,255,255,0.45); }
+
+    .lb-pricing-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .lb-pricing-card { background: rgba(255,255,255,0.04); border-radius: 16px; padding: 24px 32px; text-align: center; min-width: 140px; }
+    .lb-pricing-card .l { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+    .lb-pricing-card .v { font-size: 1.4rem; font-weight: 800; color: var(--ev-primary); }
+
+    .lb-gallery-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+    .lb-gallery-grid img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; }
+    .lb-gallery-video { position: relative; width: 100%; padding-top: 56.25%; border-radius: 12px; overflow: hidden; margin-top: 16px; }
+    .lb-gallery-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+    .lb-announcement-list, .lb-faq-list { display: flex; flex-direction: column; gap: 12px; }
+    .lb-announcement-item, .lb-faq-item { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 16px 20px; }
+    .lb-announcement-item .t { font-size: 0.88rem; font-weight: 700; color: var(--ev-text,#fff); margin-bottom: 4px; }
+    .lb-faq-item .q { font-size: 0.88rem; font-weight: 700; color: var(--ev-text,#fff); margin-bottom: 6px; }
+    .lb-faq-item .a { font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+
+    .lb-sponsor-row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; align-items: center; }
+    .lb-sponsor-row img { max-height: 48px; width: auto; opacity: 0.8; }
+
+    /* ═══════════════════════════════════════
        Phase 11: ACTIVITY FOOTER
     ═══════════════════════════════════════ */
     .ev-footer {
@@ -791,6 +845,120 @@
 </section>
 
 {% endif %}
+
+<!-- ══ Phase 3: LANDING PAGE BUILDER — Section Loop ══════════════════ -->
+{% for sec in sections %}
+{% set sc = sec.content %}
+<section class="lb-section lb-theme-{{ sec.theme_style_resolved }}"
+         data-show-desktop="{{ 'true' if sec.visible_desktop else 'false' }}"
+         data-show-tablet="{{ 'true' if sec.visible_tablet else 'false' }}"
+         data-show-mobile="{{ 'true' if sec.visible_mobile else 'false' }}">
+  <div class="lb-inner">
+
+    {% if sec.type == 'highlights' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      {% set cols = sc.columns or 3 %}
+      <div class="lb-highlights-grid" style="grid-template-columns:repeat({{ cols }},minmax(0,1fr));">
+        {% for item in (sc.get('items') or []) %}
+        <div class="lb-highlight-card">
+          {% if item.icon %}<div class="icon">{{ item.icon }}</div>{% endif %}
+          <div class="t">{{ item.title }}</div>
+          {% if item.description %}<div class="d">{{ item.description }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+    {% elif sec.type == 'schedule' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      <div class="lb-schedule-grid">
+        {% if sc.event_date %}<div class="lb-schedule-item"><div class="l">活動日期</div><div class="v">{{ sc.event_date }}</div></div>{% endif %}
+        {% if sc.meet_time %}<div class="lb-schedule-item"><div class="l">集合時間</div><div class="v">{{ sc.meet_time }}</div></div>{% endif %}
+        {% if sc.depart_time %}<div class="lb-schedule-item"><div class="l">出發時間</div><div class="v">{{ sc.depart_time }}</div></div>{% endif %}
+        {% if sc.end_time %}<div class="lb-schedule-item"><div class="l">散場時間</div><div class="v">{{ sc.end_time }}</div></div>{% endif %}
+      </div>
+
+    {% elif sec.type == 'pickup' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      <div class="lb-pickup">
+        <div class="info">
+          {% if sc.point %}<p><span class="label">集合點：</span>{{ sc.point }}</p>{% endif %}
+          {% if sc.address %}<p><span class="label">地址：</span>{{ sc.address }}</p>{% endif %}
+        </div>
+        {% if sc.map_url %}<iframe src="{{ sc.map_url }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>{% endif %}
+      </div>
+
+    {% elif sec.type == 'pricing' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      {% set p = sc.price if sc.price is not none else ep.price %}
+      {% set d = sc.deposit if sc.deposit is not none else ep.deposit %}
+      {% set b = sc.balance if sc.balance is not none else ep.balance %}
+      <div class="lb-pricing-row">
+        <div class="lb-pricing-card"><div class="l">票價</div><div class="v">NT${{ '{:,}'.format(p or 0) }}</div></div>
+        <div class="lb-pricing-card"><div class="l">訂金</div><div class="v">NT${{ '{:,}'.format(d or 0) }}</div></div>
+        <div class="lb-pricing-card"><div class="l">尾款</div><div class="v">NT${{ '{:,}'.format(b or 0) }}</div></div>
+      </div>
+
+    {% elif sec.type == 'gallery' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      {% if sc.images %}
+      <div class="lb-gallery-grid">
+        {% for img in sc.images %}<img src="{{ img }}" loading="lazy" alt="" />{% endfor %}
+      </div>
+      {% endif %}
+      {% if sc.youtube %}
+      <div class="lb-gallery-video">
+        <iframe src="https://www.youtube.com/embed/{{ sc.youtube }}" loading="lazy" allowfullscreen></iframe>
+      </div>
+      {% endif %}
+
+    {% elif sec.type == 'announcement' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      {% set anns = ann_by_sec.get(sec.id, []) %}
+      {% if anns %}
+      <div class="lb-announcement-list">
+        {% for a in anns %}
+        <a href="/announcements/{{ a.id }}" class="lb-announcement-item" style="display:block;text-decoration:none;">
+          <div class="t">{{ a.title }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    {% elif sec.type == 'faq' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      <div class="lb-faq-list">
+        {% for item in (sc.get('items') or []) %}
+        <div class="lb-faq-item">
+          <div class="q">{{ item.question }}</div>
+          <div class="a">{{ item.answer }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+    {% elif sec.type == 'cta' %}
+      <section class="bottom-cta" style="padding:0;">
+        <h2>{{ sc.title or '準備好出發了嗎？' }}</h2>
+        <p style="color:var(--ev-secondary,#a78bfa);">立即預定，訂金 NT${{ '{:,}'.format(ep.deposit or 0) }} 確保您的座位</p>
+        <a href="/events/{{ ep.slug }}/booking" class="mc-btn bottom-cta-btn" style="padding:15px 44px;font-size:0.95rem;">
+          {{ sc.buttonText or '立即預約包車' }}
+        </a>
+      </section>
+
+    {% elif sec.type == 'sponsor' %}
+      {% if sec.title %}<h2 class="lb-title">{{ sec.title }}</h2>{% endif %}
+      {% if sc.logos %}
+      <div class="lb-sponsor-row">
+        {% for logo in sc.logos %}<img src="{{ logo }}" alt="" />{% endfor %}
+      </div>
+      {% endif %}
+
+    {% elif sec.type == 'footer' %}
+      <p style="text-align:center;font-size:0.78rem;color:rgba(255,255,255,0.45);">{{ sc.text or sec.title or '' }}</p>
+
+    {% endif %}
+  </div>
+</section>
+{% endfor %}
 
 <!-- ══ CTA SECTION（僅管理員啟用時 Render，預設 Hero 結束即結束頁面）══ -->
 {% if ep.cta_enabled %}

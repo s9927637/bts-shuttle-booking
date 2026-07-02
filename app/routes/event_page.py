@@ -334,7 +334,29 @@ def event_show(slug):
     if ep.status == "已發布" and not session.get("admin_id"):
         from app.services.event_metrics_service import increment_page_views
         increment_page_views(ep.id)
-    return render_template("passenger/event_template.html", ep=ep)
+    sections = (
+        ep.sections
+        .filter(EventSection.is_active.is_(True))
+        .filter(EventSection.type != "hero")
+        .order_by(EventSection.sort_order)
+        .all()
+    )
+    ann_by_sec = {}
+    if any(s.type == "announcement" for s in sections):
+        from app.models.announcement import Announcement
+        for s in sections:
+            if s.type != "announcement":
+                continue
+            limit = s.content.get("limit", 5)
+            ann_by_sec[s.id] = (
+                Announcement.query
+                .filter(Announcement.status == "已發布")
+                .filter(db.or_(Announcement.event_page_id == ep.id, Announcement.event_page_id.is_(None)))
+                .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
+                .limit(limit).all()
+            )
+    return render_template("passenger/event_template.html",
+                           ep=ep, sections=sections, ann_by_sec=ann_by_sec)
 
 
 # ── 前台：活動公告 /events/<slug>/news ─────────────────────────────────────
@@ -716,8 +738,21 @@ def ep_sections(ep_id):
     sections = ep.sections.all()
     return render_template("admin/event_pages/sections.html",
                            ep=ep, sections=sections,
-                           section_types=EventSection.TYPES,
-                           type_labels=EventSection.TYPE_LABELS)
+                           section_types=EventSection.BUILDER_TYPES,
+                           type_labels=EventSection.TYPE_LABELS,
+                           theme_styles=EventSection.THEME_STYLES,
+                           theme_style_labels=EventSection.THEME_STYLE_LABELS)
+
+
+# ── 後台：即時預覽（Desktop/Tablet/Mobile 切換）──────────────────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/preview")
+def ep_preview(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+    ep = EventPage.query.get_or_404(ep_id)
+    return render_template("admin/event_pages/preview.html", ep=ep)
 
 
 # ── 後台：編輯區塊 ─────────────────────────────────────────────────────────
@@ -741,6 +776,11 @@ def ep_section_edit(ep_id, sec_id):
             sec.content = json.loads(content_raw) if content_raw else sec.content
         except json.JSONDecodeError:
             flash("JSON 格式錯誤，未儲存 content。", "warning")
+        sec.show_desktop = bool(request.form.get("show_desktop"))
+        sec.show_tablet  = bool(request.form.get("show_tablet"))
+        sec.show_mobile  = bool(request.form.get("show_mobile"))
+        theme_style = request.form.get("theme_style", "default").strip()
+        sec.theme_style = theme_style if theme_style in EventSection.THEME_STYLES else "default"
         sec.updated_at = datetime.utcnow()
         db.session.commit()
         flash("已更新區塊。", "success")
@@ -748,7 +788,9 @@ def ep_section_edit(ep_id, sec_id):
 
     return render_template("admin/event_pages/section_edit.html",
                            ep=ep, sec=sec,
-                           type_labels=EventSection.TYPE_LABELS)
+                           type_labels=EventSection.TYPE_LABELS,
+                           theme_styles=EventSection.THEME_STYLES,
+                           theme_style_labels=EventSection.THEME_STYLE_LABELS)
 
 
 # ── 後台：刪除區塊 ─────────────────────────────────────────────────────────
@@ -786,6 +828,31 @@ def ep_section_toggle(ep_id, sec_id):
     db.session.commit()
     state = "啟用" if sec.is_active else "停用"
     return jsonify({"ok": True, "is_active": sec.is_active, "msg": f"已{state}"})
+
+
+# ── 後台：切換單一 breakpoint 顯示（Desktop/Tablet/Mobile）──────────────────
+
+@event_page_bp.route("/admin/events/<int:ep_id>/sections/<int:sec_id>/toggle-breakpoint",
+                     methods=["POST"])
+def ep_section_toggle_breakpoint(ep_id, sec_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+
+    sec = EventSection.query.get_or_404(sec_id)
+    if sec.event_id != ep_id:
+        abort(404)
+    data = request.get_json(silent=True) or {}
+    bp = data.get("breakpoint")
+    if bp not in ("desktop", "tablet", "mobile"):
+        return jsonify({"error": "invalid breakpoint"}), 400
+    field = f"show_{bp}"
+    current = getattr(sec, field)
+    new_val = not (current is not False)   # None/True → False；False → True
+    setattr(sec, field, new_val)
+    sec.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True, "breakpoint": bp, "visible": new_val})
 
 
 # ── 後台：更新排序 ─────────────────────────────────────────────────────────

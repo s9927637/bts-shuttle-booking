@@ -6,21 +6,42 @@ from app import db
 class EventSection(db.Model):
     __tablename__ = "event_sections"
 
+    # Phase 3: Landing Page Builder — 支援區塊型別
+    # 保留舊型別（vehicle_showcase / process / meeting_point / terms）供既有資料相容，
+    # 後台「新增區塊」下拉選單只列出 BUILDER_TYPES（spec 指定的 11 種）。
     TYPES = [
-        'hero', 'highlights', 'vehicle_showcase', 'process',
-        'meeting_point', 'announcement', 'faq', 'terms', 'cta', 'footer',
+        'hero', 'highlights', 'schedule', 'pickup', 'pricing', 'gallery',
+        'announcement', 'faq', 'cta', 'sponsor', 'footer',
+        # legacy（相容用，不在新增選單顯示）
+        'vehicle_showcase', 'process', 'meeting_point', 'terms',
+    ]
+    BUILDER_TYPES = [
+        'hero', 'highlights', 'schedule', 'pickup', 'pricing', 'gallery',
+        'announcement', 'faq', 'cta', 'sponsor', 'footer',
     ]
     TYPE_LABELS = {
-        'hero':             'Hero 橫幅',
-        'highlights':       '特色亮點',
-        'vehicle_showcase': '車型介紹',
-        'process':          '流程說明',
-        'meeting_point':    '集合地點',
-        'announcement':     '公告',
-        'faq':              '常見問題',
-        'terms':            '注意事項',
-        'cta':              '行動呼籲',
-        'footer':           '頁尾',
+        'hero':             'Hero',
+        'highlights':       'Highlights',
+        'schedule':         'Schedule',
+        'pickup':           'Pickup',
+        'pricing':          'Pricing',
+        'gallery':          'Gallery',
+        'announcement':     'Announcement',
+        'faq':              'FAQ',
+        'cta':              'CTA',
+        'sponsor':          'Sponsor',
+        'footer':           'Footer',
+        'vehicle_showcase': '車型介紹（Legacy）',
+        'process':          '流程說明（Legacy）',
+        'meeting_point':    '集合地點（Legacy）',
+        'terms':            '注意事項（Legacy）',
+    }
+    THEME_STYLES = ['default', 'primary', 'secondary', 'transparent']
+    THEME_STYLE_LABELS = {
+        'default':     'Default',
+        'primary':     'Primary',
+        'secondary':   'Secondary',
+        'transparent': 'Transparent',
     }
     TYPE_DEFAULTS = {
         'hero': {
@@ -29,20 +50,51 @@ class EventSection(db.Model):
             'buttonText': '立即預約',
         },
         'highlights': {
-            'items': ['舒適直達', '散場接送', '專屬車隊'],
+            'columns': 3,
+            'items': [
+                {'icon': '🚗', 'title': '舒適直達', 'description': '免轉乘，一車到底'},
+                {'icon': '🕐', 'title': '散場接送', 'description': '演出結束準時發車'},
+                {'icon': '👥', 'title': '專屬車隊', 'description': '同好共乘更安心'},
+            ],
+        },
+        'schedule': {
+            'event_date':  '',
+            'meet_time':   '',
+            'depart_time': '',
+            'end_time':    '',
+        },
+        'pickup': {
+            'address': '',
+            'point':   '',
+            'map_url': '',
+        },
+        'pricing': {
+            'price':   None,
+            'deposit': None,
+            'balance': None,
+        },
+        'gallery': {
+            'images':  [],
+            'youtube': '',
         },
         'process': {
             'steps': ['提交預約', '支付訂金', '等待成團', '出發通知'],
         },
         'announcement': {
-            'content': '注意事項請詳閱',
+            'limit': 5,
         },
         'faq': {
-            'items': [{'question': '散場多久發車？', 'answer': '依現場狀況安排'}],
+            'items': [],
         },
         'cta': {
             'title': '準備好出發了嗎？',
             'buttonText': '立即預約',
+        },
+        'sponsor': {
+            'logos': [],
+        },
+        'footer': {
+            'text': '',
         },
     }
 
@@ -54,6 +106,12 @@ class EventSection(db.Model):
     content_json = db.Column(db.Text,        nullable=True)
     sort_order   = db.Column(db.Integer,     nullable=False, default=0)
     is_active    = db.Column(db.Boolean,     nullable=False, default=True)
+    # Phase 3: 響應式顯示（每個 breakpoint 獨立控制，nullable + 預設 True 向前相容）
+    show_desktop = db.Column(db.Boolean,     nullable=True, default=True)
+    show_tablet  = db.Column(db.Boolean,     nullable=True, default=True)
+    show_mobile  = db.Column(db.Boolean,     nullable=True, default=True)
+    # Phase 3: 區塊主題（default/primary/secondary/transparent）
+    theme_style  = db.Column(db.String(20),  nullable=True, default='default')
     created_at   = db.Column(db.DateTime,    default=datetime.utcnow)
     updated_at   = db.Column(db.DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -73,3 +131,19 @@ class EventSection(db.Model):
     @property
     def type_label(self):
         return self.TYPE_LABELS.get(self.type, self.type)
+
+    @property
+    def theme_style_resolved(self):
+        return self.theme_style or 'default'
+
+    @property
+    def visible_desktop(self):
+        return self.show_desktop is not False
+
+    @property
+    def visible_tablet(self):
+        return self.show_tablet is not False
+
+    @property
+    def visible_mobile(self):
+        return self.show_mobile is not False

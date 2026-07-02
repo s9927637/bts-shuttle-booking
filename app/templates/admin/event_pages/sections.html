@@ -27,6 +27,10 @@
       </p>
     </div>
     <div class="flex gap-2">
+      <a href="{{ url_for('event_page.ep_preview', ep_id=ep.id) }}" target="_blank"
+         class="text-sm text-purple-600 border border-purple-200 rounded-xl px-4 py-2 hover:bg-purple-50">
+        即時預覽（Desktop/Tablet/Mobile）→
+      </a>
       <a href="/events/{{ ep.slug }}" target="_blank"
          class="text-sm text-indigo-600 border border-indigo-200 rounded-xl px-4 py-2 hover:bg-indigo-50">
         預覽前台 →
@@ -106,6 +110,25 @@
         <span class="text-sm text-gray-700 font-medium flex-1 truncate">
           {{ sec.title or '(未設定標題)' }}
         </span>
+
+        <!-- Theme badge -->
+        <span class="shrink-0 inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+          {{ theme_style_labels.get(sec.theme_style_resolved, sec.theme_style_resolved) }}
+        </span>
+
+        <!-- 響應式顯示（Desktop / Tablet / Mobile）-->
+        <div class="flex gap-1 shrink-0">
+          {% for bp, ic, visible in [('desktop','🖥️',sec.visible_desktop), ('tablet','📱',sec.visible_tablet), ('mobile','📲',sec.visible_mobile)] %}
+          <button type="button"
+                  onclick="toggleBreakpoint({{ ep.id }}, {{ sec.id }}, '{{ bp }}', this)"
+                  data-visible="{{ 'true' if visible else 'false' }}"
+                  title="{{ bp }}"
+                  class="w-7 h-7 rounded-lg text-xs flex items-center justify-center transition
+                         {% if visible %}bg-indigo-100 opacity-100{% else %}bg-gray-100 opacity-30{% endif %}">
+            {{ ic }}
+          </button>
+          {% endfor %}
+        </div>
 
         <!-- Content 預覽 -->
         <span class="text-xs text-gray-400 font-mono truncate max-w-xs hidden sm:block">
@@ -201,6 +224,23 @@
     });
   }
 })();
+
+function toggleBreakpoint(epId, secId, bp, btn) {
+  fetch('/admin/events/' + epId + '/sections/' + secId + '/toggle-breakpoint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+    body: JSON.stringify({ breakpoint: bp }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      var visible = data.visible;
+      btn.dataset.visible = visible ? 'true' : 'false';
+      btn.className = 'w-7 h-7 rounded-lg text-xs flex items-center justify-center transition ' +
+        (visible ? 'bg-indigo-100 opacity-100' : 'bg-gray-100 opacity-30');
+    }
+  });
+}
 
 function toggleSection(epId, secId, btn) {
   fetch('/admin/events/' + epId + '/sections/' + secId + '/toggle', {

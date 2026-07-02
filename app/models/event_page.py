@@ -89,6 +89,11 @@ class EventPage(db.Model):
     footer_privacy_url = db.Column(db.String(300), nullable=True)
     footer_terms_url   = db.Column(db.String(300), nullable=True)
     footer_contact_url = db.Column(db.String(300), nullable=True)
+    # Phase 4: Landing Page 自由編輯（唯一可自訂 HTML 的頁面）
+    # 若未設定則 fallback 回原本 Hero Variant 系統，向前相容既有活動
+    landing_html = db.Column(db.Text, nullable=True)
+    landing_css  = db.Column(db.Text, nullable=True)
+    landing_js   = db.Column(db.Text, nullable=True)
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
@@ -260,6 +265,10 @@ class EventPage(db.Model):
     def event_display_name(self):
         """供 LINE / 收據顯示用的活動名稱"""
         return self.title or self.event_name or f"{self.artist_name} 活動包車"
+
+    @property
+    def has_custom_landing(self):
+        return bool(self.landing_html and self.landing_html.strip())
 
     @property
     def is_published(self):

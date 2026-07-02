@@ -1,0 +1,97 @@
+{% extends "layouts/admin_base.html" %}
+{% block title %}Landing Page — {{ ep.title }}{% endblock %}
+{% block page_title %}Landing Page 編輯{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- 麵包屑 -->
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <a href="{{ url_for('event_page.ep_list') }}" class="hover:text-gray-800">活動列表</a>
+    <span>/</span>
+    <a href="{{ url_for('event_page.event_detail', ep_id=ep.id) }}" class="hover:text-gray-800">{{ ep.title }}</a>
+    <span>/</span>
+    <span class="text-gray-800">Landing Page</span>
+  </div>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-gray-900">{{ ep.title }}</h1>
+      <p class="text-xs text-gray-400 mt-0.5">
+        /events/{{ ep.slug }}
+        <span class="mx-1">·</span>
+        首頁為唯一可自由設計的頁面，其餘功能頁維持系統共用 Template
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{{ url_for('event_page.ep_preview', ep_id=ep.id) }}" target="_blank"
+         class="text-sm text-purple-600 border border-purple-200 rounded-xl px-4 py-2 hover:bg-purple-50">
+        即時預覽（Desktop/Tablet/Mobile）→
+      </a>
+      <a href="{{ url_for('event_page.ep_edit', ep_id=ep.id) }}"
+         class="text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50">
+        編輯基本資訊
+      </a>
+    </div>
+  </div>
+
+  {% if not ep.has_custom_landing %}
+  <div class="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+    <span class="text-amber-500 text-lg">ℹ️</span>
+    <p class="text-sm text-amber-700">
+      目前尚未設定 Landing HTML，前台會 fallback 顯示原本的 Hero Variant 版型
+      （{{ ep.hero_variant or 'modern-card' }}）。填寫下方 HTML 並儲存後，將改為顯示自訂內容。
+    </p>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('event_page.ep_landing', ep_id=ep.id) }}" class="space-y-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-2">
+      <label class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">HTML</span>
+        <span class="text-xs text-gray-400">首頁主體內容，可使用 {{ '{{ ep.title }}' }} 等變數插值</span>
+      </label>
+      <textarea name="landing_html" rows="16" placeholder="<section>...</section>"
+                class="w-full px-3 py-3 text-sm font-mono border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                spellcheck="false">{{ ep.landing_html or '' }}</textarea>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-2">
+      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">CSS（選填）</label>
+      <textarea name="landing_css" rows="10" placeholder=".my-class { color: red; }"
+                class="w-full px-3 py-3 text-sm font-mono border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                spellcheck="false">{{ ep.landing_css or '' }}</textarea>
+      <p class="text-xs text-gray-400">CSS 會自動限定作用範圍在本活動頁面，不影響其他活動或全站樣式</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-2">
+      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">JavaScript（選配）</label>
+      <textarea name="landing_js" rows="8" placeholder="console.log('landing loaded');"
+                class="w-full px-3 py-3 text-sm font-mono border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                spellcheck="false">{{ ep.landing_js or '' }}</textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit"
+              class="px-6 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition">
+        儲存 Landing Page
+      </button>
+      {% if ep.has_custom_landing %}
+      <button type="button"
+              onclick="if(confirm('清空後將 fallback 回原本 Hero 版型，確定嗎？')){document.querySelector('[name=landing_html]').value='';document.querySelector('[name=landing_css]').value='';document.querySelector('[name=landing_js]').value='';this.form ? this.form.submit() : this.closest('form').submit();}"
+              class="px-6 py-2.5 text-sm font-medium text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition">
+        清空並還原為 Hero 版型
+      </button>
+      {% endif %}
+      <a href="/events/{{ ep.slug }}" target="_blank"
+         class="px-6 py-2.5 text-sm font-medium text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+        預覽前台 →
+      </a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

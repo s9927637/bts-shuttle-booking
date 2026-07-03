@@ -3,17 +3,80 @@
 {% block page_title %}{{ '編輯活動' if mode == 'edit' else '建立活動' }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
 
-  <div class="mb-5">
+<!-- ══════════════════════════════════════════════════════════════════════
+     Event Edit Header — 固定於頁面上方（sticky）
+     左側：返回連結／活動名稱／狀態 Badge
+     右側：查看前台／Landing Page／儲存（三顆按鈕皆為既有邏輯的入口，不變更任何儲存流程）
+════════════════════════════════════════════════════════════════════════ -->
+<div class="sticky top-0 z-20 -mx-8 -mt-8 mb-6 px-8 py-4 bg-white/95 backdrop-blur border-b border-gray-200
+            flex flex-wrap items-center justify-between gap-3">
+
+  <!-- 左側：返回 / 活動名稱 / 狀態 -->
+  <div class="flex items-center gap-3 min-w-0">
     <a href="{{ url_for('event_page.ep_list') }}"
-       class="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
+       class="shrink-0 text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1 transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
       </svg>
-      返回活動列表
+      <span class="hidden sm:inline">返回活動列表</span>
     </a>
+    <span class="shrink-0 text-gray-300">|</span>
+    <h1 class="text-base font-semibold text-gray-900 truncate">
+      {{ page.event_name if page else '建立活動' }}
+    </h1>
+    {% if page %}
+    {% set status_style = {
+      '草稿':   'bg-gray-100 text-gray-600',
+      '已發布': 'bg-green-100 text-green-700',
+      '已結束': 'bg-blue-100 text-blue-700',
+      '取消':   'bg-red-100 text-red-700',
+    } %}
+    <span class="shrink-0 inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ status_style.get(page.status, 'bg-gray-100 text-gray-600') }}">
+      {{ page.status }}
+    </span>
+    {% endif %}
   </div>
+
+  <!-- 右側：操作按鈕 -->
+  <div class="flex items-center gap-2 shrink-0">
+    {% if mode == 'edit' and page.slug %}
+    <a href="/events/{{ page.slug }}" target="_blank" rel="noopener"
+       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+      <!-- Tabler ti-eye 對應 SVG（沿用現有 inline-SVG icon 系統，不引入 Tabler CDN） -->
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <span class="hidden md:inline">查看前台</span>
+    </a>
+    {% endif %}
+
+    {% if mode == 'edit' %}
+    <a href="{{ url_for('event_page.ep_landing', ep_id=page.id) }}"
+       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
+      <!-- Tabler ti-layout 對應 SVG -->
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9h18M9 9v11"/>
+      </svg>
+      <span class="hidden md:inline">Landing Page</span>
+    </a>
+    {% endif %}
+
+    <button type="submit" form="ep-form"
+            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+      <!-- Tabler ti-device-floppy 對應 SVG -->
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-8H7v8M7 3v5h8"/>
+      </svg>
+      <span>儲存</span>
+    </button>
+  </div>
+</div>
+
+<div class="max-w-3xl mx-auto">
 
   <form id="ep-form"
         method="post"

@@ -38,7 +38,6 @@ from app.models.order_event import OrderEvent
 from app.models.dispatch_event import DispatchEvent, DispatchEventOrder
 from app.models.passenger_profile import PassengerProfile, PassengerTag
 from app.models.crawler_audit_log import CrawlerAuditLog
-from app.models.event_section import EventSection
 from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
 
 def create_app():
@@ -75,8 +74,6 @@ def create_app():
     from app.routes.system_health import health_bp
     from app.routes.event_dispatch import event_dispatch_bp
     from app.routes.passenger_center import passenger_center_bp
-    from app.routes.activity_template import activity_template_bp
-    from app.models.activity_template import ActivityTemplate, ActivityTemplateSection
 
     app.register_blueprint(passenger_bp)
     app.register_blueprint(admin_bp)
@@ -95,7 +92,6 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(event_dispatch_bp)
     app.register_blueprint(passenger_center_bp)
-    app.register_blueprint(activity_template_bp)
 
     # Register Jinja filters
     from app.utils.css_scope import scope_css as _scope_css

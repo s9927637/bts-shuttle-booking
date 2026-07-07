@@ -39,22 +39,11 @@ class EventPage(db.Model):
     feat3_sub        = db.Column(db.String(80),   nullable=True, default='不超行程')
     feat4_title      = db.Column(db.String(60),   nullable=True, default='安全安心')
     feat4_sub        = db.Column(db.String(80),   nullable=True, default='專業司機')
-    # Phase 3：Hero Variant System
-    hero_variant     = db.Column(db.String(30),   nullable=True, default='modern-card')
     tour_name        = db.Column(db.String(200),  nullable=True)
-    # Phase 4：Responsive Hero Images (fallback: tablet/mobile → desktop → banner_image/cover_image)
+    # Phase 4：Responsive Hero Images（現用途：SEO og:image / 活動列表縮圖來源）
     hero_image_desktop = db.Column(db.String(500), nullable=True)
     hero_image_tablet  = db.Column(db.String(500), nullable=True)
     hero_image_mobile  = db.Column(db.String(500), nullable=True)
-    # Editorial Hero styling
-    hero_title_color    = db.Column(db.String(20), nullable=True)   # e.g. '#2B2B2B'
-    hero_subtitle_color = db.Column(db.String(20), nullable=True)   # e.g. '#6B5A4B'
-    hero_text_color     = db.Column(db.String(20), nullable=True)   # body/info text
-    hero_btn_color      = db.Column(db.String(20), nullable=True)   # CTA button bg
-    hero_overlay        = db.Column(db.String(20), nullable=True)   # 'none'|'light'|'dark'
-    hero_title_size     = db.Column(db.String(10), nullable=True)   # 'sm'|'md'|'lg'|'xl'
-    # Phase 5: Event Custom CSS
-    custom_css          = db.Column(db.Text, nullable=True)          # raw CSS scoped at render time
     # Phase 6: Brand Identity
     logo_image          = db.Column(db.String(500), nullable=True)   # URL to logo image (PNG/SVG/WebP)
     logo_text           = db.Column(db.String(100), nullable=True)   # fallback text when no image
@@ -79,18 +68,14 @@ class EventPage(db.Model):
     theme_btn_color       = db.Column(db.String(20), nullable=True)   # CTA 按鈕底色
     theme_btn_text_color  = db.Column(db.String(20), nullable=True)   # CTA 按鈕文字
     theme_navbar          = db.Column(db.String(10), nullable=True, default='auto')  # 'auto'|'light'|'dark'
-    # Phase 11: Hero Landing Page — Hero Layout 設定 + CTA 開關 + Activity Footer
-    hero_height   = db.Column(db.String(10), nullable=True, default='full')   # 'full'（100vh）|'auto'
-    hero_valign   = db.Column(db.String(10), nullable=True, default='center') # 'top'|'center'|'bottom'
-    hero_width    = db.Column(db.String(10), nullable=True, default='medium') # 'small'|'medium'|'large'|'full'
-    cta_enabled   = db.Column(db.Boolean,    nullable=True, default=False)    # Hero 後是否顯示 CTA Section
+    # Phase 11: CTA 開關 + Activity Footer
+    cta_enabled   = db.Column(db.Boolean,    nullable=True, default=False)    # Landing 後是否顯示 CTA Section
     footer_enabled = db.Column(db.Boolean,   nullable=True, default=False)    # 是否顯示 Activity Footer
     footer_text    = db.Column(db.String(200), nullable=True)                 # Copyright 文字
     footer_privacy_url = db.Column(db.String(300), nullable=True)
     footer_terms_url   = db.Column(db.String(300), nullable=True)
     footer_contact_url = db.Column(db.String(300), nullable=True)
     # Phase 4: Landing Page 自由編輯（唯一可自訂 HTML 的頁面）
-    # 若未設定則 fallback 回原本 Hero Variant 系統，向前相容既有活動
     landing_html = db.Column(db.Text, nullable=True)
     landing_css  = db.Column(db.Text, nullable=True)
     landing_js   = db.Column(db.Text, nullable=True)
@@ -103,8 +88,6 @@ class EventPage(db.Model):
 
     concert     = db.relationship("Concert",    foreign_keys=[concert_id],     backref=db.backref("event_pages", lazy="select"))
     event_group = db.relationship("EventGroup", foreign_keys=[event_group_id], backref=db.backref("event_pages", lazy="select"))
-    sections    = db.relationship("EventSection", backref="event_page", lazy="dynamic",
-                                  cascade="all, delete-orphan", order_by="EventSection.sort_order")
 
     CATEGORY_LABELS = {
         'concert':    '演唱會',

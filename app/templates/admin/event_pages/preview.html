@@ -31,7 +31,7 @@
 <body>
 
   <div class="pv-toolbar">
-    <a href="{{ url_for('event_page.ep_sections', ep_id=ep.id) }}" class="pv-back">← 返回區塊管理</a>
+    <a href="{{ url_for('event_page.ep_landing', ep_id=ep.id) }}" class="pv-back">← 返回 Landing Page</a>
     <h1>{{ ep.title }} — 即時預覽</h1>
     <button class="pv-btn active" data-w="1280" onclick="setViewport(this,1280)">Desktop</button>
     <button class="pv-btn" data-w="768" onclick="setViewport(this,768)">Tablet</button>

@@ -1,10 +1,31 @@
 {% extends "layouts/base.html" %}
-{% block title %}{{ announcement.title }} — BTS Shuttle{% endblock %}
+{% block title %}{{ announcement.title }} — {{ event_page.title if event_page else 'BTS Shuttle' }}{% endblock %}
+
+{% block nav_brand %}
+{% if event_page %}
+<a href="{{ event_page.logo_link or ('/events/' + event_page.slug) }}" class="flex items-center gap-2.5">
+  {%- if event_page.logo_image %}
+  <img src="{{ event_page.logo_image }}" alt="{{ event_page.logo_text or event_page.artist_name }}"
+       class="h-7 w-auto max-w-[140px] object-contain" />
+  {%- else %}
+  <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
+    <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+    </svg>
+  </div>
+  <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">
+    {{ event_page.logo_text or (event_page.artist_name + ' Shuttle') }}
+  </span>
+  {%- endif %}
+</a>
+{% else %}{{ super() }}{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="page-container">
 
-  <a href="/announcements"
+  {%- set back_url = ('/events/' + event_page.slug + '/news') if event_page else '/announcements' %}
+  <a href="{{ back_url }}"
      class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 transition-colors mb-6">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -55,7 +76,7 @@
   </div>
 
   <div class="mt-6 text-center">
-    <a href="/announcements" class="btn-secondary" style="width:auto; display:inline-flex;">
+    <a href="{{ back_url }}" class="btn-secondary" style="width:auto; display:inline-flex;">
       查看所有公告
     </a>
   </div>

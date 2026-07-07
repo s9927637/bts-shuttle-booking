@@ -110,6 +110,7 @@ def announcement_detail(ann_id):
     return render_template(
         "passenger/announcement_detail.html",
         announcement=a,
+        event_page=a.event_page,
         passenger_liff_id=PASSENGER_LIFF_ID,
     )
 

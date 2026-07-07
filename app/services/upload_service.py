@@ -29,9 +29,10 @@ def upload_dir(event_id: int) -> Path:
     return base
 
 
-def save_hero_image(file, event_id: int, slot: str) -> str:
+def save_hero_image(file, event_id: int, slot: str, prefix: str = "hero") -> str:
     """
     slot: 'desktop' | 'tablet' | 'mobile'
+    prefix: 檔名前綴，例如 'hero' 或 'landing'，讓不同用途的圖片共用同一套儲存邏輯
     returns: public URL path e.g. '/static/uploads/events/1/hero-desktop.webp'
     raises: ValueError on validation failure
     """
@@ -51,20 +52,22 @@ def save_hero_image(file, event_id: int, slot: str) -> str:
         raise ValueError(f"檔案過大（{len(content)//1024//1024} MB），上限 16 MB")
     file.seek(0)
 
-    filename = f"hero-{slot}.{ext}"
+    # 先刪除同 slot 舊檔（可能副檔名不同）
+    delete_hero_image(event_id, slot, prefix=prefix)
+
+    filename = f"{prefix}-{slot}.{ext}"
     dest = upload_dir(event_id) / filename
 
-    # 覆蓋舊檔（同 slot 只保留最新一張）
     with open(dest, 'wb') as f:
         f.write(content)
 
     return f"/static/uploads/events/{event_id}/{filename}"
 
 
-def delete_hero_image(event_id: int, slot: str) -> None:
+def delete_hero_image(event_id: int, slot: str, prefix: str = "hero") -> None:
     """刪除指定 slot 的圖片檔案（不拋例外）"""
     for ext in ALLOWED_EXTENSIONS:
-        path = upload_dir(event_id) / f"hero-{slot}.{ext}"
+        path = upload_dir(event_id) / f"{prefix}-{slot}.{ext}"
         try:
             path.unlink()
         except FileNotFoundError:

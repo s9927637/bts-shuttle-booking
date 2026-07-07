@@ -75,10 +75,19 @@ class EventPage(db.Model):
     footer_privacy_url = db.Column(db.String(300), nullable=True)
     footer_terms_url   = db.Column(db.String(300), nullable=True)
     footer_contact_url = db.Column(db.String(300), nullable=True)
-    # Phase 4: Landing Page 自由編輯（唯一可自訂 HTML 的頁面）
+    # Phase 4: Landing Page HTML/CSS/JS 自由編輯
+    # ── DEPRECATED（V1 Architecture Refactor）──
+    # 已被「圖片 Landing + Hotspot」取代，僅為 BTS 既有活動保留向前相容，
+    # 新活動請一律使用 landing_image_desktop/tablet/mobile + EventHotspot。
     landing_html = db.Column(db.Text, nullable=True)
     landing_css  = db.Column(db.Text, nullable=True)
     landing_js   = db.Column(db.Text, nullable=True)
+
+    # V1: Landing Page = 圖片 + Hotspot（唯一支援的首頁客製方式）
+    landing_image_desktop = db.Column(db.String(500), nullable=True)   # 建議 1920x1080
+    landing_image_tablet  = db.Column(db.String(500), nullable=True)   # 建議 1536x2048
+    landing_image_mobile  = db.Column(db.String(500), nullable=True)   # 建議 1080x1920
+    landing_published     = db.Column(db.Boolean, nullable=True, default=False)  # Landing Page 獨立發布開關
 
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
@@ -88,6 +97,8 @@ class EventPage(db.Model):
 
     concert     = db.relationship("Concert",    foreign_keys=[concert_id],     backref=db.backref("event_pages", lazy="select"))
     event_group = db.relationship("EventGroup", foreign_keys=[event_group_id], backref=db.backref("event_pages", lazy="select"))
+    hotspots    = db.relationship("EventHotspot", backref="event_page", lazy="dynamic",
+                                  cascade="all, delete-orphan", order_by="EventHotspot.sort_order")
 
     CATEGORY_LABELS = {
         'concert':    '演唱會',
@@ -250,7 +261,13 @@ class EventPage(db.Model):
         return self.title or self.event_name or f"{self.artist_name} 活動包車"
 
     @property
+    def has_image_landing(self):
+        """V1: 圖片 Landing + Hotspot（唯一支援的首頁客製方式）"""
+        return bool(self.landing_image_desktop and self.landing_published)
+
+    @property
     def has_custom_landing(self):
+        """DEPRECATED：舊版 HTML/CSS/JS Landing，僅為既有活動（如 BTS）向前相容保留"""
         return bool(self.landing_html and self.landing_html.strip())
 
     @property

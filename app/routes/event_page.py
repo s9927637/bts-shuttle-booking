@@ -11,6 +11,7 @@ from flask import Blueprint, abort, flash, jsonify, redirect, render_template, r
 
 from app import db, csrf
 from app.models.event_page import EventPage
+from app.models.event_hotspot import EventHotspot
 from app.models.concert import Concert, EventGroup
 
 event_page_bp = Blueprint("event_page", __name__)
@@ -307,7 +308,8 @@ def event_show(slug):
     if ep.status == "已發布" and not session.get("admin_id"):
         from app.services.event_metrics_service import increment_page_views
         increment_page_views(ep.id)
-    return render_template("passenger/event_template.html", ep=ep)
+    hotspots = ep.hotspots.filter_by(is_active=True).order_by(EventHotspot.sort_order).all() if ep.has_image_landing else []
+    return render_template("passenger/event_template.html", ep=ep, hotspots=hotspots)
 
 
 # ── 前台：活動公告 /events/<slug>/news ─────────────────────────────────────
@@ -607,6 +609,143 @@ def api_delete_hero(ep_id):
     return jsonify({"ok": True})
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# V1: Landing Image Upload API（圖片 Landing + Hotspot）
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/api/events/<int:ep_id>/upload-landing-image", methods=["POST"])
+@csrf.exempt
+def api_upload_landing_image(ep_id):
+    """上傳 Landing 圖片（desktop / tablet / mobile）"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    ep = EventPage.query.get_or_404(ep_id)
+    slot = request.form.get("slot", "").strip()
+    file = request.files.get("file")
+
+    from app.services.upload_service import save_hero_image
+    try:
+        url = save_hero_image(file, ep_id, slot, prefix="landing")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    if slot == "desktop":
+        ep.landing_image_desktop = url
+    elif slot == "tablet":
+        ep.landing_image_tablet = url
+    elif slot == "mobile":
+        ep.landing_image_mobile = url
+    else:
+        return jsonify({"error": "無效 slot"}), 400
+
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True, "url": url, "slot": slot})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/delete-landing-image", methods=["POST"])
+@csrf.exempt
+def api_delete_landing_image(ep_id):
+    """刪除指定 slot Landing 圖片"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(silent=True) or {}
+    slot = data.get("slot", "").strip()
+
+    from app.services.upload_service import delete_hero_image
+    if slot not in ("desktop", "tablet", "mobile"):
+        return jsonify({"error": "無效 slot"}), 400
+
+    delete_hero_image(ep_id, slot, prefix="landing")
+
+    if slot == "desktop":
+        ep.landing_image_desktop = None
+    elif slot == "tablet":
+        ep.landing_image_tablet = None
+    elif slot == "mobile":
+        ep.landing_image_mobile = None
+
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V1: Hotspot CRUD API
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/api/events/<int:ep_id>/hotspots", methods=["GET", "POST"])
+@csrf.exempt
+def api_hotspots(ep_id):
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    ep = EventPage.query.get_or_404(ep_id)
+
+    if request.method == "GET":
+        hs_list = ep.hotspots.all()
+        return jsonify({"hotspots": [
+            {"id": h.id, "label": h.label, "link_type": h.link_type, "custom_url": h.custom_url,
+             "x_pct": h.x_pct, "y_pct": h.y_pct, "w_pct": h.w_pct, "h_pct": h.h_pct,
+             "sort_order": h.sort_order, "is_active": h.is_active}
+            for h in hs_list
+        ]})
+
+    data = request.get_json(silent=True) or {}
+    link_type = data.get("link_type", "booking")
+    if link_type not in EventHotspot.LINK_TYPES:
+        return jsonify({"error": "無效的 link_type"}), 400
+    max_order = db.session.query(db.func.max(EventHotspot.sort_order)).filter_by(event_id=ep_id).scalar() or 0
+    hs = EventHotspot(
+        event_id=ep_id,
+        label=(data.get("label") or "").strip() or "熱點",
+        link_type=link_type,
+        custom_url=(data.get("custom_url") or "").strip() or None,
+        x_pct=float(data.get("x_pct", 10)),
+        y_pct=float(data.get("y_pct", 10)),
+        w_pct=float(data.get("w_pct", 20)),
+        h_pct=float(data.get("h_pct", 10)),
+        sort_order=max_order + 1,
+        is_active=True,
+    )
+    db.session.add(hs)
+    db.session.commit()
+    return jsonify({"ok": True, "id": hs.id})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/hotspots/<int:hs_id>", methods=["PUT", "DELETE"])
+@csrf.exempt
+def api_hotspot_detail(ep_id, hs_id):
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    hs = EventHotspot.query.get_or_404(hs_id)
+    if hs.event_id != ep_id:
+        abort(404)
+
+    if request.method == "DELETE":
+        db.session.delete(hs)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    data = request.get_json(silent=True) or {}
+    if "label" in data:
+        hs.label = (data.get("label") or "").strip() or hs.label
+    if "link_type" in data and data["link_type"] in EventHotspot.LINK_TYPES:
+        hs.link_type = data["link_type"]
+    if "custom_url" in data:
+        hs.custom_url = (data.get("custom_url") or "").strip() or None
+    for field in ("x_pct", "y_pct", "w_pct", "h_pct"):
+        if field in data:
+            setattr(hs, field, float(data[field]))
+    if "is_active" in data:
+        hs.is_active = bool(data["is_active"])
+    hs.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @event_page_bp.route("/api/events/<int:ep_id>/upload-logo", methods=["POST"])
 @csrf.exempt
 def api_upload_logo(ep_id):
@@ -656,15 +795,19 @@ def ep_landing(ep_id):
     ep = EventPage.query.get_or_404(ep_id)
 
     if request.method == "POST":
-        ep.landing_html = request.form.get("landing_html", "").strip() or None
-        ep.landing_css  = request.form.get("landing_css", "").strip() or None
-        ep.landing_js   = request.form.get("landing_js", "").strip() or None
-        ep.updated_at   = datetime.utcnow()
+        # V1：Landing Page 主體改為圖片 + Hotspot（各自透過獨立 API 儲存），
+        # 這裡只處理「發布」開關。
+        ep.landing_published = bool(request.form.get("landing_published"))
+        ep.updated_at = datetime.utcnow()
         db.session.commit()
-        flash("已儲存 Landing Page。", "success")
+        flash("已更新 Landing Page 發布狀態。" if ep.landing_published else "Landing Page 已下架。", "success")
         return redirect(url_for("event_page.ep_landing", ep_id=ep.id))
 
-    return render_template("admin/event_pages/landing_editor.html", ep=ep)
+    hotspots = ep.hotspots.order_by(EventHotspot.sort_order).all()
+    return render_template("admin/event_pages/landing_editor.html",
+                           ep=ep, hotspots=hotspots,
+                           link_types=EventHotspot.LINK_TYPES,
+                           link_type_labels=EventHotspot.LINK_TYPE_LABELS)
 
 
 # ── 後台：即時預覽（Desktop/Tablet/Mobile 切換）──────────────────────────────
@@ -737,10 +880,29 @@ def ep_clone(ep_id):
         landing_html=src.landing_html,
         landing_css=src.landing_css,
         landing_js=src.landing_js,
+        landing_image_desktop=src.landing_image_desktop,
+        landing_image_tablet=src.landing_image_tablet,
+        landing_image_mobile=src.landing_image_mobile,
+        landing_published=False,   # 複製後預設下架，需重新確認後手動發布
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
     db.session.add(clone)
+    db.session.flush()   # 取得 clone.id 供複製 Hotspot 使用
+
+    for hs in src.hotspots.all():
+        db.session.add(EventHotspot(
+            event_id=clone.id,
+            label=hs.label,
+            link_type=hs.link_type,
+            custom_url=hs.custom_url,
+            x_pct=hs.x_pct, y_pct=hs.y_pct, w_pct=hs.w_pct, h_pct=hs.h_pct,
+            sort_order=hs.sort_order,
+            is_active=hs.is_active,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        ))
+
     db.session.commit()
     flash(f"已複製活動「{new_title}」，請修改後發布。", "success")
     return redirect(url_for("event_page.ep_edit", ep_id=clone.id))

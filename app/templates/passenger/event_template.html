@@ -109,7 +109,54 @@
 </head>
 <body data-event="{{ ep.slug }}">
 
-<!-- ══ NAV ══════════════════════════════════════════════════════ -->
+{% if ep.has_image_landing %}
+{# ════════════════════════════════════════════════════════════════
+   V1: Landing Page = 圖片 + Hotspot（唯一支援的首頁客製方式）
+   首頁只保留 Logo／Landing Image／Hotspot，不顯示預約/查詢訂單/
+   匯款回報/最新公告選單、不顯示 CTA/Footer。圖片本身不可點，
+   只有 Hotspot 可點。
+════════════════════════════════════════════════════════════════ #}
+<div class="lp-logo">
+  <a href="{{ ep.logo_link or ('/events/' + ep.slug) }}">
+    {%- if ep.logo_image %}
+    <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
+    {%- else %}
+    <span class="lp-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
+    {%- endif %}
+  </a>
+</div>
+
+<div class="lp-stage">
+  <picture>
+    {%- if ep.landing_image_mobile %}<source media="(max-width: 639px)" srcset="{{ ep.landing_image_mobile }}">{%- endif %}
+    {%- if ep.landing_image_tablet %}<source media="(max-width: 1023px)" srcset="{{ ep.landing_image_tablet }}">{%- endif %}
+    <img src="{{ ep.landing_image_desktop }}" class="lp-image" alt="{{ ep.title }}" draggable="false" />
+  </picture>
+  {%- for hs in hotspots %}
+  <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
+     {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
+     style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
+    <span class="sr-only">{{ hs.label }}</span>
+  </a>
+  {%- endfor %}
+</div>
+
+<style>
+  .lp-logo { position: fixed; top: 20px; left: 20px; z-index: 20; }
+  .lp-logo img { height: 32px; width: auto; max-width: 160px; object-fit: contain; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
+  .lp-logo-text { font-size: 0.95rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .lp-stage { position: relative; width: 100%; line-height: 0; }
+  .lp-image { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
+  .lp-hotspot { position: absolute; display: block; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+
+{% elif ep.has_custom_landing %}
+{# ────────────────────────────────────────────────────────────────
+   DEPRECATED：舊版 HTML/CSS/JS Landing，僅為既有活動（如 BTS）保留，
+   包含系統共用 nav（預約/查詢訂單/匯款回報/最新公告）。
+   新活動請一律使用上方「圖片 + Hotspot」。
+──────────────────────────────────────────────────────────────── #}
 <nav class="ev-nav">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
     {%- set nav_link = ep.logo_link or ('/events/' + ep.slug) %}
@@ -152,18 +199,9 @@
   </div>
 </nav>
 
-{# ════════════════════════════════════════════════════════════════
-   Phase 4: Landing Page 自由編輯（唯一可自訂首頁內容的入口）
-   nav 維持系統共用（確保預約／查詢訂單／匯款回報／最新公告連結一致）。
-   未設定 landing_html 時，Hero 以下內容不會 render（Hero Builder 已移除，
-   請至 /admin/event-pages/<id>/landing 設定內容）。
-════════════════════════════════════════════════════════════════ #}
-{% if ep.has_custom_landing %}
 {% if ep.landing_css %}<style id="landing-custom-css">{{ ep.landing_css | scope_css(ep.slug) | safe }}</style>{% endif %}
 {{ ep.landing_html | safe }}
 {% if ep.landing_js %}<script>{{ ep.landing_js | safe }}</script>{% endif %}
-{% endif %}
-
 
 <!-- ══ CTA SECTION（僅管理員啟用時 Render，預設不建立）══ -->
 {% if ep.cta_enabled %}
@@ -194,6 +232,7 @@
   </div>
   {% endif %}
 </footer>
+{% endif %}
 {% endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>

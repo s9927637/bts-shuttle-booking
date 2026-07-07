@@ -10,6 +10,9 @@ class EventHotspot(db.Model):
     """
     __tablename__ = "event_hotspots"
 
+    DEVICES = ['desktop', 'tablet', 'mobile']
+    DEVICE_LABELS = {'desktop': 'Desktop', 'tablet': 'Tablet', 'mobile': 'Mobile'}
+
     LINK_TYPES = ['booking', 'orders', 'remittance', 'news', 'faq', 'line', 'custom']
     LINK_TYPE_LABELS = {
         'booking':    '立即預約',
@@ -24,6 +27,8 @@ class EventHotspot(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     event_id   = db.Column(db.Integer, db.ForeignKey('event_pages.id', ondelete='CASCADE'),
                            nullable=False, index=True)
+    # Bug Fix Phase 1: Desktop/Tablet/Mobile 各自獨立一組 Hotspot，不再共用
+    device     = db.Column(db.String(10), nullable=False, default='desktop')
     label      = db.Column(db.String(100), nullable=False)
     link_type  = db.Column(db.String(20), nullable=False, default='booking')
     custom_url = db.Column(db.String(500), nullable=True)   # 僅 link_type == 'custom' 時使用

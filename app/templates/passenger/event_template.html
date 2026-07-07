@@ -132,13 +132,36 @@
     {%- if ep.landing_image_tablet %}<source media="(max-width: 1023px)" srcset="{{ ep.landing_image_tablet }}">{%- endif %}
     <img src="{{ ep.landing_image_desktop }}" class="lp-image" alt="{{ ep.title }}" draggable="false" />
   </picture>
-  {%- for hs in hotspots %}
-  <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
-     {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
-     style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
-    <span class="sr-only">{{ hs.label }}</span>
-  </a>
-  {%- endfor %}
+
+  {# Bug Fix Phase 1: Desktop/Tablet/Mobile 各自獨立一組 Hotspot，
+     以 CSS media query 對齊 <picture> 的圖片切換斷點，同時間只會有一組可見/可點 #}
+  <div class="lp-hotspots lp-hotspots-desktop">
+    {%- for hs in hotspots_by_device.desktop %}
+    <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
+       {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
+       style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
+      <span class="sr-only">{{ hs.label }}</span>
+    </a>
+    {%- endfor %}
+  </div>
+  <div class="lp-hotspots lp-hotspots-tablet">
+    {%- for hs in hotspots_by_device.tablet %}
+    <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
+       {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
+       style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
+      <span class="sr-only">{{ hs.label }}</span>
+    </a>
+    {%- endfor %}
+  </div>
+  <div class="lp-hotspots lp-hotspots-mobile">
+    {%- for hs in hotspots_by_device.mobile %}
+    <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
+       {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
+       style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
+      <span class="sr-only">{{ hs.label }}</span>
+    </a>
+    {%- endfor %}
+  </div>
 </div>
 
 <style>
@@ -147,8 +170,20 @@
   .lp-logo-text { font-size: 0.95rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
   .lp-stage { position: relative; width: 100%; line-height: 0; }
   .lp-image { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
+  .lp-hotspots { position: absolute; inset: 0; }
   .lp-hotspot { position: absolute; display: block; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+  /* 對齊 <picture><source> 斷點：同時間只顯示對應裝置的 Hotspot 組 */
+  .lp-hotspots-tablet, .lp-hotspots-mobile { display: none; }
+  @media (max-width: 1023px) {
+    .lp-hotspots-desktop { display: none; }
+    .lp-hotspots-tablet  { display: block; }
+  }
+  @media (max-width: 639px) {
+    .lp-hotspots-tablet  { display: none; }
+    .lp-hotspots-mobile  { display: block; }
+  }
 </style>
 
 {% elif ep.has_custom_landing %}

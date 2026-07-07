@@ -308,8 +308,14 @@ def event_show(slug):
     if ep.status == "已發布" and not session.get("admin_id"):
         from app.services.event_metrics_service import increment_page_views
         increment_page_views(ep.id)
-    hotspots = ep.hotspots.filter_by(is_active=True).order_by(EventHotspot.sort_order).all() if ep.has_image_landing else []
-    return render_template("passenger/event_template.html", ep=ep, hotspots=hotspots)
+    hotspots_by_device = {"desktop": [], "tablet": [], "mobile": []}
+    if ep.has_image_landing:
+        for device in EventHotspot.DEVICES:
+            hotspots_by_device[device] = (
+                ep.hotspots.filter_by(is_active=True, device=device)
+                .order_by(EventHotspot.sort_order).all()
+            )
+    return render_template("passenger/event_template.html", ep=ep, hotspots_by_device=hotspots_by_device)
 
 
 # ── 前台：活動公告 /events/<slug>/news ─────────────────────────────────────
@@ -685,9 +691,15 @@ def api_hotspots(ep_id):
     ep = EventPage.query.get_or_404(ep_id)
 
     if request.method == "GET":
-        hs_list = ep.hotspots.all()
+        device = request.args.get("device", "").strip()
+        q = ep.hotspots
+        if device:
+            if device not in EventHotspot.DEVICES:
+                return jsonify({"error": "無效的 device"}), 400
+            q = q.filter_by(device=device)
+        hs_list = q.all()
         return jsonify({"hotspots": [
-            {"id": h.id, "label": h.label, "link_type": h.link_type, "custom_url": h.custom_url,
+            {"id": h.id, "device": h.device, "label": h.label, "link_type": h.link_type, "custom_url": h.custom_url,
              "x_pct": h.x_pct, "y_pct": h.y_pct, "w_pct": h.w_pct, "h_pct": h.h_pct,
              "sort_order": h.sort_order, "is_active": h.is_active}
             for h in hs_list
@@ -697,9 +709,16 @@ def api_hotspots(ep_id):
     link_type = data.get("link_type", "booking")
     if link_type not in EventHotspot.LINK_TYPES:
         return jsonify({"error": "無效的 link_type"}), 400
-    max_order = db.session.query(db.func.max(EventHotspot.sort_order)).filter_by(event_id=ep_id).scalar() or 0
+    device = data.get("device", "desktop")
+    if device not in EventHotspot.DEVICES:
+        return jsonify({"error": "無效的 device"}), 400
+    max_order = (
+        db.session.query(db.func.max(EventHotspot.sort_order))
+        .filter_by(event_id=ep_id, device=device).scalar() or 0
+    )
     hs = EventHotspot(
         event_id=ep_id,
+        device=device,
         label=(data.get("label") or "").strip() or "熱點",
         link_type=link_type,
         custom_url=(data.get("custom_url") or "").strip() or None,
@@ -803,9 +822,18 @@ def ep_landing(ep_id):
         flash("已更新 Landing Page 發布狀態。" if ep.landing_published else "Landing Page 已下架。", "success")
         return redirect(url_for("event_page.ep_landing", ep_id=ep.id))
 
-    hotspots = ep.hotspots.order_by(EventHotspot.sort_order).all()
+    device = request.args.get("device", "desktop").strip()
+    if device not in EventHotspot.DEVICES:
+        device = "desktop"
+    hotspots = ep.hotspots.filter_by(device=device).order_by(EventHotspot.sort_order).all()
+    device_image = {
+        "desktop": ep.landing_image_desktop,
+        "tablet":  ep.landing_image_tablet,
+        "mobile":  ep.landing_image_mobile,
+    }[device]
     return render_template("admin/event_pages/landing_editor.html",
-                           ep=ep, hotspots=hotspots,
+                           ep=ep, hotspots=hotspots, device=device, device_image=device_image,
+                           devices=EventHotspot.DEVICES, device_labels=EventHotspot.DEVICE_LABELS,
                            link_types=EventHotspot.LINK_TYPES,
                            link_type_labels=EventHotspot.LINK_TYPE_LABELS)
 
@@ -893,6 +921,7 @@ def ep_clone(ep_id):
     for hs in src.hotspots.all():
         db.session.add(EventHotspot(
             event_id=clone.id,
+            device=hs.device,
             label=hs.label,
             link_type=hs.link_type,
             custom_url=hs.custom_url,

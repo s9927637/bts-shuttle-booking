@@ -233,9 +233,22 @@ def ep_edit(ep_id):
     event_groups = EventGroup.query.order_by(EventGroup.created_at.desc()).all()
 
     if request.method == "GET":
+        device = request.args.get("device", "desktop").strip()
+        if device not in EventHotspot.DEVICES:
+            device = "desktop"
+        hotspots = ep.hotspots.filter_by(device=device).order_by(EventHotspot.sort_order).all()
+        device_image = {
+            "desktop": ep.landing_image_desktop,
+            "tablet":  ep.landing_image_tablet,
+            "mobile":  ep.landing_image_mobile,
+        }[device]
         return render_template("admin/event_pages/form.html",
                                mode="edit", page=ep,
-                               concerts=concerts, event_groups=event_groups)
+                               concerts=concerts, event_groups=event_groups,
+                               device=device, device_image=device_image, hotspots=hotspots,
+                               devices=EventHotspot.DEVICES, device_labels=EventHotspot.DEVICE_LABELS,
+                               link_types=EventHotspot.LINK_TYPES,
+                               link_type_labels=EventHotspot.LINK_TYPE_LABELS)
 
     # POST
     def _parse_dt_edit(field):
@@ -296,6 +309,7 @@ def ep_edit(ep_id):
     ep.footer_privacy_url  = request.form.get("footer_privacy_url", "").strip() or None
     ep.footer_terms_url    = request.form.get("footer_terms_url", "").strip() or None
     ep.footer_contact_url  = request.form.get("footer_contact_url", "").strip() or None
+    ep.landing_published = bool(request.form.get("landing_published"))
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()
@@ -822,9 +836,9 @@ def api_delete_logo(ep_id):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PHASE 4  Landing Page 自由編輯（唯一可自訂 HTML 的頁面）
-# 其餘前台頁面（預約／查詢訂單／匯款回報／最新公告）一律使用系統共用 Template，
-# 僅可透過 Theme / Logo / Color / 活動名稱 客製，不開放自訂 HTML。
+# Landing Page 已併入活動編輯頁（/admin/event-pages/<id>/edit 的「Landing Page」
+# 區塊，原「Hero Media Manager」位置），不再獨立成頁。此路由僅為相容舊連結
+# （例如既有書籤／外部連結）保留，導向新位置。
 # ══════════════════════════════════════════════════════════════════════════════
 
 @event_page_bp.route("/admin/event-pages/<int:ep_id>/landing", methods=["GET", "POST"])
@@ -832,32 +846,11 @@ def ep_landing(ep_id):
     guard = _require_admin()
     if guard:
         return guard
-
-    ep = EventPage.query.get_or_404(ep_id)
-
-    if request.method == "POST":
-        # V1：Landing Page 主體改為圖片 + Hotspot（各自透過獨立 API 儲存），
-        # 這裡只處理「發布」開關。
-        ep.landing_published = bool(request.form.get("landing_published"))
-        ep.updated_at = datetime.utcnow()
-        db.session.commit()
-        flash("已更新 Landing Page 發布狀態。" if ep.landing_published else "Landing Page 已下架。", "success")
-        return redirect(url_for("event_page.ep_landing", ep_id=ep.id))
-
-    device = request.args.get("device", "desktop").strip()
-    if device not in EventHotspot.DEVICES:
-        device = "desktop"
-    hotspots = ep.hotspots.filter_by(device=device).order_by(EventHotspot.sort_order).all()
-    device_image = {
-        "desktop": ep.landing_image_desktop,
-        "tablet":  ep.landing_image_tablet,
-        "mobile":  ep.landing_image_mobile,
-    }[device]
-    return render_template("admin/event_pages/landing_editor.html",
-                           ep=ep, hotspots=hotspots, device=device, device_image=device_image,
-                           devices=EventHotspot.DEVICES, device_labels=EventHotspot.DEVICE_LABELS,
-                           link_types=EventHotspot.LINK_TYPES,
-                           link_type_labels=EventHotspot.LINK_TYPE_LABELS)
+    device = request.args.get("device", "").strip()
+    target = url_for("event_page.ep_edit", ep_id=ep_id)
+    if device:
+        target += f"?device={device}"
+    return redirect(target)
 
 
 # ── 後台：即時預覽（Desktop/Tablet/Mobile 切換）──────────────────────────────

@@ -53,7 +53,7 @@
     {% endif %}
 
     {% if mode == 'edit' %}
-    <a href="{{ url_for('event_page.ep_landing', ep_id=page.id) }}"
+    <a href="#landing-page"
        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
       <!-- Tabler ti-layout 對應 SVG -->
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,363 +299,199 @@
       </div>
     </div>
 
-    <!-- ── 活動特色（Hero 4格）── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
+    <!-- ── Landing Page（取代 Hero Media Manager）── -->
+    <div id="landing-page" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
       <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <h3 class="text-sm font-semibold text-gray-700">活動特色（Hero 4格）</h3>
-        <span class="text-xs text-gray-400">顯示在 Hero 下方的 4 個特色格子</span>
-      </div>
-
-      {% set feat_rows = [
-        ('1', page.feat1_title if page else '', page.feat1_sub if page else '', '專屬包車', '直達會場'),
-        ('2', page.feat2_title if page else '', page.feat2_sub if page else '', '舒適乘坐', '旅遊艙款'),
-        ('3', page.feat3_title if page else '', page.feat3_sub if page else '', '準時接送', '不超行程'),
-        ('4', page.feat4_title if page else '', page.feat4_sub if page else '', '安全安心', '專業司機'),
-      ] %}
-      {% for idx, val_t, val_s, def_t, def_s in feat_rows %}
-      <div class="grid grid-cols-2 gap-3 items-start">
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">特色 {{ idx }}｜標題</label>
-          <input type="text" name="feat{{ idx }}_title"
-                 value="{{ val_t or '' }}"
-                 placeholder="{{ def_t }}"
-                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">特色 {{ idx }}｜副標</label>
-          <input type="text" name="feat{{ idx }}_sub"
-                 value="{{ val_s or '' }}"
-                 placeholder="{{ def_s }}"
-                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        </div>
-      </div>
-      {% endfor %}
-      <p class="text-xs text-gray-400">留空使用預設文字（專屬包車、舒適乘坐、準時接送、安全安心）</p>
-    </div>
-
-
-    <!-- ── Phase 11: CTA Section & Activity Footer ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
-      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <h3 class="text-sm font-semibold text-gray-700">CTA Section ＆ Activity Footer</h3>
-        <span class="text-xs text-gray-400">預設關閉，不啟用則 Hero 後直接結束頁面</span>
-      </div>
-
-      <label class="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="cta_enabled" value="1"
-               {% if page and page.cta_enabled %}checked{% endif %}
-               class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400" />
-        <span class="text-sm text-gray-700">啟用 CTA Section（Hero 後顯示「準備好出發了嗎？」區塊）</span>
-      </label>
-
-      <label class="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="footer_enabled" value="1"
-               {% if page and page.footer_enabled %}checked{% endif %}
-               class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400" />
-        <span class="text-sm text-gray-700">啟用 Activity Footer（顯示於頁面最下方）</span>
-      </label>
-
-      <div class="grid grid-cols-1 gap-3 pt-1">
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">Footer 文字（留空使用預設 Copyright）</label>
-          <input type="text" name="footer_text" value="{{ page.footer_text if page else '' }}"
-                 placeholder="© 2026 藤井風 Shuttle"
-                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-        </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">隱私權政策連結</label>
-            <input type="text" name="footer_privacy_url" value="{{ page.footer_privacy_url if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">服務條款連結</label>
-            <input type="text" name="footer_terms_url" value="{{ page.footer_terms_url if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">聯絡我們連結</label>
-            <input type="text" name="footer_contact_url" value="{{ page.footer_contact_url if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Hero Media Manager ── -->
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
-      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <h3 class="text-sm font-semibold text-gray-700">Hero Media Manager</h3>
-        <span class="text-xs text-gray-400">Mobile 留空自動使用 Desktop 圖（Phase 8 fallback）</span>
+        <h3 class="text-sm font-semibold text-gray-700">Landing Page</h3>
+        <span class="text-xs text-gray-400">首頁 = Landing Image + Hotspot，不套用 Theme</span>
       </div>
 
       {% if mode == 'create' %}
       <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-6 py-8 text-center">
-        <p class="text-sm text-gray-500">請先 <strong>建立活動</strong>，建立後再返回上傳 Hero 圖片。</p>
-        <p class="text-xs text-gray-400 mt-1">（也可先輸入網址，建立後再改為上傳）</p>
-        <div class="mt-4 grid grid-cols-1 gap-3">
-          {% for slot_label, slot_name in [('Desktop Hero URL', 'hero_image_desktop'), ('Mobile Hero URL', 'hero_image_mobile')] %}
-          <input type="text" name="{{ slot_name }}" placeholder="{{ slot_label }} https://..."
-                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          {% endfor %}
-        </div>
+        <p class="text-sm text-gray-500">請先 <strong>建立活動</strong>，建立後再回來設定 Landing Page。</p>
       </div>
 
       {% else %}
-      {# ── edit mode: full drag-drop upload UI ── #}
+      {# ── edit mode: Landing Image 上傳 + Hotspot 管理 + Preview + 發布 ── #}
       {% set ep_id = page.id %}
 
-      <!-- Upload Zones: Desktop + Mobile side by side -->
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
-        {# Desktop Zone #}
+      <!-- Landing Image 上傳（Desktop / Tablet / Mobile）-->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {% for slot, label, ratio, size_hint in [
+          ('desktop', 'Desktop', '16/9', '建議 1920×1080'),
+          ('tablet',  'Tablet',  '3/4',  '建議 1536×2048'),
+          ('mobile',  'Mobile',  '9/16', '建議 1080×1920'),
+        ] %}
         <div>
           <div class="flex items-center gap-2 mb-2">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded">🖥 Desktop</span>
-            <span class="text-xs text-gray-400">1920×1080 · 16:9</span>
+            <span class="text-xs font-semibold text-gray-600">{{ label }}</span>
+            <span class="text-xs text-gray-400">{{ size_hint }}</span>
           </div>
-          <div id="zone-desktop"
-               class="upload-zone relative rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden cursor-pointer transition-colors hover:border-purple-300 hover:bg-purple-50/30"
-               style="aspect-ratio:16/9;"
-               onclick="document.getElementById('file-desktop').click()"
-               ondragover="zoneDragOver(event,'desktop')"
-               ondragleave="zoneDragLeave('desktop')"
-               ondrop="zoneDrop(event,'desktop')">
-
-            {# Existing image #}
-            <img id="img-desktop"
-                 src="{{ page.hero_image_desktop or '' }}"
-                 alt="Desktop Hero"
-                 class="absolute inset-0 w-full h-full object-cover {% if not page.hero_image_desktop %}hidden{% endif %}" />
-
-            {# Placeholder (shown when no image) #}
-            <div id="ph-desktop" class="absolute inset-0 flex flex-col items-center justify-center gap-2 {% if page.hero_image_desktop %}hidden{% endif %}">
-              <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              <p class="text-xs text-gray-400 text-center px-4">點擊或拖曳上傳<br>建議 1920×1080</p>
-            </div>
-
-            {# Overlay on hover #}
-            <div id="ov-desktop"
-                 class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3 {% if not page.hero_image_desktop %}hidden{% endif %}">
-              <button type="button" onclick="event.stopPropagation();document.getElementById('file-desktop').click()"
-                      class="px-3 py-1.5 bg-white text-gray-800 text-xs font-medium rounded-lg">更換</button>
-              <button type="button" onclick="event.stopPropagation();deleteHero('desktop')"
-                      class="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg">刪除</button>
-            </div>
-
-            {# Upload progress #}
-            <div id="prog-desktop" class="absolute inset-0 bg-black/60 hidden flex-col items-center justify-center gap-2">
-              <div class="w-10 h-10 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span class="text-white text-xs">上傳中…</span>
-            </div>
-          </div>
-
-          {# Size warning #}
-          <p id="warn-desktop" class="hidden mt-1 text-xs text-amber-600 flex items-center gap-1">
-            ⚠ 圖片解析度過低，可能影響顯示品質
-          </p>
-          {# Filename badge #}
-          <p id="fname-desktop" class="mt-1 text-xs text-gray-400 {% if not page.hero_image_desktop %}hidden{% endif %}">
-            {% if page.hero_image_desktop %}{{ page.hero_image_desktop.split('/')[-1] }}{% endif %}
-          </p>
-
-          <input id="file-desktop" type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
-                 onchange="uploadFile(this, 'desktop')" />
-        </div>
-
-        {# Mobile Zone #}
-        <div>
-          <div class="flex items-center gap-2 mb-2">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-700 rounded">📲 Mobile</span>
-            <span class="text-xs text-gray-400">1080×1920 · 9:16 · 可留空</span>
-          </div>
-          <div id="zone-mobile"
-               class="upload-zone relative rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden cursor-pointer transition-colors hover:border-orange-300 hover:bg-orange-50/20 mx-auto"
-               style="aspect-ratio:9/16;max-width:140px;"
-               onclick="document.getElementById('file-mobile').click()"
-               ondragover="zoneDragOver(event,'mobile')"
-               ondragleave="zoneDragLeave('mobile')"
-               ondrop="zoneDrop(event,'mobile')">
-
-            <img id="img-mobile"
-                 src="{{ page.hero_image_mobile or '' }}"
-                 alt="Mobile Hero"
-                 class="absolute inset-0 w-full h-full object-cover {% if not page.hero_image_mobile %}hidden{% endif %}" />
-
-            <div id="ph-mobile" class="absolute inset-0 flex flex-col items-center justify-center gap-2 {% if page.hero_image_mobile %}hidden{% endif %}">
+          <div id="lp-zone-{{ slot }}"
+               class="relative rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden cursor-pointer hover:border-purple-300 hover:bg-purple-50/30 transition-colors"
+               style="aspect-ratio:{{ ratio }};"
+               onclick="document.getElementById('lp-file-{{ slot }}').click()">
+            {% set img_url = {'desktop': page.landing_image_desktop, 'tablet': page.landing_image_tablet, 'mobile': page.landing_image_mobile}[slot] %}
+            <img id="lp-img-{{ slot }}" src="{{ img_url or '' }}"
+                 class="absolute inset-0 w-full h-full object-cover {% if not img_url %}hidden{% endif %}" />
+            <div id="lp-placeholder-{{ slot }}" class="absolute inset-0 flex flex-col items-center justify-center gap-1 {% if img_url %}hidden{% endif %}">
               <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
-              <p class="text-xs text-gray-400 text-center px-2">1080×1920<br>9:16</p>
-            </div>
-
-            <div id="ov-mobile"
-                 class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 {% if not page.hero_image_mobile %}hidden{% endif %}">
-              <button type="button" onclick="event.stopPropagation();document.getElementById('file-mobile').click()"
-                      class="px-2 py-1 bg-white text-gray-800 text-xs font-medium rounded">更換</button>
-              <button type="button" onclick="event.stopPropagation();deleteHero('mobile')"
-                      class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded">刪除</button>
-            </div>
-
-            <div id="prog-mobile" class="absolute inset-0 bg-black/60 hidden flex-col items-center justify-center">
-              <div class="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span class="text-xs text-gray-400">點擊上傳</span>
             </div>
           </div>
-
-          <p id="warn-mobile" class="hidden mt-1 text-xs text-amber-600">⚠ 圖片解析度過低</p>
-          <p id="fname-mobile" class="mt-1 text-xs text-gray-400 text-center {% if not page.hero_image_mobile %}hidden{% endif %}">
-            {% if page.hero_image_mobile %}{{ page.hero_image_mobile.split('/')[-1] }}{% endif %}
-          </p>
-
-          <input id="file-mobile" type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
-                 onchange="uploadFile(this, 'mobile')" />
+          <input type="file" id="lp-file-{{ slot }}" accept=".png,.jpg,.jpeg,.webp" class="hidden"
+                 onchange="lpUpload('{{ slot }}', this)" />
+          <div class="flex items-center justify-between mt-1.5">
+            <span id="lp-status-{{ slot }}" class="text-xs text-gray-400"></span>
+            {% if img_url %}
+            <button type="button" onclick="lpDelete('{{ slot }}')" class="text-xs text-red-500 hover:text-red-700">移除</button>
+            {% endif %}
+          </div>
         </div>
+        {% endfor %}
       </div>
 
-      {# Tablet (optional, collapsible) #}
-      <details class="border border-gray-100 rounded-xl">
-        <summary class="px-4 py-2.5 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50 rounded-xl">
-          📱 Tablet Hero（選填，1536×2048 · 3:4）
-        </summary>
-        <div class="px-4 pb-4 pt-3 border-t border-gray-100">
-          <div id="zone-tablet"
-               class="upload-zone relative rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden cursor-pointer transition-colors hover:border-green-300 mx-auto"
-               style="aspect-ratio:3/4;max-width:160px;"
-               onclick="document.getElementById('file-tablet').click()"
-               ondragover="zoneDragOver(event,'tablet')"
-               ondragleave="zoneDragLeave('tablet')"
-               ondrop="zoneDrop(event,'tablet')">
+      <!-- Hotspot 管理（Desktop/Tablet/Mobile 各自獨立一組，互不共用）-->
+      <div class="border-t border-gray-100 pt-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hotspot</h4>
+          <button type="button" onclick="lpAddHotspot()"
+                  class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+            ＋ 新增 Hotspot（{{ device_labels[device] }}）
+          </button>
+        </div>
 
-            <img id="img-tablet"
-                 src="{{ page.hero_image_tablet or '' }}"
-                 alt="Tablet Hero"
-                 class="absolute inset-0 w-full h-full object-cover {% if not page.hero_image_tablet %}hidden{% endif %}" />
+        <!-- 裝置分頁 -->
+        <div class="flex gap-1 border-b border-gray-100">
+          {% for d in devices %}
+          <a href="{{ url_for('event_page.ep_edit', ep_id=page.id) }}?device={{ d }}#landing-page"
+             class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition
+                    {% if device == d %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-800{% endif %}">
+            {{ device_labels[d] }}
+          </a>
+          {% endfor %}
+        </div>
 
-            <div id="ph-tablet" class="absolute inset-0 flex flex-col items-center justify-center gap-2 {% if page.hero_image_tablet %}hidden{% endif %}">
-              <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              <p class="text-xs text-gray-400 text-center px-2">1536×2048</p>
+        <!-- 視覺預覽（唯讀，數值調整後即時同步） -->
+        {% if device_image %}
+        <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-100" style="max-width:480px;">
+          <img src="{{ device_image }}" class="block w-full h-auto" />
+          <div id="lp-preview-overlay" class="absolute inset-0"></div>
+        </div>
+        {% else %}
+        <p class="text-xs text-amber-600">尚未上傳 {{ device_labels[device] }} 圖片，請先於上方上傳後再設定 Hotspot</p>
+        {% endif %}
+        <p class="text-xs text-gray-400">座標以圖片百分比儲存；{{ device_labels[device] }} 的 Hotspot 只在對應斷點顯示，與其他裝置完全獨立</p>
+
+        <div id="lp-hotspot-list" class="space-y-3">
+          {% for hs in hotspots %}
+          <div class="lp-hs-row border border-gray-100 rounded-xl p-4 bg-gray-50" data-id="{{ hs.id }}">
+            <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
+              <div class="col-span-2 sm:col-span-2">
+                <label class="block text-xs text-gray-500 mb-1">標籤</label>
+                <input type="text" class="hs-label w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" value="{{ hs.label }}" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">連結類型</label>
+                <select class="hs-link-type w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" onchange="lpToggleCustomUrl(this)">
+                  {% for lt in link_types %}
+                  <option value="{{ lt }}" {% if hs.link_type == lt %}selected{% endif %}>{{ link_type_labels[lt] }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="hs-custom-url-wrap {% if hs.link_type not in ('custom', 'line') %}hidden{% endif %}">
+                <label class="block text-xs text-gray-500 mb-1">網址</label>
+                <input type="text" class="hs-custom-url w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.custom_url or '' }}" placeholder="https://..." />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">啟用</label>
+                <label class="flex items-center h-8">
+                  <input type="checkbox" class="hs-active w-4 h-4 rounded border-gray-300 text-indigo-600" {% if hs.is_active %}checked{% endif %} />
+                </label>
+              </div>
+              <div class="flex gap-2 justify-end">
+                <button type="button" onclick="lpSaveHotspot(this)" class="px-3 py-1.5 text-xs text-white bg-gray-700 rounded-lg hover:bg-gray-800">儲存</button>
+                <button type="button" onclick="lpDeleteHotspot(this)" class="px-3 py-1.5 text-xs text-red-500 border border-red-200 rounded-lg hover:bg-red-50">刪除</button>
+              </div>
             </div>
-
-            <div id="ov-tablet"
-                 class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 {% if not page.hero_image_tablet %}hidden{% endif %}">
-              <button type="button" onclick="event.stopPropagation();document.getElementById('file-tablet').click()"
-                      class="px-2 py-1 bg-white text-gray-800 text-xs font-medium rounded">更換</button>
-              <button type="button" onclick="event.stopPropagation();deleteHero('tablet')"
-                      class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded">刪除</button>
-            </div>
-
-            <div id="prog-tablet" class="absolute inset-0 bg-black/60 hidden flex-col items-center justify-center">
-              <div class="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div class="grid grid-cols-4 gap-3 mt-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">X (%)</label>
+                <input type="number" step="0.1" min="0" max="100" class="hs-x w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.x_pct }}" oninput="lpUpdatePreview()" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
+                <input type="number" step="0.1" min="0" max="100" class="hs-y w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.y_pct }}" oninput="lpUpdatePreview()" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
+                <input type="number" step="0.1" min="0" max="100" class="hs-w w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.w_pct }}" oninput="lpUpdatePreview()" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
+                <input type="number" step="0.1" min="0" max="100" class="hs-h w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.h_pct }}" oninput="lpUpdatePreview()" />
+              </div>
             </div>
           </div>
-          <p id="warn-tablet" class="hidden mt-1 text-xs text-amber-600 text-center">⚠ 解析度過低</p>
-          <p id="fname-tablet" class="mt-1 text-xs text-gray-400 text-center {% if not page.hero_image_tablet %}hidden{% endif %}">
-            {% if page.hero_image_tablet %}{{ page.hero_image_tablet.split('/')[-1] }}{% endif %}
-          </p>
-          <input id="file-tablet" type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
-                 onchange="uploadFile(this, 'tablet')" />
+          {% endfor %}
         </div>
-      </details>
+        {% if not hotspots %}
+        <p class="text-center text-sm text-gray-400 py-6">{{ device_labels[device] }} 尚未設定 Hotspot，點擊上方「＋ 新增 Hotspot」開始</p>
+        {% endif %}
+      </div>
 
-      {# Phase 5/6: Live Hero Preview (iframe-based) #}
-      {% if page.slug %}
+      <!-- Landing Preview（即時預覽）-->
       <div class="border-t border-gray-100 pt-5">
         <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold text-gray-700">Hero 即時預覽</p>
-          <div class="flex items-center gap-2">
-            <button type="button" id="prev-btn-desktop"
-                    onclick="setPreviewDevice('desktop')"
-                    class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white">🖥 Desktop</button>
-            <button type="button" id="prev-btn-mobile"
-                    onclick="setPreviewDevice('mobile')"
-                    class="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-600">📲 Mobile</button>
-            <a href="/events/{{ page.slug }}" target="_blank"
-               class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">↗ 開新頁</a>
-          </div>
+          <p class="text-xs font-semibold text-gray-700">Landing Preview</p>
+          <a href="{{ url_for('event_page.ep_preview', ep_id=page.id) }}" target="_blank"
+             class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+            Desktop/Tablet/Mobile 切換預覽 →
+          </a>
         </div>
-        <div class="relative bg-gray-900 rounded-xl overflow-hidden" style="height:400px;">
-          <div id="prev-device-bar" class="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-black/60 backdrop-blur rounded-full px-3 py-1 text-white text-xs">
-            Desktop · 1920×1080
-          </div>
-          <div id="prev-wrap" class="w-full h-full overflow-hidden transition-all duration-300">
-            <iframe id="hero-iframe"
-                    src="/events/{{ page.slug }}"
-                    style="width:1280px;height:100%;transform-origin:top left;border:none;"
-                    scrolling="no"
-                    title="Hero Preview">
-            </iframe>
-          </div>
+        <div class="relative bg-gray-900 rounded-xl overflow-hidden" style="height:320px;">
+          <iframe src="/events/{{ page.slug }}" style="width:100%;height:100%;border:none;" title="Landing Preview"></iframe>
         </div>
-        <p class="text-xs text-gray-400 mt-1.5">上傳圖片後，點「刷新預覽」可立即查看效果。
-          <button type="button" onclick="document.getElementById('hero-iframe').src = document.getElementById('hero-iframe').src"
-                  class="text-purple-500 hover:underline">刷新預覽</button>
-        </p>
-      </div>
-      {% endif %}
-
-      {# Phase 8 fallback notice #}
-      <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-xs text-blue-700">
-        <strong>Fallback：</strong>未上傳 Mobile 圖時，自動使用 Desktop 圖。未上傳任何圖時顯示色塊背景。
       </div>
 
-      {# Legacy URL fields #}
+      <!-- 發布 -->
+      <div class="border-t border-gray-100 pt-5 flex items-center justify-between">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="landing_published" value="1" {% if page.landing_published %}checked{% endif %}
+                 class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-400" />
+          <span class="text-sm text-gray-700">發布 Landing Page（關閉則前台不顯示 Landing Image/Hotspot）</span>
+        </label>
+      </div>
+
+      <!-- SEO / OG 圖片（進階，非首頁顯示用途；供社群分享預覽圖，Deprecated 舊欄位相容保留）-->
       <details class="border border-gray-100 rounded-lg">
-        <summary class="px-4 py-2.5 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50">舊版 URL 欄位（進階 / 相容用）</summary>
+        <summary class="px-4 py-2.5 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50">
+          SEO / 社群分享圖片（進階，不影響首頁顯示）
+        </summary>
         <div class="px-4 pb-4 pt-3 space-y-3 border-t border-gray-100">
+          <p class="text-xs text-gray-400">供 Facebook/LINE 等分享預覽用，與首頁 Landing Image 無關</p>
+          {% for field_name, field_label in [
+            ('hero_image_desktop', 'og:image 圖片 URL（優先使用 Landing Desktop 圖，留空則用此欄位）'),
+            ('banner_image', 'banner_image（更舊版相容欄位）'),
+            ('cover_image', 'cover_image（最舊版相容欄位）'),
+            ('thumbnail_image', 'thumbnail_image（活動列表縮圖）'),
+          ] %}
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_desktop URL（手動輸入）</label>
-            <input type="text" name="hero_image_desktop"
-                   value="{{ page.hero_image_desktop if page else '' }}"
+            <label class="block text-xs font-medium text-gray-500 mb-1">{{ field_label }}</label>
+            <input type="text" name="{{ field_name }}"
+                   value="{{ page[field_name] if page else '' }}"
                    placeholder="https://..."
                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_tablet URL</label>
-            <input type="text" name="hero_image_tablet"
-                   value="{{ page.hero_image_tablet if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">hero_image_mobile URL</label>
-            <input type="text" name="hero_image_mobile"
-                   value="{{ page.hero_image_mobile if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">banner_image（舊版）</label>
-            <input type="text" name="banner_image"
-                   value="{{ page.banner_image if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">cover_image（最舊版）</label>
-            <input type="text" name="cover_image"
-                   value="{{ page.cover_image if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">thumbnail_image</label>
-            <input type="text" name="thumbnail_image"
-                   value="{{ page.thumbnail_image if page else '' }}"
-                   placeholder="https://..."
-                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
-          </div>
+          {% endfor %}
         </div>
       </details>
 
       {% endif %}{# end edit mode #}
     </div>
+
 
     <!-- ── 預約時段（選填）── -->
     <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
@@ -1066,164 +902,109 @@
 </div>
 
 <script>
-/* ── Hero Media Manager ── */
+/* ── Landing Page（取代 Hero Media Manager）── */
 
 const EP_ID = "{{ page.id if page else '' }}";
+const LP_DEVICE = "{{ device if device else 'desktop' }}";
 
-const SLOT_MIN = {
-  desktop: { w: 1200, h: 675 },
-  tablet:  { w: 768,  h: 1024 },
-  mobile:  { w: 720,  h: 1280 },
-};
-
-function zoneDragOver(e, slot) {
-  e.preventDefault();
-  document.getElementById('zone-' + slot).classList.add('border-purple-400', 'bg-purple-50/40');
-}
-function zoneDragLeave(slot) {
-  document.getElementById('zone-' + slot).classList.remove('border-purple-400', 'bg-purple-50/40');
-}
-function zoneDrop(e, slot) {
-  e.preventDefault();
-  zoneDragLeave(slot);
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file, slot);
-}
-
-function uploadFile(input, slot) {
-  if (input.files[0]) processFile(input.files[0], slot);
-  input.value = '';
-}
-
-function processFile(file, slot) {
+function lpUpload(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
   if (!EP_ID) { alert('請先儲存活動，再上傳圖片'); return; }
-
-  // client-side dimension check via Image()
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const img = new Image();
-    img.onload = function() {
-      const min = SLOT_MIN[slot];
-      const warn = document.getElementById('warn-' + slot);
-      if (warn) {
-        if (img.width < min.w || img.height < min.h) {
-          warn.classList.remove('hidden');
-        } else {
-          warn.classList.add('hidden');
-        }
-      }
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-
-  // show progress
-  showProg(slot, true);
-
+  const status = document.getElementById('lp-status-' + slot);
+  if (status) status.textContent = '上傳中…';
   const fd = new FormData();
   fd.append('file', file);
   fd.append('slot', slot);
-
-  fetch('/api/events/' + EP_ID + '/upload-hero', { method: 'POST', body: fd })
+  fetch('/api/events/' + EP_ID + '/upload-landing-image', { method: 'POST', body: fd })
     .then(r => r.json())
-    .then(data => {
-      showProg(slot, false);
-      if (data.ok) {
-        setSlotImage(slot, data.url);
-        setFname(slot, data.url.split('/').pop());
+    .then(d => {
+      if (d.ok) {
+        const img = document.getElementById('lp-img-' + slot);
+        const ph  = document.getElementById('lp-placeholder-' + slot);
+        if (img) { img.src = d.url; img.classList.remove('hidden'); }
+        if (ph)  ph.classList.add('hidden');
+        if (status) status.textContent = '✓ 上傳成功';
+        setTimeout(() => location.reload(), 500);
       } else {
-        alert('上傳失敗：' + (data.error || '未知錯誤'));
+        if (status) status.textContent = '✗ ' + (d.error || '上傳失敗');
       }
     })
-    .catch(() => {
-      showProg(slot, false);
-      alert('上傳失敗，請檢查網路連線');
-    });
+    .catch(() => { if (status) status.textContent = '✗ 網路錯誤'; });
+  input.value = '';
 }
 
-function deleteHero(slot) {
+function lpDelete(slot) {
   if (!EP_ID) return;
-  if (!confirm('確定刪除 ' + slot + ' Hero 圖片？')) return;
-
-  fetch('/api/events/' + EP_ID + '/delete-hero', {
+  if (!confirm('確定移除 ' + slot + ' 圖片？')) return;
+  fetch('/api/events/' + EP_ID + '/delete-landing-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slot })
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.ok) {
-        clearSlotImage(slot);
-        const warn = document.getElementById('warn-' + slot);
-        if (warn) warn.classList.add('hidden');
-      } else {
-        alert('刪除失敗：' + (data.error || '未知錯誤'));
-      }
-    });
+    body: JSON.stringify({ slot: slot }),
+  }).then(r => r.json()).then(d => { if (d.ok) location.reload(); });
 }
 
-function setSlotImage(slot, url) {
-  const img = document.getElementById('img-' + slot);
-  const ph  = document.getElementById('ph-'  + slot);
-  const ov  = document.getElementById('ov-'  + slot);
-  if (img) { img.src = url; img.classList.remove('hidden'); }
-  if (ph)  ph.classList.add('hidden');
-  if (ov)  ov.classList.remove('hidden');
+function lpToggleCustomUrl(sel) {
+  const row = sel.closest('.lp-hs-row');
+  const wrap = row.querySelector('.hs-custom-url-wrap');
+  wrap.classList.toggle('hidden', !['custom', 'line'].includes(sel.value));
 }
 
-function clearSlotImage(slot) {
-  const img   = document.getElementById('img-'   + slot);
-  const ph    = document.getElementById('ph-'    + slot);
-  const ov    = document.getElementById('ov-'    + slot);
-  const fname = document.getElementById('fname-' + slot);
-  if (img)   { img.src = ''; img.classList.add('hidden'); }
-  if (ph)    ph.classList.remove('hidden');
-  if (ov)    ov.classList.add('hidden');
-  if (fname) fname.classList.add('hidden');
+function lpAddHotspot() {
+  if (!EP_ID) return;
+  fetch('/api/events/' + EP_ID + '/hotspots', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device: LP_DEVICE, label: '新熱點', link_type: 'booking', x_pct: 10, y_pct: 10, w_pct: 20, h_pct: 10 }),
+  }).then(r => r.json()).then(d => { if (d.ok) location.reload(); });
 }
 
-function setFname(slot, name) {
-  const el = document.getElementById('fname-' + slot);
-  if (el) { el.textContent = name; el.classList.remove('hidden'); }
-}
-
-function showProg(slot, show) {
-  const el = document.getElementById('prog-' + slot);
-  if (!el) return;
-  el.style.display = show ? 'flex' : 'none';
-}
-
-/* ── Live Preview iframe ── */
-
-function setPreviewDevice(device) {
-  const iframe = document.getElementById('hero-iframe');
-  const wrap   = document.getElementById('prev-wrap');
-  const bar    = document.getElementById('prev-device-bar');
-  if (!iframe || !wrap) return;
-
-  ['desktop','mobile'].forEach(d => {
-    const btn = document.getElementById('prev-btn-' + d);
-    if (btn) btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg ' +
-      (d === device ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600');
+function lpSaveHotspot(btn) {
+  const row = btn.closest('.lp-hs-row');
+  const id = row.dataset.id;
+  const payload = {
+    label: row.querySelector('.hs-label').value,
+    link_type: row.querySelector('.hs-link-type').value,
+    custom_url: row.querySelector('.hs-custom-url').value,
+    x_pct: parseFloat(row.querySelector('.hs-x').value),
+    y_pct: parseFloat(row.querySelector('.hs-y').value),
+    w_pct: parseFloat(row.querySelector('.hs-w').value),
+    h_pct: parseFloat(row.querySelector('.hs-h').value),
+    is_active: row.querySelector('.hs-active').checked,
+  };
+  fetch('/api/events/' + EP_ID + '/hotspots/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).then(d => {
+    if (d.ok) { btn.textContent = '✓ 已儲存'; setTimeout(() => { btn.textContent = '儲存'; }, 1500); }
   });
-
-  if (device === 'desktop') {
-    iframe.style.width = '1280px';
-    iframe.style.transform = '';
-    wrap.style.overflowX = 'hidden';
-    if (bar) bar.textContent = 'Desktop · 1920×1080';
-  } else {
-    // Scale 390px viewport to fit inside the 400px-tall container
-    const containerW = wrap.offsetWidth || 800;
-    const mobileW = 390;
-    const scale = Math.min(containerW / mobileW, 1);
-    iframe.style.width = mobileW + 'px';
-    iframe.style.transform = 'scale(' + scale + ')';
-    iframe.style.transformOrigin = 'top left';
-    wrap.style.overflowX = 'hidden';
-    if (bar) bar.textContent = 'Mobile · 390×844';
-  }
 }
+
+function lpDeleteHotspot(btn) {
+  if (!confirm('確定刪除此 Hotspot？')) return;
+  const row = btn.closest('.lp-hs-row');
+  const id = row.dataset.id;
+  fetch('/api/events/' + EP_ID + '/hotspots/' + id, { method: 'DELETE' })
+    .then(r => r.json()).then(d => { if (d.ok) row.remove(); });
+}
+
+function lpUpdatePreview() {
+  const overlay = document.getElementById('lp-preview-overlay');
+  if (!overlay) return;
+  overlay.innerHTML = '';
+  document.querySelectorAll('.lp-hs-row').forEach(function(row) {
+    const x = parseFloat(row.querySelector('.hs-x').value) || 0;
+    const y = parseFloat(row.querySelector('.hs-y').value) || 0;
+    const w = parseFloat(row.querySelector('.hs-w').value) || 0;
+    const h = parseFloat(row.querySelector('.hs-h').value) || 0;
+    const box = document.createElement('div');
+    box.style.cssText = 'position:absolute;left:' + x + '%;top:' + y + '%;width:' + w + '%;height:' + h + '%;' +
+      'border:2px solid #6366f1;background:rgba(99,102,241,0.15);border-radius:4px;';
+    overlay.appendChild(box);
+  });
+}
+window.addEventListener('load', lpUpdatePreview);
 
 /* ── Brand Identity — Logo Upload / Delete / Live Preview ── */
 {% if mode == 'edit' and page %}

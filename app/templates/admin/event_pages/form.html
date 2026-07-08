@@ -353,6 +353,54 @@
         {% endfor %}
       </div>
 
+      <!-- 品牌設定：Logo Display Mode -->
+      <div class="border-t border-gray-100 pt-5 space-y-3">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logo Display Mode</h4>
+        <p class="text-xs text-gray-400">兩種模式互斥，不會同時顯示；Logo Link 沿用上方「品牌設定」的 Logo Link 欄位</p>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="logo_display_mode" value="system"
+                   {% if (page.logo_display_mode or 'system') == 'system' %}checked{% endif %}
+                   class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-400" />
+            <span class="text-sm text-gray-700">System Logo（系統 Logo，顯示 Logo Image/Text）</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="logo_display_mode" value="landing_hotspot"
+                   {% if page.logo_display_mode == 'landing_hotspot' %}checked{% endif %}
+                   class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-400" />
+            <span class="text-sm text-gray-700">Landing Logo（Hotspot）（Logo 已內建於圖片中，改用透明可點擊區域）</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-4 gap-3 pt-1">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Logo Hotspot X (%)｜{{ device_labels[device] }}</label>
+            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_x"
+                   value="{{ page['logo_hotspot_' + device + '_x'] }}"
+                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
+            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_y"
+                   value="{{ page['logo_hotspot_' + device + '_y'] }}"
+                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
+            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_w"
+                   value="{{ page['logo_hotspot_' + device + '_w'] }}"
+                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
+            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_h"
+                   value="{{ page['logo_hotspot_' + device + '_h'] }}"
+                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+          </div>
+        </div>
+        <p class="text-xs text-gray-400">此區塊為「{{ device_labels[device] }}」的 Logo Hotspot 座標，切換上方裝置分頁可分別設定；下方視覺預覽會以琥珀色標示</p>
+      </div>
+
       <!-- Hotspot 管理（Desktop/Tablet/Mobile 各自獨立一組，互不共用）-->
       <div class="border-t border-gray-100 pt-5 space-y-4">
         <div class="flex items-center justify-between">
@@ -993,6 +1041,25 @@ function lpUpdatePreview() {
   const overlay = document.getElementById('lp-preview-overlay');
   if (!overlay) return;
   overlay.innerHTML = '';
+
+  // Logo Hotspot（琥珀色），僅 Landing Logo（Hotspot）模式下有意義，但輸入框一律存在即畫出供對位
+  const logoModeRadio = document.querySelector('input[name="logo_display_mode"][value="landing_hotspot"]');
+  if (logoModeRadio && logoModeRadio.checked) {
+    const lx = document.querySelector('input[name^="logo_hotspot_"][name$="_x"]');
+    const ly = document.querySelector('input[name^="logo_hotspot_"][name$="_y"]');
+    const lw = document.querySelector('input[name^="logo_hotspot_"][name$="_w"]');
+    const lh = document.querySelector('input[name^="logo_hotspot_"][name$="_h"]');
+    if (lx && ly && lw && lh) {
+      const box = document.createElement('div');
+      const x = parseFloat(lx.value) || 0, y = parseFloat(ly.value) || 0;
+      const w = parseFloat(lw.value) || 0, h = parseFloat(lh.value) || 0;
+      box.style.cssText = 'position:absolute;left:' + x + '%;top:' + y + '%;width:' + w + '%;height:' + h + '%;' +
+        'border:2px solid #d97706;background:rgba(217,119,6,0.18);border-radius:4px;';
+      box.title = 'Logo Hotspot';
+      overlay.appendChild(box);
+    }
+  }
+
   document.querySelectorAll('.lp-hs-row').forEach(function(row) {
     const x = parseFloat(row.querySelector('.hs-x').value) || 0;
     const y = parseFloat(row.querySelector('.hs-y').value) || 0;
@@ -1005,6 +1072,9 @@ function lpUpdatePreview() {
   });
 }
 window.addEventListener('load', lpUpdatePreview);
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.name === 'logo_display_mode') lpUpdatePreview();
+});
 
 /* ── Brand Identity — Logo Upload / Delete / Live Preview ── */
 {% if mode == 'edit' and page %}

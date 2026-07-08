@@ -41,6 +41,23 @@ def _load_current_event():
         return
     g.current_event = ep
 
+def _logo_hotspot_form_kwargs():
+    """從 request.form 解析 Logo Display Mode + 三裝置 Logo Hotspot 座標"""
+    mode = request.form.get("logo_display_mode", "system").strip()
+    if mode not in ("system", "landing_hotspot"):
+        mode = "system"
+    kwargs = {"logo_display_mode": mode}
+    for device in ("desktop", "tablet", "mobile"):
+        for axis in ("x", "y", "w", "h"):
+            field = f"logo_hotspot_{device}_{axis}"
+            raw = request.form.get(field, "").strip()
+            try:
+                kwargs[field] = float(raw) if raw else None
+            except ValueError:
+                kwargs[field] = None
+    return kwargs
+
+
 # ── 藝人 slug 對照表 ─────────────────────────────────────────────────────────
 _ARTIST_SLUG = {
     "BTS": "bts", "防彈少年團": "bts",
@@ -213,6 +230,7 @@ def ep_create():
         event_group_id=int(request.form.get("event_group_id") or 0) or None,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
+        **_logo_hotspot_form_kwargs(),
     )
     db.session.add(ep)
     db.session.commit()
@@ -310,6 +328,8 @@ def ep_edit(ep_id):
     ep.footer_terms_url    = request.form.get("footer_terms_url", "").strip() or None
     ep.footer_contact_url  = request.form.get("footer_contact_url", "").strip() or None
     ep.landing_published = bool(request.form.get("landing_published"))
+    for field, value in _logo_hotspot_form_kwargs().items():
+        setattr(ep, field, value)
     ep.concert_id     = int(request.form.get("concert_id") or 0) or None
     ep.event_group_id = int(request.form.get("event_group_id") or 0) or None
     ep.updated_at     = datetime.utcnow()
@@ -927,6 +947,19 @@ def ep_clone(ep_id):
         landing_image_tablet=src.landing_image_tablet,
         landing_image_mobile=src.landing_image_mobile,
         landing_published=False,   # 複製後預設下架，需重新確認後手動發布
+        logo_display_mode=src.logo_display_mode,
+        logo_hotspot_desktop_x=src.logo_hotspot_desktop_x,
+        logo_hotspot_desktop_y=src.logo_hotspot_desktop_y,
+        logo_hotspot_desktop_w=src.logo_hotspot_desktop_w,
+        logo_hotspot_desktop_h=src.logo_hotspot_desktop_h,
+        logo_hotspot_tablet_x=src.logo_hotspot_tablet_x,
+        logo_hotspot_tablet_y=src.logo_hotspot_tablet_y,
+        logo_hotspot_tablet_w=src.logo_hotspot_tablet_w,
+        logo_hotspot_tablet_h=src.logo_hotspot_tablet_h,
+        logo_hotspot_mobile_x=src.logo_hotspot_mobile_x,
+        logo_hotspot_mobile_y=src.logo_hotspot_mobile_y,
+        logo_hotspot_mobile_w=src.logo_hotspot_mobile_w,
+        logo_hotspot_mobile_h=src.logo_hotspot_mobile_h,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )

@@ -116,8 +116,14 @@
    匯款回報/最新公告選單、不顯示 CTA/Footer。圖片本身不可點，
    只有 Hotspot 可點。
 ════════════════════════════════════════════════════════════════ #}
+{% set logo_href = ep.logo_link or ('/events/' + ep.slug) %}
+
+{# 品牌設定：Logo Display Mode — System Logo（預設，render 系統 Logo）
+   或 Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，不 render 系統 Logo）。
+   兩者互斥，不會同時顯示。 #}
+{% if not ep.uses_logo_hotspot %}
 <div class="lp-logo">
-  <a href="{{ ep.logo_link or ('/events/' + ep.slug) }}">
+  <a href="{{ logo_href }}">
     {%- if ep.logo_image %}
     <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
     {%- else %}
@@ -125,6 +131,7 @@
     {%- endif %}
   </a>
 </div>
+{% endif %}
 
 <div class="lp-stage">
   <picture>
@@ -136,6 +143,12 @@
   {# Bug Fix Phase 1: Desktop/Tablet/Mobile 各自獨立一組 Hotspot，
      以 CSS media query 對齊 <picture> 的圖片切換斷點，同時間只會有一組可見/可點 #}
   <div class="lp-hotspots lp-hotspots-desktop">
+    {%- if ep.uses_logo_hotspot %}
+    <a class="lp-hotspot lp-logo-hotspot" href="{{ logo_href }}" title="Logo"
+       style="left:{{ ep.logo_hotspot_desktop_x or 2 }}%; top:{{ ep.logo_hotspot_desktop_y or 2 }}%; width:{{ ep.logo_hotspot_desktop_w or 15 }}%; height:{{ ep.logo_hotspot_desktop_h or 6 }}%;">
+      <span class="sr-only">Logo</span>
+    </a>
+    {%- endif %}
     {%- for hs in hotspots_by_device.desktop %}
     <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
        {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
@@ -145,6 +158,12 @@
     {%- endfor %}
   </div>
   <div class="lp-hotspots lp-hotspots-tablet">
+    {%- if ep.uses_logo_hotspot %}
+    <a class="lp-hotspot lp-logo-hotspot" href="{{ logo_href }}" title="Logo"
+       style="left:{{ ep.logo_hotspot_tablet_x or 2 }}%; top:{{ ep.logo_hotspot_tablet_y or 2 }}%; width:{{ ep.logo_hotspot_tablet_w or 20 }}%; height:{{ ep.logo_hotspot_tablet_h or 5 }}%;">
+      <span class="sr-only">Logo</span>
+    </a>
+    {%- endif %}
     {%- for hs in hotspots_by_device.tablet %}
     <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
        {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}
@@ -154,6 +173,12 @@
     {%- endfor %}
   </div>
   <div class="lp-hotspots lp-hotspots-mobile">
+    {%- if ep.uses_logo_hotspot %}
+    <a class="lp-hotspot lp-logo-hotspot" href="{{ logo_href }}" title="Logo"
+       style="left:{{ ep.logo_hotspot_mobile_x or 3 }}%; top:{{ ep.logo_hotspot_mobile_y or 2 }}%; width:{{ ep.logo_hotspot_mobile_w or 25 }}%; height:{{ ep.logo_hotspot_mobile_h or 5 }}%;">
+      <span class="sr-only">Logo</span>
+    </a>
+    {%- endif %}
     {%- for hs in hotspots_by_device.mobile %}
     <a class="lp-hotspot" href="{{ hs.resolved_url(ep) }}" title="{{ hs.label }}"
        {%- if hs.opens_new_tab %} target="_blank" rel="noopener"{% endif %}

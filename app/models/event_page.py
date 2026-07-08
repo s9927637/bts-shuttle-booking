@@ -89,6 +89,23 @@ class EventPage(db.Model):
     landing_image_mobile  = db.Column(db.String(500), nullable=True)   # 建議 1080x1920
     landing_published     = db.Column(db.Boolean, nullable=True, default=False)  # Landing Page 獨立發布開關
 
+    # 品牌設定：Logo Display Mode — 'system'（系統 Logo，預設）｜'landing_hotspot'（Logo 已內建於
+    # Landing Image 中，改用透明 Hotspot 標示可點擊區域，不 render 系統 Logo）。
+    # 兩種模式互斥；nullable + 預設 'system' 確保既有活動行為不變。
+    logo_display_mode = db.Column(db.String(20), nullable=True, default='system')
+    logo_hotspot_desktop_x = db.Column(db.Float, nullable=True, default=2.0)
+    logo_hotspot_desktop_y = db.Column(db.Float, nullable=True, default=2.0)
+    logo_hotspot_desktop_w = db.Column(db.Float, nullable=True, default=15.0)
+    logo_hotspot_desktop_h = db.Column(db.Float, nullable=True, default=6.0)
+    logo_hotspot_tablet_x  = db.Column(db.Float, nullable=True, default=2.0)
+    logo_hotspot_tablet_y  = db.Column(db.Float, nullable=True, default=2.0)
+    logo_hotspot_tablet_w  = db.Column(db.Float, nullable=True, default=20.0)
+    logo_hotspot_tablet_h  = db.Column(db.Float, nullable=True, default=5.0)
+    logo_hotspot_mobile_x  = db.Column(db.Float, nullable=True, default=3.0)
+    logo_hotspot_mobile_y  = db.Column(db.Float, nullable=True, default=2.0)
+    logo_hotspot_mobile_w  = db.Column(db.Float, nullable=True, default=25.0)
+    logo_hotspot_mobile_h  = db.Column(db.Float, nullable=True, default=5.0)
+
     concert_id     = db.Column(db.Integer, db.ForeignKey("concerts.id",     ondelete="SET NULL"), nullable=True)
     event_group_id = db.Column(db.Integer, db.ForeignKey("event_groups.id", ondelete="SET NULL"), nullable=True)
     deleted_at   = db.Column(db.DateTime, nullable=True)
@@ -269,6 +286,11 @@ class EventPage(db.Model):
     def has_custom_landing(self):
         """DEPRECATED：舊版 HTML/CSS/JS Landing，僅為既有活動（如 BTS）向前相容保留"""
         return bool(self.landing_html and self.landing_html.strip())
+
+    @property
+    def uses_logo_hotspot(self):
+        """True 時不 render 系統 Logo，改用 Landing Image 內建的 Logo Hotspot"""
+        return self.logo_display_mode == 'landing_hotspot'
 
     @property
     def is_published(self):

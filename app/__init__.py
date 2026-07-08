@@ -100,6 +100,15 @@ def create_app():
     def _scope_css_filter(raw_css, slug):
         return _scope_css(raw_css, slug)
 
+    # Current Event Context：/events/<slug>/* 底下的路由（見 event_page_bp.before_request）
+    # 統一在 g.current_event 解析一次，這裡自動注入到所有 template，
+    # 不需要每個 render_template() 手動傳入。與各路由既有的 ep=/event_page= 參數並存，
+    # 不影響既有 template 的 Logo/Navbar/Booking/Orders/Announcement 顯示邏輯。
+    from flask import g as _g
+    @app.context_processor
+    def _inject_current_event():
+        return dict(current_event=getattr(_g, 'current_event', None))
+
     import logging
     from flask import render_template as _rt
 

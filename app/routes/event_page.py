@@ -7,7 +7,7 @@
 import re
 from datetime import datetime
 
-from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
 from app import db, csrf
 from app.models.event_page import EventPage
@@ -15,6 +15,31 @@ from app.models.event_hotspot import EventHotspot
 from app.models.concert import Concert, EventGroup
 
 event_page_bp = Blueprint("event_page", __name__)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Current Event Context
+#
+# 前台 /events/<slug>/* 底下所有路由（Landing／Booking／Orders／Remittance／
+# Announcement／FAQ）共用同一份 EventPage 查詢，統一在這裡解析一次，存進
+# g.current_event。各路由不得再自行 `EventPage.query.filter_by(slug=slug)`，
+# 一律讀 g.current_event。未發布活動僅管理員（session admin_id）可預覽。
+#
+# 透過 app 層級的 context_processor（見 app/__init__.py）自動注入
+# `current_event` 供所有 template 使用，不需要每個 render_template() 手動傳入。
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.before_request
+def _load_current_event():
+    slug = (request.view_args or {}).get("slug")
+    if not slug:
+        g.current_event = None
+        return
+    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first()
+    if not ep or (ep.status != "已發布" and not session.get("admin_id")):
+        g.current_event = None
+        return
+    g.current_event = ep
 
 # ── 藝人 slug 對照表 ─────────────────────────────────────────────────────────
 _ARTIST_SLUG = {
@@ -298,12 +323,9 @@ def ep_delete(ep_id):
 
 @event_page_bp.route("/events/<slug>")
 def event_show(slug):
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first()
+    ep = g.current_event
     if not ep:
         abort(404)
-    if ep.status != "已發布":
-        if not session.get("admin_id"):
-            abort(404)
     # 計頁數（僅已發布的前台訪問，管理員預覽不計）
     if ep.status == "已發布" and not session.get("admin_id"):
         from app.services.event_metrics_service import increment_page_views
@@ -323,8 +345,8 @@ def event_show(slug):
 @event_page_bp.route("/events/<slug>/news")
 def event_news(slug):
     from app.models.announcement import Announcement
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
-    if ep.status != "已發布" and not session.get("admin_id"):
+    ep = g.current_event
+    if not ep:
         abort(404)
     page = request.args.get("page", 1, type=int)
     per_page = 10
@@ -345,8 +367,8 @@ def event_news(slug):
 @event_page_bp.route("/events/<slug>/faq")
 def event_faq(slug):
     from app.models.faq import Faq
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
-    if ep.status != "已發布" and not session.get("admin_id"):
+    ep = g.current_event
+    if not ep:
         abort(404)
     faqs = Faq.query.filter_by(event_page_id=ep.id, is_active=True).order_by(Faq.sort_order).all()
     return render_template("passenger/event_faq.html", ep=ep, faqs=faqs)
@@ -356,8 +378,8 @@ def event_faq(slug):
 
 @event_page_bp.route("/events/<slug>/booking")
 def event_booking(slug):
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
-    if ep.status != "已發布" and not session.get("admin_id"):
+    ep = g.current_event
+    if not ep:
         abort(404)
     from app.routes.passenger import _render_booking_page
     friend_code = request.args.get("friend_code", "").strip() or None
@@ -368,8 +390,8 @@ def event_booking(slug):
 
 @event_page_bp.route("/events/<slug>/orders")
 def event_orders(slug):
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
-    if ep.status != "已發布" and not session.get("admin_id"):
+    ep = g.current_event
+    if not ep:
         abort(404)
     from app.routes.passenger import _render_order_search_page
     return _render_order_search_page(event_page=ep)
@@ -379,8 +401,8 @@ def event_orders(slug):
 
 @event_page_bp.route("/events/<slug>/remittance")
 def event_remittance(slug):
-    ep = EventPage.query.filter_by(slug=slug).filter(EventPage.deleted_at.is_(None)).first_or_404()
-    if ep.status != "已發布" and not session.get("admin_id"):
+    ep = g.current_event
+    if not ep:
         abort(404)
     from app.routes.passenger import _render_payment_report_page
     return _render_payment_report_page(event_page=ep)

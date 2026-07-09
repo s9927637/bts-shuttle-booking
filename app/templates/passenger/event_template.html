@@ -111,28 +111,54 @@
 
 {% if ep.has_image_landing %}
 {# ════════════════════════════════════════════════════════════════
-   V1: Landing Page = 圖片 + Hotspot（唯一支援的首頁客製方式）
-   首頁只保留 Logo／Landing Image／Hotspot，不顯示預約/查詢訂單/
-   匯款回報/最新公告選單、不顯示 CTA/Footer。圖片本身不可點，
-   只有 Hotspot 可點。
+   V1: Landing Page = 圖片 + Hotspot，並恢復 Header Navigation
+   （Logo + 預約/查詢訂單/匯款回報/最新公告，全部依 current_event
+   自動產生，不寫死 BTS）。Header 疊加於圖片上方（fixed），不影響
+   Landing Image 版面／比例；不顯示 CTA/Footer。圖片本身不可點，
+   Hotspot 與 Header 連結可點。
 ════════════════════════════════════════════════════════════════ #}
 {# Logo 永遠返回目前活動首頁，不提供自訂連結（不得寫死其他網址） #}
 {% set logo_href = '/events/' + ep.slug %}
 
-{# 品牌設定：Logo Display Mode — System Logo（預設，render 系統 Logo）
-   或 Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，不 render 系統 Logo）。
-   兩者互斥，不會同時顯示。 #}
-{% if not ep.uses_logo_hotspot %}
-<div class="lp-logo">
-  <a href="{{ logo_href }}">
-    {%- if ep.logo_image %}
-    <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
-    {%- else %}
-    <span class="lp-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
-    {%- endif %}
-  </a>
-</div>
-{% endif %}
+<nav class="ev-nav lp-nav">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+    {# 品牌設定：Logo Display Mode — System Logo（render 系統 Logo）或
+       Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，Header 左側留空，
+       不重複顯示 Logo）。兩者互斥，維持既有邏輯不變。 #}
+    <a href="{{ logo_href }}" class="flex items-center gap-2.5 shrink-0">
+      {%- if not ep.uses_logo_hotspot %}
+        {%- if ep.logo_image %}
+        <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}"
+             class="h-8 w-auto max-w-[160px] object-contain" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />
+        {%- else %}
+        <span class="text-sm font-semibold text-white tracking-tight" style="text-shadow:0 1px 3px rgba(0,0,0,.5);">
+          {{ ep.logo_text or (ep.artist_name + ' Shuttle') }}
+        </span>
+        {%- endif %}
+      {%- endif %}
+    </a>
+    <div class="hidden md:flex items-center gap-1">
+      <a href="/events/{{ ep.slug }}/booking"    class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">預約</a>
+      <a href="/events/{{ ep.slug }}/orders"     class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">查詢訂單</a>
+      <a href="/events/{{ ep.slug }}/remittance" class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">匯款回報</a>
+      <a href="/events/{{ ep.slug }}/news"       class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">最新公告</a>
+    </div>
+    <button data-collapse-toggle="lp-mobile-menu" type="button"
+            class="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+  <div id="lp-mobile-menu" class="hidden md:hidden ev-mobile-panel">
+    <div class="px-4 py-3 space-y-1">
+      <a href="/events/{{ ep.slug }}/booking"    class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">預約</a>
+      <a href="/events/{{ ep.slug }}/orders"     class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">查詢訂單</a>
+      <a href="/events/{{ ep.slug }}/remittance" class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">匯款回報</a>
+      <a href="/events/{{ ep.slug }}/news"       class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">最新公告</a>
+    </div>
+  </div>
+</nav>
 
 <div class="lp-stage">
   <picture>
@@ -191,9 +217,12 @@
 </div>
 
 <style>
-  .lp-logo { position: fixed; top: 20px; left: 20px; z-index: 20; }
-  .lp-logo img { height: 32px; width: auto; max-width: 160px; object-fit: contain; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
-  .lp-logo-text { font-size: 0.95rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  /* Header Navigation 疊加於 Landing Image 上方（fixed，不影響圖片版面／比例）。
+     容器與其子層預設 pointer-events:none、僅實際連結/按鈕 pointer-events:auto，
+     確保 Landing Logo（Hotspot）模式下、Logo Hotspot 落在 Header 高度範圍內時仍可正常點擊，
+     不受空的 Header 左側區塊遮擋（維持既有 Logo Display Mode 行為不變）。 */
+  .lp-nav, .lp-nav * { pointer-events: none; }
+  .lp-nav a, .lp-nav button { pointer-events: auto; }
   .lp-stage { position: relative; width: 100%; line-height: 0; }
   .lp-image { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
   .lp-hotspots { position: absolute; inset: 0; }

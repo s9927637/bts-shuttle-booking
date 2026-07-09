@@ -366,33 +366,15 @@
       </div>
 
       <!-- Visual Editor：Logo Hotspot + 內容 Hotspot 皆於同一畫布直接拖曳／縮放，不提供手動輸入 X/Y/Width/Height
-           每個裝置（Desktop/Tablet/Mobile）各自獨立一顆「💾 儲存 Hotspot」，只儲存目前裝置的 Logo Hotspot + 內容 Hotspot，
-           與頁面最下方「儲存變更」（Landing Page／Brand Settings／圖片／Theme／SEO 等一般表單欄位）完全分離、互不影響。 -->
+           每個裝置（Desktop/Tablet/Mobile）是獨立編輯器，各自在最下方右側保留一顆「儲存」，
+           只儲存目前裝置的 Logo Hotspot + 內容 Hotspot，與頁面最下方「儲存變更」
+           （Landing Page／Brand Settings／圖片／Theme／SEO 等一般表單欄位）完全分離、互不影響。 -->
       <div class="border-t border-gray-100 pt-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Visual Editor｜{{ device_labels[device] }}</h4>
-          <div class="flex flex-wrap items-center gap-1.5">
-            {% if device == 'desktop' %}
-            <button type="button" onclick="lpCopyLogoHotspot(['tablet'])"
-                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">Logo 複製到 Tablet</button>
-            <button type="button" onclick="lpCopyLogoHotspot(['mobile'])"
-                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">Logo 複製到 Mobile</button>
-            <button type="button" onclick="lpCopyLogoHotspot(['tablet','mobile'])"
-                    class="px-2.5 py-1 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Logo 複製到全部裝置</button>
-            {% endif %}
-            <button type="button" onclick="lpAddHotspot()"
-                    class="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
-              ＋ 新增 Hotspot
-            </button>
-          </div>
-        </div>
-
-        <!-- 本裝置專屬儲存：只儲存 {{ device_labels[device] }} 的 Logo Hotspot + 內容 Hotspot，不影響 Landing Page 其他表單欄位 -->
-        <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <span id="lp-save-status" class="text-xs font-medium text-gray-400">✓ 已儲存</span>
-          <button type="button" id="lp-save-btn" onclick="lpSaveAll()"
-                  class="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-            💾 儲存 Hotspot（{{ device_labels[device] }}）
+          <button type="button" onclick="lpAddHotspot()"
+                  class="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+            ＋ 新增 Hotspot
           </button>
         </div>
 
@@ -435,14 +417,14 @@
         {% endif %}
 
         <!-- Logo Hotspot 座標：僅供 JS 讀寫，故意不加 name 屬性 —— 不隨主表單（頁面最下方「儲存變更」）送出，
-             避免主表單提交時誤觸／覆寫 Hotspot 資料；座標僅透過「💾 儲存 Hotspot」呼叫 PUT /logo-hotspot 寫入 -->
+             避免主表單提交時誤觸／覆寫 Hotspot 資料；座標僅透過本 Editor 下方的「儲存」呼叫 PUT /logo-hotspot 寫入 -->
         <input type="hidden" id="logo-hs-x" value="{{ page['logo_hotspot_' + device + '_x'] or 2 }}" />
         <input type="hidden" id="logo-hs-y" value="{{ page['logo_hotspot_' + device + '_y'] or 2 }}" />
         <input type="hidden" id="logo-hs-w" value="{{ page['logo_hotspot_' + device + '_w'] or 15 }}" />
         <input type="hidden" id="logo-hs-h" value="{{ page['logo_hotspot_' + device + '_h'] or 6 }}" />
         <p id="logo-hs-copy-status" class="text-xs text-green-600 text-center"></p>
 
-        <!-- 內容 Hotspot 中繼資料（標籤／連結類型／啟用）；座標僅由畫布拖曳決定，不提供手動輸入；所有變更需按上方「💾 儲存 Hotspot」才寫入 -->
+        <!-- 內容 Hotspot 中繼資料（標籤／連結類型／啟用）；座標僅由畫布拖曳決定，不提供手動輸入；所有變更需按下方「儲存」才寫入 -->
         <div id="lp-hotspot-list" class="space-y-3">
           {% for hs in hotspots %}
           <div class="lp-hs-row border border-gray-100 rounded-xl p-3 bg-gray-50" data-id="{{ hs.id }}">
@@ -476,7 +458,29 @@
         {% if not hotspots %}
         <p class="text-center text-sm text-gray-400 py-6">{{ device_labels[device] }} 尚未設定 Hotspot，點擊上方「＋ 新增 Hotspot」開始</p>
         {% endif %}
-        <p class="text-xs text-gray-400">位置、大小、新增與刪除皆先暫存於畫面，需按上方「💾 儲存 Hotspot」才會寫入資料庫（百分比座標）；{{ device_labels[device] }} 的 Hotspot 只在對應斷點顯示，與其他裝置完全獨立，且不受頁面最下方「儲存變更」影響</p>
+        <p class="text-xs text-gray-400">位置、大小、新增與刪除皆先暫存於畫面，需按下方「儲存」才會寫入資料庫（百分比座標）；{{ device_labels[device] }} 的 Hotspot 只在對應斷點顯示，與其他裝置完全獨立，且不受頁面最下方「儲存變更」影響</p>
+
+        <!-- Visual Editor 底部：右側操作區（Copy 僅 Desktop 提供）＋ 本裝置專屬「儲存」 -->
+        <div class="flex flex-col items-end gap-2 pt-2 border-t border-gray-100">
+          {% if device == 'desktop' %}
+          <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <button type="button" onclick="lpCopyLogoHotspot(['tablet'])"
+                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Tablet</button>
+            <button type="button" onclick="lpCopyLogoHotspot(['mobile'])"
+                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Mobile</button>
+            <button type="button" onclick="lpCopyLogoHotspot(['tablet','mobile'])"
+                    class="px-2.5 py-1 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">複製到全部裝置</button>
+          </div>
+          {% endif %}
+          <div class="flex items-center gap-3">
+            <span id="lp-save-status" class="text-xs font-medium text-gray-400">✓ 已儲存</span>
+            <button type="button" id="lp-save-btn" onclick="lpSaveAll()"
+                    class="px-4 py-1.5 text-xs font-semibold bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    style="color:#000000;">
+              儲存
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Landing Preview（即時預覽）-->

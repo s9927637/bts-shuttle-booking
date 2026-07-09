@@ -55,7 +55,7 @@
 
 {% block nav_brand %}
 {% if event_page %}
-{%- set nav_link = event_page.logo_link or ('/events/' + event_page.slug) %}
+{%- set nav_link = '/events/' + event_page.slug %}
 <a href="{{ nav_link }}" class="flex items-center gap-2.5 shrink-0">
   {%- if event_page.logo_image %}
   <img src="{{ event_page.logo_image }}" alt="{{ event_page.logo_text or event_page.artist_name }}"

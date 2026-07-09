@@ -225,7 +225,7 @@
       </div>
 
       <!-- Logo 文字 -->
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4">
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">
             Logo 文字
@@ -236,17 +236,8 @@
                  placeholder="{{ (page.artist_name + ' Shuttle') if page else '例：KAZE Shuttle' }}"
                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
         </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">
-            Logo 連結
-            <span class="text-gray-300">（留空則預設回到活動首頁）</span>
-          </label>
-          <input type="text" name="logo_link"
-                 value="{{ page.logo_link or '' if page else '' }}"
-                 placeholder="{{ ('/events/' + page.slug) if page else '/events/<slug>' }}"
-                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono text-xs" />
-        </div>
       </div>
+      <p class="text-xs text-gray-400">Logo 點擊後固定返回目前活動首頁，不提供自訂連結</p>
 
       <!-- Navbar 即時預覽 -->
       <div class="rounded-lg overflow-hidden" style="background:#060312;padding:10px 16px;">
@@ -356,7 +347,7 @@
       <!-- 品牌設定：Logo Display Mode -->
       <div class="border-t border-gray-100 pt-5 space-y-3">
         <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logo Display Mode</h4>
-        <p class="text-xs text-gray-400">兩種模式互斥，不會同時顯示；Logo Link 沿用上方「品牌設定」的 Logo Link 欄位</p>
+        <p class="text-xs text-gray-400">兩種模式互斥，不會同時顯示；點擊後固定返回目前活動首頁，不提供自訂連結</p>
         <div class="flex gap-4">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="radio" name="logo_display_mode" value="system"

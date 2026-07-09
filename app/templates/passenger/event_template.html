@@ -116,7 +116,8 @@
    匯款回報/最新公告選單、不顯示 CTA/Footer。圖片本身不可點，
    只有 Hotspot 可點。
 ════════════════════════════════════════════════════════════════ #}
-{% set logo_href = ep.logo_link or ('/events/' + ep.slug) %}
+{# Logo 永遠返回目前活動首頁，不提供自訂連結（不得寫死其他網址） #}
+{% set logo_href = '/events/' + ep.slug %}
 
 {# 品牌設定：Logo Display Mode — System Logo（預設，render 系統 Logo）
    或 Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，不 render 系統 Logo）。
@@ -219,7 +220,7 @@
 ──────────────────────────────────────────────────────────────── #}
 <nav class="ev-nav">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-    {%- set nav_link = ep.logo_link or ('/events/' + ep.slug) %}
+    {%- set nav_link = '/events/' + ep.slug %}
     <a href="{{ nav_link }}" class="flex items-center gap-2.5 shrink-0">
       {%- if ep.logo_image %}
       <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}"

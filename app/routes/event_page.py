@@ -218,7 +218,6 @@ def ep_create():
         hero_image_tablet=request.form.get("hero_image_tablet", "").strip() or None,
         hero_image_mobile=request.form.get("hero_image_mobile", "").strip() or None,
         logo_text=request.form.get("logo_text", "").strip() or None,
-        logo_link=request.form.get("logo_link", "").strip() or None,
         theme_navbar=request.form.get("theme_navbar", "auto").strip() or "auto",
         cta_enabled=bool(request.form.get("cta_enabled")),
         footer_enabled=bool(request.form.get("footer_enabled")),
@@ -309,7 +308,6 @@ def ep_edit(ep_id):
     ep.hero_image_tablet   = request.form.get("hero_image_tablet", "").strip() or None
     ep.hero_image_mobile   = request.form.get("hero_image_mobile", "").strip() or None
     ep.logo_text  = request.form.get("logo_text", "").strip() or None
-    ep.logo_link  = request.form.get("logo_link", "").strip() or None
     # Phase 10: Theme System
     def _hex(key):
         v = request.form.get(key, "").strip()

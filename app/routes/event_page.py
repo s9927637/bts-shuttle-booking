@@ -43,9 +43,9 @@ def _load_current_event():
 
 def _logo_hotspot_form_kwargs():
     """從 request.form 解析 Logo Display Mode + 三裝置 Logo Hotspot 座標"""
-    mode = request.form.get("logo_display_mode", "system").strip()
+    mode = request.form.get("logo_display_mode", "landing_hotspot").strip()
     if mode not in ("system", "landing_hotspot"):
-        mode = "system"
+        mode = "landing_hotspot"
     kwargs = {"logo_display_mode": mode}
     for device in ("desktop", "tablet", "mobile"):
         for axis in ("x", "y", "w", "h"):
@@ -817,6 +817,43 @@ def api_hotspot_detail(ep_id, hs_id):
     hs.updated_at = datetime.utcnow()
     db.session.commit()
     return jsonify({"ok": True})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V1: Logo Hotspot（獨立於 Landing Hotspot，每裝置固定一個，不可新增/刪除）
+# ══════════════════════════════════════════════════════════════════════════════
+
+@event_page_bp.route("/api/events/<int:ep_id>/copy-logo-hotspot", methods=["POST"])
+@csrf.exempt
+def api_copy_logo_hotspot(ep_id):
+    """把目前輸入中的 Logo Hotspot 座標（來源固定為 Desktop 編輯器）複製到指定裝置"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    ep = EventPage.query.get_or_404(ep_id)
+
+    data = request.get_json(silent=True) or {}
+    targets = data.get("targets") or []
+    targets = [t for t in targets if t in EventHotspot.DEVICES]
+    if not targets:
+        return jsonify({"error": "無效的目標裝置"}), 400
+
+    try:
+        x = float(data.get("x", 2))
+        y = float(data.get("y", 2))
+        w = float(data.get("w", 15))
+        h = float(data.get("h", 6))
+    except (TypeError, ValueError):
+        return jsonify({"error": "座標格式錯誤"}), 400
+
+    # 來源裝置（Desktop）本身也一併寫入，確保複製當下即生效，不需等待主表單儲存
+    for device in set(targets) | {"desktop"}:
+        setattr(ep, f"logo_hotspot_{device}_x", x)
+        setattr(ep, f"logo_hotspot_{device}_y", y)
+        setattr(ep, f"logo_hotspot_{device}_w", w)
+        setattr(ep, f"logo_hotspot_{device}_h", h)
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True, "targets": targets})
 
 
 @event_page_bp.route("/api/events/<int:ep_id>/upload-logo", methods=["POST"])

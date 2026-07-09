@@ -92,7 +92,7 @@ class EventPage(db.Model):
     # 品牌設定：Logo Display Mode — 'system'（系統 Logo，預設）｜'landing_hotspot'（Logo 已內建於
     # Landing Image 中，改用透明 Hotspot 標示可點擊區域，不 render 系統 Logo）。
     # 兩種模式互斥；nullable + 預設 'system' 確保既有活動行為不變。
-    logo_display_mode = db.Column(db.String(20), nullable=True, default='system')
+    logo_display_mode = db.Column(db.String(20), nullable=True, default='landing_hotspot')
     logo_hotspot_desktop_x = db.Column(db.Float, nullable=True, default=2.0)
     logo_hotspot_desktop_y = db.Column(db.Float, nullable=True, default=2.0)
     logo_hotspot_desktop_w = db.Column(db.Float, nullable=True, default=15.0)

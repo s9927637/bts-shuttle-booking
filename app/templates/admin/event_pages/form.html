@@ -347,49 +347,81 @@
       <!-- 品牌設定：Logo Display Mode -->
       <div class="border-t border-gray-100 pt-5 space-y-3">
         <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logo Display Mode</h4>
-        <p class="text-xs text-gray-400">兩種模式互斥，不會同時顯示；點擊後固定返回目前活動首頁，不提供自訂連結</p>
+        <p class="text-xs text-gray-400">兩種模式互斥，不會同時顯示；Logo 永遠固定返回目前活動首頁，不提供自訂連結</p>
         <div class="flex gap-4">
           <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="logo_display_mode" value="landing_hotspot"
+                   {% if (page.logo_display_mode or 'landing_hotspot') == 'landing_hotspot' %}checked{% endif %}
+                   class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-400" />
+            <span class="text-sm text-gray-700">Landing Logo（Hotspot）【預設】（Logo 已內建於圖片中，改用透明可點擊區域）</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
             <input type="radio" name="logo_display_mode" value="system"
-                   {% if (page.logo_display_mode or 'system') == 'system' %}checked{% endif %}
+                   {% if page.logo_display_mode == 'system' %}checked{% endif %}
                    class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-400" />
             <span class="text-sm text-gray-700">System Logo（系統 Logo，顯示 Logo Image/Text）</span>
           </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="logo_display_mode" value="landing_hotspot"
-                   {% if page.logo_display_mode == 'landing_hotspot' %}checked{% endif %}
-                   class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-400" />
-            <span class="text-sm text-gray-700">Landing Logo（Hotspot）（Logo 已內建於圖片中，改用透明可點擊區域）</span>
-          </label>
         </div>
 
-        <div class="grid grid-cols-4 gap-3 pt-1">
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Logo Hotspot X (%)｜{{ device_labels[device] }}</label>
-            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_x"
-                   value="{{ page['logo_hotspot_' + device + '_x'] }}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+        <!-- Logo Hotspot Editor：每個裝置固定一個，不可新增/刪除，僅可拖曳/調整大小 -->
+        <div id="logo-hotspot-editor" class="rounded-xl border border-gray-200 p-4 bg-gray-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold text-gray-600">Logo Hotspot Editor｜{{ device_labels[device] }}</p>
+            {% if device == 'desktop' %}
+            <div class="flex gap-1.5">
+              <button type="button" onclick="lpCopyLogoHotspot(['tablet'])"
+                      class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Tablet</button>
+              <button type="button" onclick="lpCopyLogoHotspot(['mobile'])"
+                      class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Mobile</button>
+              <button type="button" onclick="lpCopyLogoHotspot(['tablet','mobile'])"
+                      class="px-2.5 py-1 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">複製到全部裝置</button>
+            </div>
+            {% endif %}
           </div>
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
-            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_y"
-                   value="{{ page['logo_hotspot_' + device + '_y'] }}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+
+          {% if device_image %}
+          <div id="logo-hs-stage" class="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-100 mx-auto" style="max-width:420px;">
+            <img src="{{ device_image }}" class="block w-full h-auto pointer-events-none select-none" draggable="false" />
+            <div id="logo-hs-box"
+                 class="absolute border-2 border-amber-500 bg-amber-500/20 cursor-move"
+                 style="left:{{ page['logo_hotspot_' + device + '_x'] or 2 }}%; top:{{ page['logo_hotspot_' + device + '_y'] or 2 }}%; width:{{ page['logo_hotspot_' + device + '_w'] or 15 }}%; height:{{ page['logo_hotspot_' + device + '_h'] or 6 }}%;">
+              <div class="logo-hs-handle" data-handle="se"
+                   style="position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;background:#d97706;border-radius:2px;cursor:nwse-resize;"></div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
-            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_w"
-                   value="{{ page['logo_hotspot_' + device + '_w'] }}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
+          <p class="text-xs text-gray-400 text-center">拖曳琥珀色方框移動位置，拖曳右下角控制點調整大小</p>
+          {% else %}
+          <p class="text-xs text-amber-600">尚未上傳 {{ device_labels[device] }} 圖片，請先上傳後再設定 Logo Hotspot</p>
+          {% endif %}
+
+          <div class="grid grid-cols-4 gap-3 pt-1">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">X (%)</label>
+              <input type="number" step="0.1" min="0" max="100" id="logo-hs-x" name="logo_hotspot_{{ device }}_x"
+                     value="{{ page['logo_hotspot_' + device + '_x'] }}"
+                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
+              <input type="number" step="0.1" min="0" max="100" id="logo-hs-y" name="logo_hotspot_{{ device }}_y"
+                     value="{{ page['logo_hotspot_' + device + '_y'] }}"
+                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
+              <input type="number" step="0.1" min="0" max="100" id="logo-hs-w" name="logo_hotspot_{{ device }}_w"
+                     value="{{ page['logo_hotspot_' + device + '_w'] }}"
+                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
+              <input type="number" step="0.1" min="0" max="100" id="logo-hs-h" name="logo_hotspot_{{ device }}_h"
+                     value="{{ page['logo_hotspot_' + device + '_h'] }}"
+                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
+            </div>
           </div>
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
-            <input type="number" step="0.1" min="0" max="100" name="logo_hotspot_{{ device }}_h"
-                   value="{{ page['logo_hotspot_' + device + '_h'] }}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpUpdatePreview()" />
-          </div>
+          <p id="logo-hs-copy-status" class="text-xs text-green-600"></p>
         </div>
-        <p class="text-xs text-gray-400">此區塊為「{{ device_labels[device] }}」的 Logo Hotspot 座標，切換上方裝置分頁可分別設定；下方視覺預覽會以琥珀色標示</p>
       </div>
 
       <!-- Hotspot 管理（Desktop/Tablet/Mobile 各自獨立一組，互不共用）-->
@@ -1066,6 +1098,107 @@ window.addEventListener('load', lpUpdatePreview);
 document.addEventListener('change', function(e) {
   if (e.target && e.target.name === 'logo_display_mode') lpUpdatePreview();
 });
+
+/* ── Logo Hotspot Editor：拖曳移動 + 拖曳右下角控制點調整大小 ──
+   固定一個 Editor，不提供新增/刪除；每個裝置各自獨立座標。 ── */
+(function () {
+  const stage = document.getElementById('logo-hs-stage');
+  const box   = document.getElementById('logo-hs-box');
+  if (!stage || !box) return;
+
+  const inX = document.getElementById('logo-hs-x');
+  const inY = document.getElementById('logo-hs-y');
+  const inW = document.getElementById('logo-hs-w');
+  const inH = document.getElementById('logo-hs-h');
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function writeBox(xPct, yPct, wPct, hPct) {
+    box.style.left   = xPct + '%';
+    box.style.top    = yPct + '%';
+    box.style.width  = wPct + '%';
+    box.style.height = hPct + '%';
+    inX.value = xPct.toFixed(1);
+    inY.value = yPct.toFixed(1);
+    inW.value = wPct.toFixed(1);
+    inH.value = hPct.toFixed(1);
+  }
+
+  let dragMode = null; // 'move' | 'resize'
+  let startX = 0, startY = 0;
+  let startPct = { x: 0, y: 0, w: 0, h: 0 };
+
+  box.addEventListener('mousedown', function (e) {
+    if (e.target.classList.contains('logo-hs-handle')) {
+      dragMode = 'resize';
+    } else {
+      dragMode = 'move';
+    }
+    startX = e.clientX;
+    startY = e.clientY;
+    startPct = {
+      x: parseFloat(inX.value) || 0, y: parseFloat(inY.value) || 0,
+      w: parseFloat(inW.value) || 15, h: parseFloat(inH.value) || 6,
+    };
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!dragMode) return;
+    const rect = stage.getBoundingClientRect();
+    const dxPct = ((e.clientX - startX) / rect.width) * 100;
+    const dyPct = ((e.clientY - startY) / rect.height) * 100;
+
+    if (dragMode === 'move') {
+      const x = clamp(startPct.x + dxPct, 0, 100 - startPct.w);
+      const y = clamp(startPct.y + dyPct, 0, 100 - startPct.h);
+      writeBox(x, y, startPct.w, startPct.h);
+    } else if (dragMode === 'resize') {
+      const w = clamp(startPct.w + dxPct, 2, 100 - startPct.x);
+      const h = clamp(startPct.h + dyPct, 2, 100 - startPct.y);
+      writeBox(startPct.x, startPct.y, w, h);
+    }
+    lpUpdatePreview();
+  });
+
+  document.addEventListener('mouseup', function () {
+    dragMode = null;
+  });
+})();
+
+function lpSyncLogoBox() {
+  const box = document.getElementById('logo-hs-box');
+  if (!box) return;
+  const x = document.getElementById('logo-hs-x').value || 0;
+  const y = document.getElementById('logo-hs-y').value || 0;
+  const w = document.getElementById('logo-hs-w').value || 15;
+  const h = document.getElementById('logo-hs-h').value || 6;
+  box.style.left = x + '%';
+  box.style.top = y + '%';
+  box.style.width = w + '%';
+  box.style.height = h + '%';
+}
+
+function lpCopyLogoHotspot(targets) {
+  if (!EP_ID) return;
+  const payload = {
+    x: parseFloat(document.getElementById('logo-hs-x').value) || 0,
+    y: parseFloat(document.getElementById('logo-hs-y').value) || 0,
+    w: parseFloat(document.getElementById('logo-hs-w').value) || 15,
+    h: parseFloat(document.getElementById('logo-hs-h').value) || 6,
+    targets: targets,
+  };
+  const status = document.getElementById('logo-hs-copy-status');
+  if (status) status.textContent = '複製中…';
+  fetch('/api/events/' + EP_ID + '/copy-logo-hotspot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).then(d => {
+    if (status) status.textContent = d.ok ? ('✓ 已複製到 ' + targets.join('、')) : ('✗ ' + (d.error || '複製失敗'));
+  }).catch(() => { if (status) status.textContent = '✗ 網路錯誤'; });
+}
 
 /* ── Brand Identity — Logo Upload / Delete / Live Preview ── */
 {% if mode == 'edit' and page %}

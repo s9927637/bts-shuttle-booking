@@ -363,74 +363,35 @@
           </label>
         </div>
 
-        <!-- Logo Hotspot Editor：每個裝置固定一個，不可新增/刪除，僅可拖曳/調整大小 -->
-        <div id="logo-hotspot-editor" class="rounded-xl border border-gray-200 p-4 bg-gray-50 space-y-3">
-          <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold text-gray-600">Logo Hotspot Editor｜{{ device_labels[device] }}</p>
-            {% if device == 'desktop' %}
-            <div class="flex gap-1.5">
-              <button type="button" onclick="lpCopyLogoHotspot(['tablet'])"
-                      class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Tablet</button>
-              <button type="button" onclick="lpCopyLogoHotspot(['mobile'])"
-                      class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">複製到 Mobile</button>
-              <button type="button" onclick="lpCopyLogoHotspot(['tablet','mobile'])"
-                      class="px-2.5 py-1 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">複製到全部裝置</button>
-            </div>
-            {% endif %}
-          </div>
-
-          {% if device_image %}
-          <div id="logo-hs-stage" class="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-100 mx-auto" style="max-width:420px;">
-            <img src="{{ device_image }}" class="block w-full h-auto pointer-events-none select-none" draggable="false" />
-            <div id="logo-hs-box"
-                 class="absolute border-2 border-amber-500 bg-amber-500/20 cursor-move"
-                 style="left:{{ page['logo_hotspot_' + device + '_x'] or 2 }}%; top:{{ page['logo_hotspot_' + device + '_y'] or 2 }}%; width:{{ page['logo_hotspot_' + device + '_w'] or 15 }}%; height:{{ page['logo_hotspot_' + device + '_h'] or 6 }}%;">
-              <div class="logo-hs-handle" data-handle="se"
-                   style="position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;background:#d97706;border-radius:2px;cursor:nwse-resize;"></div>
-            </div>
-          </div>
-          <p class="text-xs text-gray-400 text-center">拖曳琥珀色方框移動位置，拖曳右下角控制點調整大小</p>
-          {% else %}
-          <p class="text-xs text-amber-600">尚未上傳 {{ device_labels[device] }} 圖片，請先上傳後再設定 Logo Hotspot</p>
-          {% endif %}
-
-          <div class="grid grid-cols-4 gap-3 pt-1">
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">X (%)</label>
-              <input type="number" step="0.1" min="0" max="100" id="logo-hs-x" name="logo_hotspot_{{ device }}_x"
-                     value="{{ page['logo_hotspot_' + device + '_x'] }}"
-                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
-              <input type="number" step="0.1" min="0" max="100" id="logo-hs-y" name="logo_hotspot_{{ device }}_y"
-                     value="{{ page['logo_hotspot_' + device + '_y'] }}"
-                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
-              <input type="number" step="0.1" min="0" max="100" id="logo-hs-w" name="logo_hotspot_{{ device }}_w"
-                     value="{{ page['logo_hotspot_' + device + '_w'] }}"
-                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
-              <input type="number" step="0.1" min="0" max="100" id="logo-hs-h" name="logo_hotspot_{{ device }}_h"
-                     value="{{ page['logo_hotspot_' + device + '_h'] }}"
-                     class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" oninput="lpSyncLogoBox(); lpUpdatePreview();" />
-            </div>
-          </div>
-          <p id="logo-hs-copy-status" class="text-xs text-green-600"></p>
-        </div>
       </div>
 
-      <!-- Hotspot 管理（Desktop/Tablet/Mobile 各自獨立一組，互不共用）-->
+      <!-- Visual Editor：Logo Hotspot + 內容 Hotspot 皆於同一畫布直接拖曳／縮放，不提供手動輸入 X/Y/Width/Height
+           拖曳／新增／刪除皆僅暫存於畫面，需按「儲存」才會寫入資料庫 -->
       <div class="border-t border-gray-100 pt-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hotspot</h4>
-          <button type="button" onclick="lpAddHotspot()"
-                  class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
-            ＋ 新增 Hotspot（{{ device_labels[device] }}）
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Visual Editor｜{{ device_labels[device] }}</h4>
+          <div class="flex items-center gap-1.5">
+            {% if device == 'desktop' %}
+            <button type="button" onclick="lpCopyLogoHotspot(['tablet'])"
+                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">Logo 複製到 Tablet</button>
+            <button type="button" onclick="lpCopyLogoHotspot(['mobile'])"
+                    class="px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50">Logo 複製到 Mobile</button>
+            <button type="button" onclick="lpCopyLogoHotspot(['tablet','mobile'])"
+                    class="px-2.5 py-1 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Logo 複製到全部裝置</button>
+            {% endif %}
+            <button type="button" onclick="lpAddHotspot()"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+              ＋ 新增 Hotspot
+            </button>
+          </div>
+        </div>
+
+        <!-- 儲存狀態列：所有拖曳/新增/刪除/欄位變更皆先暫存於畫面，需按「儲存」才寫入資料庫 -->
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <span id="lp-save-status" class="text-xs font-medium text-gray-400">✓ 已儲存</span>
+          <button type="button" id="lp-save-btn" onclick="lpSaveAll()"
+                  class="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            儲存
           </button>
         </div>
 
@@ -445,28 +406,52 @@
           {% endfor %}
         </div>
 
-        <!-- 視覺預覽（唯讀，數值調整後即時同步） -->
         {% if device_image %}
-        <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-100" style="max-width:480px;">
-          <img src="{{ device_image }}" class="block w-full h-auto" />
-          <div id="lp-preview-overlay" class="absolute inset-0"></div>
+        <div id="lp-editor-stage" class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-100 mx-auto select-none" style="max-width:480px;">
+          <img src="{{ device_image }}" class="block w-full h-auto pointer-events-none select-none" draggable="false" />
+
+          <!-- Logo Hotspot：Move + Resize，不提供 Delete（Logo 永遠存在） -->
+          <div id="logo-hs-box" class="lp-box lp-box-logo absolute border-2 border-amber-500 bg-amber-500/20 cursor-move"
+               style="left:{{ page['logo_hotspot_' + device + '_x'] or 2 }}%; top:{{ page['logo_hotspot_' + device + '_y'] or 2 }}%; width:{{ page['logo_hotspot_' + device + '_w'] or 15 }}%; height:{{ page['logo_hotspot_' + device + '_h'] or 6 }}%;">
+            <span class="lp-box-tag" style="position:absolute;top:-18px;left:0;font-size:10px;line-height:16px;color:#b45309;background:#fff;padding:0 4px;border-radius:3px;white-space:nowrap;">Logo</span>
+            <div class="lp-resize-handle" style="position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;background:#d97706;border-radius:2px;cursor:nwse-resize;"></div>
+          </div>
+
+          <!-- 內容 Hotspot：Move + Resize + Delete -->
+          {% for hs in hotspots %}
+          <div class="lp-box lp-box-hotspot absolute border-2 border-indigo-500 bg-indigo-500/15 cursor-move" data-id="{{ hs.id }}"
+               style="left:{{ hs.x_pct }}%; top:{{ hs.y_pct }}%; width:{{ hs.w_pct }}%; height:{{ hs.h_pct }}%;">
+            <span class="lp-box-tag" style="position:absolute;top:-18px;left:0;font-size:10px;line-height:16px;color:#4338ca;background:#fff;padding:0 4px;border-radius:3px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ hs.label }}</span>
+            <button type="button" class="lp-box-delete" data-id="{{ hs.id }}" title="刪除 Hotspot"
+                    style="position:absolute;top:-9px;right:-9px;width:18px;height:18px;line-height:16px;font-size:12px;color:#fff;background:#ef4444;border:2px solid #fff;border-radius:50%;text-align:center;cursor:pointer;">×</button>
+            <div class="lp-resize-handle" style="position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;background:#4f46e5;border-radius:2px;cursor:nwse-resize;"></div>
+          </div>
+          {% endfor %}
         </div>
+        <p class="text-xs text-gray-400 text-center">拖曳方框移動位置、拖曳右下角控制點縮放；琥珀色 = Logo Hotspot（不可刪除），靛色 = 內容 Hotspot（可刪除）</p>
         {% else %}
         <p class="text-xs text-amber-600">尚未上傳 {{ device_labels[device] }} 圖片，請先於上方上傳後再設定 Hotspot</p>
         {% endif %}
-        <p class="text-xs text-gray-400">座標以圖片百分比儲存；{{ device_labels[device] }} 的 Hotspot 只在對應斷點顯示，與其他裝置完全獨立</p>
 
+        <!-- Logo Hotspot 座標：僅供表單送出使用，不對管理員顯示手動輸入欄位 -->
+        <input type="hidden" id="logo-hs-x" name="logo_hotspot_{{ device }}_x" value="{{ page['logo_hotspot_' + device + '_x'] or 2 }}" />
+        <input type="hidden" id="logo-hs-y" name="logo_hotspot_{{ device }}_y" value="{{ page['logo_hotspot_' + device + '_y'] or 2 }}" />
+        <input type="hidden" id="logo-hs-w" name="logo_hotspot_{{ device }}_w" value="{{ page['logo_hotspot_' + device + '_w'] or 15 }}" />
+        <input type="hidden" id="logo-hs-h" name="logo_hotspot_{{ device }}_h" value="{{ page['logo_hotspot_' + device + '_h'] or 6 }}" />
+        <p id="logo-hs-copy-status" class="text-xs text-green-600 text-center"></p>
+
+        <!-- 內容 Hotspot 中繼資料（標籤／連結類型／啟用）；座標僅由畫布拖曳決定，不提供手動輸入；所有變更需按上方「儲存」才寫入 -->
         <div id="lp-hotspot-list" class="space-y-3">
           {% for hs in hotspots %}
-          <div class="lp-hs-row border border-gray-100 rounded-xl p-4 bg-gray-50" data-id="{{ hs.id }}">
-            <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
+          <div class="lp-hs-row border border-gray-100 rounded-xl p-3 bg-gray-50" data-id="{{ hs.id }}">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
               <div class="col-span-2 sm:col-span-2">
                 <label class="block text-xs text-gray-500 mb-1">標籤</label>
-                <input type="text" class="hs-label w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" value="{{ hs.label }}" />
+                <input type="text" class="hs-label w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" value="{{ hs.label }}" oninput="lpMarkDirty()" />
               </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">連結類型</label>
-                <select class="hs-link-type w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" onchange="lpToggleCustomUrl(this)">
+                <select class="hs-link-type w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" onchange="lpToggleCustomUrl(this); lpMarkDirty();">
                   {% for lt in link_types %}
                   <option value="{{ lt }}" {% if hs.link_type == lt %}selected{% endif %}>{{ link_type_labels[lt] }}</option>
                   {% endfor %}
@@ -474,35 +459,13 @@
               </div>
               <div class="hs-custom-url-wrap {% if hs.link_type not in ('custom', 'line') %}hidden{% endif %}">
                 <label class="block text-xs text-gray-500 mb-1">網址</label>
-                <input type="text" class="hs-custom-url w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.custom_url or '' }}" placeholder="https://..." />
+                <input type="text" class="hs-custom-url w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.custom_url or '' }}" placeholder="https://..." oninput="lpMarkDirty()" />
               </div>
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">啟用</label>
-                <label class="flex items-center h-8">
-                  <input type="checkbox" class="hs-active w-4 h-4 rounded border-gray-300 text-indigo-600" {% if hs.is_active %}checked{% endif %} />
+              <div class="flex items-center gap-3 justify-end">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" class="hs-active w-4 h-4 rounded border-gray-300 text-indigo-600" {% if hs.is_active %}checked{% endif %} onchange="lpMarkDirty()" />
+                  <span class="text-xs text-gray-500">啟用</span>
                 </label>
-              </div>
-              <div class="flex gap-2 justify-end">
-                <button type="button" onclick="lpSaveHotspot(this)" class="px-3 py-1.5 text-xs text-white bg-gray-700 rounded-lg hover:bg-gray-800">儲存</button>
-                <button type="button" onclick="lpDeleteHotspot(this)" class="px-3 py-1.5 text-xs text-red-500 border border-red-200 rounded-lg hover:bg-red-50">刪除</button>
-              </div>
-            </div>
-            <div class="grid grid-cols-4 gap-3 mt-3">
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">X (%)</label>
-                <input type="number" step="0.1" min="0" max="100" class="hs-x w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.x_pct }}" oninput="lpUpdatePreview()" />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">Y (%)</label>
-                <input type="number" step="0.1" min="0" max="100" class="hs-y w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.y_pct }}" oninput="lpUpdatePreview()" />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">寬 (%)</label>
-                <input type="number" step="0.1" min="0" max="100" class="hs-w w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.w_pct }}" oninput="lpUpdatePreview()" />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500 mb-1">高 (%)</label>
-                <input type="number" step="0.1" min="0" max="100" class="hs-h w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="{{ hs.h_pct }}" oninput="lpUpdatePreview()" />
               </div>
             </div>
           </div>
@@ -511,6 +474,7 @@
         {% if not hotspots %}
         <p class="text-center text-sm text-gray-400 py-6">{{ device_labels[device] }} 尚未設定 Hotspot，點擊上方「＋ 新增 Hotspot」開始</p>
         {% endif %}
+        <p class="text-xs text-gray-400">位置、大小、新增與刪除皆先暫存於畫面，需按上方「儲存」才會寫入資料庫（百分比座標）；{{ device_labels[device] }} 的 Hotspot 只在對應斷點顯示，與其他裝置完全獨立</p>
       </div>
 
       <!-- Landing Preview（即時預覽）-->
@@ -1021,163 +985,102 @@ function lpToggleCustomUrl(sel) {
   wrap.classList.toggle('hidden', !['custom', 'line'].includes(sel.value));
 }
 
-function lpAddHotspot() {
-  if (!EP_ID) return;
-  fetch('/api/events/' + EP_ID + '/hotspots', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ device: LP_DEVICE, label: '新熱點', link_type: 'booking', x_pct: 10, y_pct: 10, w_pct: 20, h_pct: 10 }),
-  }).then(r => r.json()).then(d => { if (d.ok) location.reload(); });
+function lpRefreshPreviewIframe() {
+  const iframe = document.querySelector('#landing-page iframe[title="Landing Preview"]');
+  if (iframe) iframe.src = iframe.src;
 }
 
-function lpSaveHotspot(btn) {
-  const row = btn.closest('.lp-hs-row');
-  const id = row.dataset.id;
-  const payload = {
-    label: row.querySelector('.hs-label').value,
-    link_type: row.querySelector('.hs-link-type').value,
-    custom_url: row.querySelector('.hs-custom-url').value,
-    x_pct: parseFloat(row.querySelector('.hs-x').value),
-    y_pct: parseFloat(row.querySelector('.hs-y').value),
-    w_pct: parseFloat(row.querySelector('.hs-w').value),
-    h_pct: parseFloat(row.querySelector('.hs-h').value),
-    is_active: row.querySelector('.hs-active').checked,
-  };
-  fetch('/api/events/' + EP_ID + '/hotspots/' + id, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(r => r.json()).then(d => {
-    if (d.ok) { btn.textContent = '✓ 已儲存'; setTimeout(() => { btn.textContent = '儲存'; }, 1500); }
-  });
+/* ── 儲存狀態：Logo Hotspot 拖曳、內容 Hotspot 新增／移動／縮放／刪除／欄位變更，
+   一律只暫存於畫面（dirty），需按「儲存」才會呼叫 API 寫入資料庫。 ── */
+let lpDirty = false;
+const lpDeletedIds = []; // 已存在（有真實 DB id）但被標記刪除的 hotspot id
+let lpNewCounter = 0;
+
+function lpMarkDirty() {
+  lpDirty = true;
+  const status = document.getElementById('lp-save-status');
+  if (status) { status.textContent = '● 尚未儲存'; status.className = 'text-xs font-medium text-amber-600'; }
 }
 
-function lpDeleteHotspot(btn) {
-  if (!confirm('確定刪除此 Hotspot？')) return;
-  const row = btn.closest('.lp-hs-row');
-  const id = row.dataset.id;
-  fetch('/api/events/' + EP_ID + '/hotspots/' + id, { method: 'DELETE' })
-    .then(r => r.json()).then(d => { if (d.ok) row.remove(); });
+function lpMarkClean() {
+  lpDirty = false;
+  const status = document.getElementById('lp-save-status');
+  if (status) { status.textContent = '✓ 已儲存'; status.className = 'text-xs font-medium text-gray-400'; }
 }
 
-function lpUpdatePreview() {
-  const overlay = document.getElementById('lp-preview-overlay');
-  if (!overlay) return;
-  overlay.innerHTML = '';
-
-  // Logo Hotspot（琥珀色），僅 Landing Logo（Hotspot）模式下有意義，但輸入框一律存在即畫出供對位
-  const logoModeRadio = document.querySelector('input[name="logo_display_mode"][value="landing_hotspot"]');
-  if (logoModeRadio && logoModeRadio.checked) {
-    const lx = document.querySelector('input[name^="logo_hotspot_"][name$="_x"]');
-    const ly = document.querySelector('input[name^="logo_hotspot_"][name$="_y"]');
-    const lw = document.querySelector('input[name^="logo_hotspot_"][name$="_w"]');
-    const lh = document.querySelector('input[name^="logo_hotspot_"][name$="_h"]');
-    if (lx && ly && lw && lh) {
-      const box = document.createElement('div');
-      const x = parseFloat(lx.value) || 0, y = parseFloat(ly.value) || 0;
-      const w = parseFloat(lw.value) || 0, h = parseFloat(lh.value) || 0;
-      box.style.cssText = 'position:absolute;left:' + x + '%;top:' + y + '%;width:' + w + '%;height:' + h + '%;' +
-        'border:2px solid #d97706;background:rgba(217,119,6,0.18);border-radius:4px;';
-      box.title = 'Logo Hotspot';
-      overlay.appendChild(box);
-    }
-  }
-
-  document.querySelectorAll('.lp-hs-row').forEach(function(row) {
-    const x = parseFloat(row.querySelector('.hs-x').value) || 0;
-    const y = parseFloat(row.querySelector('.hs-y').value) || 0;
-    const w = parseFloat(row.querySelector('.hs-w').value) || 0;
-    const h = parseFloat(row.querySelector('.hs-h').value) || 0;
-    const box = document.createElement('div');
-    box.style.cssText = 'position:absolute;left:' + x + '%;top:' + y + '%;width:' + w + '%;height:' + h + '%;' +
-      'border:2px solid #6366f1;background:rgba(99,102,241,0.15);border-radius:4px;';
-    overlay.appendChild(box);
-  });
-}
-window.addEventListener('load', lpUpdatePreview);
-document.addEventListener('change', function(e) {
-  if (e.target && e.target.name === 'logo_display_mode') lpUpdatePreview();
+window.addEventListener('beforeunload', function (e) {
+  if (!lpDirty) return;
+  e.preventDefault();
+  e.returnValue = '尚有未儲存變更，是否離開？';
+  return e.returnValue;
 });
 
-/* ── Logo Hotspot Editor：拖曳移動 + 拖曳右下角控制點調整大小 ──
-   固定一個 Editor，不提供新增/刪除；每個裝置各自獨立座標。 ── */
-(function () {
-  const stage = document.getElementById('logo-hs-stage');
-  const box   = document.getElementById('logo-hs-box');
-  if (!stage || !box) return;
+function lpAddHotspot() {
+  const stage = document.getElementById('lp-editor-stage');
+  const list = document.getElementById('lp-hotspot-list');
+  if (!stage || !list) return;
+  lpNewCounter += 1;
+  const tempId = 'new-' + lpNewCounter;
 
-  const inX = document.getElementById('logo-hs-x');
-  const inY = document.getElementById('logo-hs-y');
-  const inW = document.getElementById('logo-hs-w');
-  const inH = document.getElementById('logo-hs-h');
+  const box = document.createElement('div');
+  box.className = 'lp-box lp-box-hotspot absolute border-2 border-indigo-500 bg-indigo-500/15 cursor-move';
+  box.dataset.id = tempId;
+  box.dataset.isNew = '1';
+  box.style.cssText = 'left:40%;top:40%;width:20%;height:10%;';
+  box.innerHTML =
+    '<span class="lp-box-tag" style="position:absolute;top:-18px;left:0;font-size:10px;line-height:16px;color:#4338ca;background:#fff;padding:0 4px;border-radius:3px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">新熱點</span>' +
+    '<button type="button" class="lp-box-delete" data-id="' + tempId + '" title="刪除 Hotspot" style="position:absolute;top:-9px;right:-9px;width:18px;height:18px;line-height:16px;font-size:12px;color:#fff;background:#ef4444;border:2px solid #fff;border-radius:50%;text-align:center;cursor:pointer;">×</button>' +
+    '<div class="lp-resize-handle" style="position:absolute;right:-5px;bottom:-5px;width:12px;height:12px;background:#4f46e5;border-radius:2px;cursor:nwse-resize;"></div>';
+  stage.appendChild(box);
+  lpBindDeleteButton(box.querySelector('.lp-box-delete'));
 
-  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  const linkTypeOptions = Array.prototype.map.call(
+    document.querySelectorAll('.lp-hs-row .hs-link-type')[0]
+      ? document.querySelectorAll('.lp-hs-row .hs-link-type')[0].options
+      : [],
+    function (o) { return '<option value="' + o.value + '">' + o.textContent + '</option>'; }
+  ).join('');
 
-  function writeBox(xPct, yPct, wPct, hPct) {
-    box.style.left   = xPct + '%';
-    box.style.top    = yPct + '%';
-    box.style.width  = wPct + '%';
-    box.style.height = hPct + '%';
-    inX.value = xPct.toFixed(1);
-    inY.value = yPct.toFixed(1);
-    inW.value = wPct.toFixed(1);
-    inH.value = hPct.toFixed(1);
-  }
+  const row = document.createElement('div');
+  row.className = 'lp-hs-row border border-gray-100 rounded-xl p-3 bg-gray-50';
+  row.dataset.id = tempId;
+  row.dataset.isNew = '1';
+  row.innerHTML =
+    '<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">' +
+      '<div class="col-span-2 sm:col-span-2"><label class="block text-xs text-gray-500 mb-1">標籤</label>' +
+        '<input type="text" class="hs-label w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" value="新熱點" oninput="lpMarkDirty()" /></div>' +
+      '<div><label class="block text-xs text-gray-500 mb-1">連結類型</label>' +
+        '<select class="hs-link-type w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg" onchange="lpToggleCustomUrl(this); lpMarkDirty();">' + linkTypeOptions + '</select></div>' +
+      '<div class="hs-custom-url-wrap hidden"><label class="block text-xs text-gray-500 mb-1">網址</label>' +
+        '<input type="text" class="hs-custom-url w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg font-mono" value="" placeholder="https://..." oninput="lpMarkDirty()" /></div>' +
+      '<div class="flex items-center gap-3 justify-end"><label class="flex items-center gap-1.5 cursor-pointer">' +
+        '<input type="checkbox" class="hs-active w-4 h-4 rounded border-gray-300 text-indigo-600" checked onchange="lpMarkDirty()" /><span class="text-xs text-gray-500">啟用</span></label></div>' +
+    '</div>';
+  list.appendChild(row);
 
-  let dragMode = null; // 'move' | 'resize'
-  let startX = 0, startY = 0;
-  let startPct = { x: 0, y: 0, w: 0, h: 0 };
+  const emptyHint = document.querySelector('#landing-page p.text-center.text-sm.text-gray-400');
+  if (emptyHint && emptyHint.textContent.includes('尚未設定 Hotspot')) emptyHint.remove();
 
-  box.addEventListener('mousedown', function (e) {
-    if (e.target.classList.contains('logo-hs-handle')) {
-      dragMode = 'resize';
-    } else {
-      dragMode = 'move';
-    }
-    startX = e.clientX;
-    startY = e.clientY;
-    startPct = {
-      x: parseFloat(inX.value) || 2, y: parseFloat(inY.value) || 2,
-      w: parseFloat(inW.value) || 15, h: parseFloat(inH.value) || 6,
-    };
-    e.preventDefault();
+  lpMarkDirty();
+}
+
+function lpDeleteHotspotById(id) {
+  if (!confirm('確定刪除此 Hotspot？（需按「儲存」才會實際寫入）')) return;
+  const box = document.querySelector('.lp-box-hotspot[data-id="' + id + '"]');
+  const row = document.querySelector('.lp-hs-row[data-id="' + id + '"]');
+  const isNew = box && box.dataset.isNew === '1';
+  if (box) box.remove();
+  if (row) row.remove();
+  if (!isNew) lpDeletedIds.push(id);
+  lpMarkDirty();
+}
+
+function lpBindDeleteButton(btn) {
+  if (!btn) return;
+  btn.addEventListener('click', function (e) {
     e.stopPropagation();
+    lpDeleteHotspotById(btn.dataset.id);
   });
-
-  document.addEventListener('mousemove', function (e) {
-    if (!dragMode) return;
-    const rect = stage.getBoundingClientRect();
-    const dxPct = ((e.clientX - startX) / rect.width) * 100;
-    const dyPct = ((e.clientY - startY) / rect.height) * 100;
-
-    if (dragMode === 'move') {
-      const x = clamp(startPct.x + dxPct, 0, 100 - startPct.w);
-      const y = clamp(startPct.y + dyPct, 0, 100 - startPct.h);
-      writeBox(x, y, startPct.w, startPct.h);
-    } else if (dragMode === 'resize') {
-      const w = clamp(startPct.w + dxPct, 2, 100 - startPct.x);
-      const h = clamp(startPct.h + dyPct, 2, 100 - startPct.y);
-      writeBox(startPct.x, startPct.y, w, h);
-    }
-    lpUpdatePreview();
-  });
-
-  document.addEventListener('mouseup', function () {
-    dragMode = null;
-  });
-})();
-
-function lpSyncLogoBox() {
-  const box = document.getElementById('logo-hs-box');
-  if (!box) return;
-  const x = document.getElementById('logo-hs-x').value || 0;
-  const y = document.getElementById('logo-hs-y').value || 0;
-  const w = document.getElementById('logo-hs-w').value || 15;
-  const h = document.getElementById('logo-hs-h').value || 6;
-  box.style.left = x + '%';
-  box.style.top = y + '%';
-  box.style.width = w + '%';
-  box.style.height = h + '%';
 }
 
 function lpCopyLogoHotspot(targets) {
@@ -1199,6 +1102,160 @@ function lpCopyLogoHotspot(targets) {
     if (status) status.textContent = d.ok ? ('✓ 已複製到 ' + targets.join('、')) : ('✗ ' + (d.error || '複製失敗'));
   }).catch(() => { if (status) status.textContent = '✗ 網路錯誤'; });
 }
+
+/* ── 統一「儲存」：批次送出 Logo Hotspot（目前裝置）+ 內容 Hotspot 新增／更新／刪除 ── */
+function lpSaveAll() {
+  if (!EP_ID) return;
+  const btn = document.getElementById('lp-save-btn');
+  const status = document.getElementById('lp-save-status');
+  if (btn) btn.disabled = true;
+  if (status) { status.textContent = '儲存中…'; status.className = 'text-xs font-medium text-gray-500'; }
+
+  const ops = [];
+
+  // Logo Hotspot（僅目前裝置）
+  ops.push(fetch('/api/events/' + EP_ID + '/logo-hotspot', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      device: LP_DEVICE,
+      x: parseFloat(document.getElementById('logo-hs-x').value) || 0,
+      y: parseFloat(document.getElementById('logo-hs-y').value) || 0,
+      w: parseFloat(document.getElementById('logo-hs-w').value) || 15,
+      h: parseFloat(document.getElementById('logo-hs-h').value) || 6,
+    }),
+  }));
+
+  // 刪除
+  lpDeletedIds.forEach(function (id) {
+    ops.push(fetch('/api/events/' + EP_ID + '/hotspots/' + id, { method: 'DELETE' }));
+  });
+
+  // 新增／更新內容 Hotspot
+  document.querySelectorAll('.lp-hs-row').forEach(function (row) {
+    const id = row.dataset.id;
+    const box = document.querySelector('.lp-box-hotspot[data-id="' + id + '"]');
+    if (!box) return;
+    const payload = {
+      label: row.querySelector('.hs-label').value,
+      link_type: row.querySelector('.hs-link-type').value,
+      custom_url: row.querySelector('.hs-custom-url').value,
+      is_active: row.querySelector('.hs-active').checked,
+      x_pct: parseFloat(box.style.left) || 0,
+      y_pct: parseFloat(box.style.top) || 0,
+      w_pct: parseFloat(box.style.width) || 0,
+      h_pct: parseFloat(box.style.height) || 0,
+    };
+    if (row.dataset.isNew === '1') {
+      payload.device = LP_DEVICE;
+      ops.push(
+        fetch('/api/events/' + EP_ID + '/hotspots', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        }).then(r => r.json()).then(function (d) {
+          if (d.ok && d.id) {
+            row.dataset.id = d.id; row.dataset.isNew = '';
+            box.dataset.id = d.id; box.dataset.isNew = '';
+            const delBtn = box.querySelector('.lp-box-delete');
+            if (delBtn) delBtn.dataset.id = d.id;
+          }
+        })
+      );
+    } else {
+      ops.push(fetch('/api/events/' + EP_ID + '/hotspots/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      }));
+    }
+  });
+
+  Promise.all(ops).then(function () {
+    lpDeletedIds.length = 0;
+    lpMarkClean();
+    lpRefreshPreviewIframe();
+  }).catch(function () {
+    if (status) { status.textContent = '✗ 儲存失敗，請重試'; status.className = 'text-xs font-medium text-red-600'; }
+  }).finally(function () {
+    if (btn) btn.disabled = false;
+  });
+}
+
+/* ── Visual Editor：Logo Hotspot（Move+Resize，不可刪除）與內容 Hotspot（Move+Resize+Delete）
+   共用同一畫布拖曳邏輯；拖曳/縮放結束後僅更新畫面座標並標記為「尚未儲存」，
+   不自動寫入資料庫，須手動按「儲存」才會呼叫 API。 ── */
+(function () {
+  const stage = document.getElementById('lp-editor-stage');
+  if (!stage) return;
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function boxPct(box) {
+    return {
+      x: parseFloat(box.style.left) || 0,
+      y: parseFloat(box.style.top) || 0,
+      w: parseFloat(box.style.width) || 0,
+      h: parseFloat(box.style.height) || 0,
+    };
+  }
+
+  function writeBoxStyle(box, x, y, w, h) {
+    box.style.left = x + '%';
+    box.style.top = y + '%';
+    box.style.width = w + '%';
+    box.style.height = h + '%';
+  }
+
+  let dragMode = null; // 'move' | 'resize'
+  let dragBox = null;
+  let dragKind = null; // 'logo' | 'hotspot'
+  let startX = 0, startY = 0;
+  let startPct = { x: 0, y: 0, w: 0, h: 0 };
+
+  stage.addEventListener('mousedown', function (e) {
+    if (e.target.classList.contains('lp-box-delete')) return; // 由 click 處理刪除
+    const box = e.target.closest('.lp-box');
+    if (!box) return;
+    dragBox = box;
+    dragKind = box.classList.contains('lp-box-logo') ? 'logo' : 'hotspot';
+    dragMode = e.target.classList.contains('lp-resize-handle') ? 'resize' : 'move';
+    startX = e.clientX;
+    startY = e.clientY;
+    startPct = boxPct(box);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!dragMode || !dragBox) return;
+    const rect = stage.getBoundingClientRect();
+    const dxPct = ((e.clientX - startX) / rect.width) * 100;
+    const dyPct = ((e.clientY - startY) / rect.height) * 100;
+
+    if (dragMode === 'move') {
+      const x = clamp(startPct.x + dxPct, 0, 100 - startPct.w);
+      const y = clamp(startPct.y + dyPct, 0, 100 - startPct.h);
+      writeBoxStyle(dragBox, x, y, startPct.w, startPct.h);
+    } else {
+      const w = clamp(startPct.w + dxPct, 2, 100 - startPct.x);
+      const h = clamp(startPct.h + dyPct, 2, 100 - startPct.y);
+      writeBoxStyle(dragBox, startPct.x, startPct.y, w, h);
+    }
+  });
+
+  document.addEventListener('mouseup', function () {
+    if (!dragMode || !dragBox) { dragMode = null; dragBox = null; return; }
+    const p = boxPct(dragBox);
+    if (dragKind === 'logo') {
+      document.getElementById('logo-hs-x').value = p.x.toFixed(1);
+      document.getElementById('logo-hs-y').value = p.y.toFixed(1);
+      document.getElementById('logo-hs-w').value = p.w.toFixed(1);
+      document.getElementById('logo-hs-h').value = p.h.toFixed(1);
+    }
+    lpMarkDirty();
+    dragMode = null;
+    dragBox = null;
+  });
+
+  stage.querySelectorAll('.lp-box-delete').forEach(lpBindDeleteButton);
+})();
 
 /* ── Brand Identity — Logo Upload / Delete / Live Preview ── */
 {% if mode == 'edit' and page %}

@@ -856,6 +856,36 @@ def api_copy_logo_hotspot(ep_id):
     return jsonify({"ok": True, "targets": targets})
 
 
+@event_page_bp.route("/api/events/<int:ep_id>/logo-hotspot", methods=["PUT"])
+@csrf.exempt
+def api_update_logo_hotspot(ep_id):
+    """單一裝置 Logo Hotspot 座標即時更新（Visual Editor 拖曳/縮放結束後自動儲存，僅影響當前裝置）"""
+    if not session.get("admin_id"):
+        return jsonify({"error": "未登入"}), 401
+    ep = EventPage.query.get_or_404(ep_id)
+
+    data = request.get_json(silent=True) or {}
+    device = data.get("device")
+    if device not in EventHotspot.DEVICES:
+        return jsonify({"error": "無效的裝置"}), 400
+
+    try:
+        x = float(data.get("x", 2))
+        y = float(data.get("y", 2))
+        w = float(data.get("w", 15))
+        h = float(data.get("h", 6))
+    except (TypeError, ValueError):
+        return jsonify({"error": "座標格式錯誤"}), 400
+
+    setattr(ep, f"logo_hotspot_{device}_x", x)
+    setattr(ep, f"logo_hotspot_{device}_y", y)
+    setattr(ep, f"logo_hotspot_{device}_w", w)
+    setattr(ep, f"logo_hotspot_{device}_h", h)
+    ep.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @event_page_bp.route("/api/events/<int:ep_id>/upload-logo", methods=["POST"])
 @csrf.exempt
 def api_upload_logo(ep_id):

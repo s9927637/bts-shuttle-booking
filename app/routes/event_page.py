@@ -42,20 +42,13 @@ def _load_current_event():
     g.current_event = ep
 
 def _logo_hotspot_form_kwargs():
-    """從 request.form 解析 Logo Display Mode + 三裝置 Logo Hotspot 座標"""
+    """從 request.form 解析 Logo Display Mode（System／Landing Logo Hotspot 切換）。
+    Logo Hotspot 座標（X/Y/W/H）不透過主表單提交，改由 Visual Editor 專屬的
+    PUT /api/events/<id>/logo-hotspot 即時儲存，避免主表單「儲存變更」誤觸或覆寫 Hotspot 資料。"""
     mode = request.form.get("logo_display_mode", "landing_hotspot").strip()
     if mode not in ("system", "landing_hotspot"):
         mode = "landing_hotspot"
-    kwargs = {"logo_display_mode": mode}
-    for device in ("desktop", "tablet", "mobile"):
-        for axis in ("x", "y", "w", "h"):
-            field = f"logo_hotspot_{device}_{axis}"
-            raw = request.form.get(field, "").strip()
-            try:
-                kwargs[field] = float(raw) if raw else None
-            except ValueError:
-                kwargs[field] = None
-    return kwargs
+    return {"logo_display_mode": mode}
 
 
 # ── 藝人 slug 對照表 ─────────────────────────────────────────────────────────

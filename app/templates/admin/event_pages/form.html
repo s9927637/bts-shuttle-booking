@@ -109,6 +109,20 @@
         </div>
       </div>
 
+      {% if mode == 'edit' and page %}
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">
+          網址代碼（Slug）
+          <span class="text-gray-300">（前台網址：/events/{{ page.slug }}）</span>
+        </label>
+        <input type="text" name="slug"
+               value="{{ page.slug }}"
+               pattern="[a-z0-9\-]+"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        <p class="text-xs text-amber-500 mt-1">變更後前台所有網址（Landing/Booking/查詢訂單/匯款回報/公告）立即改用新代碼，舊網址將失效</p>
+      </div>
+      {% endif %}
+
       <div>
         <label class="block text-xs font-medium text-gray-500 mb-1">活動名稱 <span class="text-red-400">*</span></label>
         <input type="text" name="event_name" required

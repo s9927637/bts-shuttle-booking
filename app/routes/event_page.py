@@ -272,6 +272,22 @@ def ep_edit(ep_id):
     ep.title          = request.form.get("title", ep.title).strip()
     ep.artist_name    = request.form.get("artist_name", ep.artist_name).strip()
     ep.event_name     = request.form.get("event_name", ep.event_name).strip()
+
+    # 網址代碼（Slug）：admin 可編輯，前台所有網址（Landing/Booking/Orders/Remittance/
+    # Announcement）一律以 event.slug 為唯一來源，不得自行組合 artist-id/slugify(name)。
+    slug_input = request.form.get("slug", "").strip()
+    if slug_input:
+        new_slug = re.sub(r"[^a-z0-9]+", "-", slug_input.lower()).strip("-")
+        if not new_slug:
+            flash("網址代碼格式錯誤，請使用英數字與連字號", "error")
+        elif new_slug != ep.slug:
+            dup = EventPage.query.filter(
+                EventPage.slug == new_slug, EventPage.id != ep.id
+            ).first()
+            if dup:
+                flash(f"網址代碼「{new_slug}」已被其他活動使用，請改用其他代碼", "error")
+            else:
+                ep.slug = new_slug
     ep.event_date     = request.form.get("event_date", "").strip() or None
     ep.departure_city = request.form.get("departure_city", "").strip() or None
     ep.price          = int(request.form.get("price", ep.price or 2000) or 2000)

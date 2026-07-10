@@ -89,6 +89,10 @@ class EventPage(db.Model):
     landing_image_mobile  = db.Column(db.String(500), nullable=True)   # 建議 1080x1920
     landing_published     = db.Column(db.Boolean, nullable=True, default=False)  # Landing Page 獨立發布開關
 
+    # Bug Fix：每個活動獨立的訂單編號前綴（例：BTS／FJK／BP）。
+    # nullable：未設定時由 _gen_order_no() 依 slug 推導安全預設值，不影響既有訂單格式。
+    order_prefix = db.Column(db.String(20), nullable=True)
+
     # 品牌設定：Logo Display Mode — 'system'（系統 Logo，預設）｜'landing_hotspot'（Logo 已內建於
     # Landing Image 中，改用透明 Hotspot 標示可點擊區域，不 render 系統 Logo）。
     # 兩種模式互斥；nullable + 預設 'system' 確保既有活動行為不變。

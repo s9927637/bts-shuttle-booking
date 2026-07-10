@@ -1,5 +1,8 @@
 {% extends "layouts/base.html" %}
-{% block title %}訂單 {{ order.order_no }} — BTS Shuttle{% endblock %}
+{% block title %}訂單 {{ order.order_no }} — {{ event_page.title if event_page else 'BTS Shuttle' }}{% endblock %}
+
+{# Theme／Logo／Navbar 一律由 layouts/base.html 依 event_page（Theme Provider）統一提供，
+   本頁不再自行宣告 extra_head／nav_brand，避免各頁各自維護一份、彼此漂移。 #}
 
 {% block content %}
 <div class="page-container">
@@ -82,7 +85,8 @@
 
   {# ── 區塊 2：同行資訊 ── #}
   {% if order.group_id %}
-  {% set invite_link = 'https://bts-shuttle-booking.anjiatra.com/booking?friend_code=' ~ order.group_id %}
+  {% set invite_path = ('/events/' + event_page.slug + '/booking') if event_page else '/booking' %}
+  {% set invite_link = request.host_url.rstrip('/') + invite_path + '?friend_code=' + order.group_id %}
   <div class="card-dark space-y-4 mb-5">
     <h2 class="section-title">同行群組</h2>
 
@@ -199,7 +203,7 @@
       <p>未完成訂金付款之訂單將不列入排車名單。</p>
     </div>
 
-    <a href="/payment/report?order_no={{ order.order_no }}" class="btn-primary">
+    <a href="{{ ('/events/' + event_page.slug + '/remittance') if event_page else '/payment/report' }}?order_no={{ order.order_no }}" class="btn-primary">
       前往匯款回報
     </a>
 

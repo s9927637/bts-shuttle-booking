@@ -180,6 +180,19 @@
           </select>
         </div>
       </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">
+          訂單前綴（Order Prefix）
+          <span class="text-gray-300">（例：BTS／FJK／BP，訂單編號格式：前綴-YYYYMMDD-流水號）</span>
+        </label>
+        <input type="text" name="order_prefix" maxlength="20"
+               value="{{ (page.order_prefix or '') if page else '' }}"
+               placeholder="留空則自動依活動網址代碼推導"
+               style="text-transform:uppercase;"
+               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-purple-400" />
+        <p class="text-xs text-gray-400 mt-1">只影響此活動之後新建立的訂單，不會更動既有訂單編號</p>
+      </div>
     </div>
 
     <!-- ══ 品牌設定（Brand Identity）══ -->

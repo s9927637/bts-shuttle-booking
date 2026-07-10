@@ -48,8 +48,16 @@ DEPARTURE_OPTIONS = [
 AVAILABLE_DATES = {opt["value"] for opt in DEPARTURE_OPTIONS if not opt["disabled"]}
 
 
-def _gen_order_no(order_id: int) -> str:
-    return f"BTS-KHH-{order_id:06d}"
+def _gen_order_no(order_id: int, event_page=None) -> str:
+    """訂單編號：原 BTS 傳統流程（無 event_page）維持既有格式，不受影響。
+    活動流程（有 event_page）改為 {order_prefix}-{YYYYMMDD}-{流水號}，
+    Prefix 依活動 Order Prefix 設定，未設定時安全回退為 slug 前 3 碼。"""
+    if not event_page:
+        return f"BTS-KHH-{order_id:06d}"
+    prefix = (event_page.order_prefix or event_page.slug[:3] or "EVT").strip().upper()
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    seq = Order.query.filter(Order.order_no.like(f"{prefix}-{date_str}-%")).count() + 1
+    return f"{prefix}-{date_str}-{seq:04d}"
 
 
 def _gen_group_id() -> str:
@@ -353,7 +361,7 @@ def booking_submit():
             applied_coupon.use_count += 1
         db.session.add(order)
         db.session.flush()                       # 取得 id，尚未 commit
-        order.order_no = _gen_order_no(order.id)
+        order.order_no = _gen_order_no(order.id, event_page)
 
         # 成團前計算（不含本訂單，以九座商旅車為準）
         if vehicle_type == "minibus":
@@ -420,6 +428,7 @@ def order_detail(order_no):
 
     return render_template("passenger/order_detail.html",
                            order=order,
+                           event_page=order.event_page,
                            group_orders=group_orders,
                            vehicle=vehicle,
                            driver=driver,
@@ -663,7 +672,7 @@ def join_group(group_id):
                               .order_by(Order.created_at.asc()).all()
     if not group_orders:
         return render_template("passenger/join_group.html",
-                               group_id=group_id, group_orders=[], not_found=True)
+                               group_id=group_id, group_orders=[], not_found=True, event_page=None)
     departure_date = group_orders[0].departure_date
     total_pax = sum(o.passenger_count for o in group_orders)
     line_user_id = request.args.get("line_user_id", "")
@@ -673,7 +682,8 @@ def join_group(group_id):
                            departure_date=departure_date,
                            total_pax=total_pax,
                            line_user_id=line_user_id,
-                           not_found=False)
+                           not_found=False,
+                           event_page=group_orders[0].event_page)
 
 
 @passenger_bp.route("/join/<group_id>", methods=["POST"])

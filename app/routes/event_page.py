@@ -190,6 +190,7 @@ def ep_create():
         thumbnail_image=request.form.get("thumbnail_image", "").strip() or None,
         category=request.form.get("category", "concert") or "concert",
         venue=request.form.get("venue", "").strip() or None,
+        order_prefix=(request.form.get("order_prefix", "").strip().upper() or None),
         booking_open_at=_parse_dt("booking_open_at"),
         booking_close_at=_parse_dt("booking_close_at"),
         status=request.form.get("status", "草稿"),
@@ -280,6 +281,7 @@ def ep_edit(ep_id):
     ep.thumbnail_image = request.form.get("thumbnail_image", "").strip() or None
     ep.category       = request.form.get("category", ep.category or "concert") or "concert"
     ep.venue          = request.form.get("venue", "").strip() or None
+    ep.order_prefix   = request.form.get("order_prefix", "").strip().upper() or None
     ep.booking_open_at  = _parse_dt_edit("booking_open_at")
     ep.booking_close_at = _parse_dt_edit("booking_close_at")
     ep.status         = request.form.get("status", ep.status)

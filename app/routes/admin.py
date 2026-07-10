@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timedelta
 from flask import Blueprint, session, redirect, render_template, request, flash, url_for, jsonify, Response
 from werkzeug.security import generate_password_hash
@@ -38,12 +37,6 @@ DEPARTURE_OPTIONS = [
 def require_admin():
     if not session.get("admin_id"):
         return redirect(url_for("auth.login_page"))
-
-
-def _gen_order_no():
-    prefix = datetime.utcnow().strftime("%Y%m%d")
-    suffix = uuid.uuid4().hex[:6].upper()
-    return f"BTS-{prefix}-{suffix}"
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────
@@ -314,6 +307,10 @@ def orders():
     vehicles    = Vehicle.query.order_by(Vehicle.plate_number).all()
     event_pages = EventPage.query.filter(EventPage.deleted_at.is_(None)).order_by(EventPage.artist_name, EventPage.created_at.desc()).all()
 
+    # 從「活動管理 → 藤井風 → 訂單管理」進來時（?event_filter=<ep_id>），
+    # 新增訂單表單的「活動」欄位預設帶入該活動，不需要管理員重選。
+    create_default_event_id = int(event_filter) if event_filter and event_filter.isdigit() else None
+
     return render_template(
         "admin/orders.html",
         orders=orders_list,
@@ -326,6 +323,7 @@ def orders():
         vehicles=vehicles,
         event_pages=event_pages,
         event_filter=event_filter,
+        create_default_event_id=create_default_event_id,
     )
 
 
@@ -338,11 +336,22 @@ def order_create():
         return guard
 
     try:
+        from app.models.event_page import EventPage
+        event_page_id_raw = request.form.get("event_page_id", "").strip()
+        if not event_page_id_raw or not event_page_id_raw.isdigit():
+            raise ValueError("請選擇活動")
+        event_page = EventPage.query.filter(
+            EventPage.id == int(event_page_id_raw), EventPage.deleted_at.is_(None)
+        ).first()
+        if not event_page:
+            raise ValueError("找不到所選活動")
+
         pc           = int(request.form["passenger_count"])
         vehicle_type = request.form.get("vehicle_type", "minibus").strip()
         payment_status = request.form.get("payment_status", "待付款")
         order = Order(
-            order_no        = _gen_order_no(),
+            order_no        = "TEMP",
+            event_page_id   = event_page.id,
             contact_name    = request.form["contact_name"].strip(),
             phone           = request.form["phone"].strip(),
             emergency_phone = request.form.get("emergency_phone", "").strip() or None,
@@ -359,6 +368,10 @@ def order_create():
         )
         db.session.add(order)
         db.session.flush()  # 取得 order.id
+        # 訂單編號：依所選活動的 Order Prefix 產生（與前台 /booking 共用同一套邏輯），
+        # 不再固定套用 BTS 前綴。
+        from app.routes.passenger import _gen_order_no as _gen_multi_event_order_no
+        order.order_no = _gen_multi_event_order_no(order.id, event_page)
 
         # 若建立時已設為已確認，同步建立 Payment 紀錄
         if payment_status in ("訂金已確認", "已完成"):

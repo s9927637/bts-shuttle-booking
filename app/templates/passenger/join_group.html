@@ -1,5 +1,6 @@
 {% extends "layouts/base.html" %}
-{% block title %}加入同行群組 — BTS Shuttle{% endblock %}
+{% block title %}加入同行群組 — {{ event_page.title if event_page else 'BTS Shuttle' }}{% endblock %}
+{# Theme／Logo／Navbar 一律由 layouts/base.html 依 event_page（Theme Provider）統一提供 #}
 
 {% block content %}
 <div class="page-container">

@@ -6,7 +6,39 @@
   <title>{% block title %}BTS Shuttle{% endblock %}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
   <style>
-    /* ── BTS Theme CSS Variables (default; overridable by event pages) ── */
+    /* ── Theme Provider：Current Event Theme 唯一來源 ──────────────────────────
+       有 event_page（current_event）時，全部 CSS 變數一律來自 event_page.resolved_theme；
+       子頁面不得也不需要自行查詢 Theme 或重複宣告這段變數（見各頁面已移除的 extra_head 覆寫）。
+       完全沒有 event_page 時（純舊版 /booking 等未關聯活動的流程），才使用這裡的 BTS 預設值
+       作為唯一 fallback，僅此一處，不在任何子模板重複。 ── */
+    {%- set _theme_ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
+    {%- if _theme_ep %}
+    {%- set rt = _theme_ep.resolved_theme %}
+    :root {
+      --ev-primary:       {{ rt.primary }};
+      --ev-primary-hover: {{ rt.primary }}dd;
+      --ev-btn-color:     {{ rt.btn_color }};
+      --ev-btn-text:      {{ rt.btn_text }};
+      --ev-bg:            {{ rt.bg }};
+      --ev-text:          {{ rt.text }};
+      {%- if rt.navbar == 'light' %}
+      --ev-nav-bg:        #ffffff;
+      --ev-nav-text:      #1a1a1a;
+      --ev-nav-border:    rgba(0,0,0,0.08);
+      {%- elif rt.navbar == 'dark' %}
+      --ev-nav-bg:        #111111;
+      --ev-nav-text:      #ffffff;
+      --ev-nav-border:    rgba(255,255,255,0.08);
+      {%- else %}
+      --ev-nav-bg:        {{ rt.bg }};
+      --ev-nav-text:      {{ rt.text }};
+      --ev-nav-border:    rgba(128,128,128,0.15);
+      {%- endif %}
+      --ev-nav-active-bg: {{ rt.primary }};
+      --ev-input-focus:   {{ rt.primary }};
+      --ev-accent-muted:  {{ rt.primary }}22;
+    }
+    {%- else %}
     :root {
       --ev-primary:       #9333ea;
       --ev-primary-hover: #7e22ce;
@@ -21,6 +53,7 @@
       --ev-input-focus:   #9333ea;
       --ev-accent-muted:  rgba(147,51,234,0.15);
     }
+    {%- endif %}
 
     * { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
 
@@ -35,6 +68,25 @@
 
     input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.45) !important; }
     .input-dark::placeholder { color: rgba(255,255,255,0.45) !important; }
+
+    /* ── 按鈕／強調色統一對應 Current Event Theme ──────────────────────────────
+       各子頁面內文仍大量使用固定的 Tailwind purple-* class（歷史遺留），
+       這裡統一在 Theme Provider 這一層把它們全部映射到 --ev-* 變數，
+       確保「按鈕也呈現該活動的顏色」，不需要每個頁面各自覆寫一次。 ── */
+    .bg-purple-500, .bg-purple-600 { background-color: var(--ev-btn-color) !important; }
+    .hover\:bg-purple-700:hover { background-color: var(--ev-primary-hover) !important; }
+    .bg-purple-900\/40, .bg-purple-950, .bg-purple-950\/20, .bg-purple-950\/30, .bg-purple-950\/40, .bg-purple-950\/50 {
+      background-color: color-mix(in srgb, var(--ev-primary) 12%, transparent) !important;
+    }
+    .border-purple-500, .border-purple-600 { border-color: var(--ev-primary) !important; }
+    .border-purple-700\/50, .border-purple-800, .border-purple-800\/50, .border-purple-900\/50 {
+      border-color: color-mix(in srgb, var(--ev-primary) 35%, transparent) !important;
+    }
+    .text-purple-300 { color: color-mix(in srgb, var(--ev-primary) 70%, #fff) !important; }
+    .text-purple-400, .text-purple-500, .text-purple-600,
+    .hover\:text-purple-300:hover, .hover\:text-purple-400:hover { color: var(--ev-primary) !important; }
+    .ring-purple-600, .focus\:ring-purple-600:focus { --tw-ring-color: var(--ev-primary) !important; }
+    input[type=checkbox], input[type=radio] { accent-color: var(--ev-primary); }
 
     /* ── Shared Theme Classes ── */
     .page-container {
@@ -83,6 +135,22 @@
   <nav class="sticky top-0 z-40" style="background-color:var(--ev-nav-bg) !important; border-bottom:1px solid var(--ev-nav-border);">
     <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
       {% block nav_brand %}
+      {%- set _brand_ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
+      {%- if _brand_ep %}
+      <a href="/events/{{ _brand_ep.slug }}" class="flex items-center gap-2.5 shrink-0">
+        {%- if _brand_ep.logo_image %}
+        <img src="{{ _brand_ep.logo_image }}" alt="{{ _brand_ep.logo_text or _brand_ep.artist_name }}"
+             class="h-7 w-auto max-w-[140px] object-contain" />
+        {%- else %}
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
+          <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+          </svg>
+        </div>
+        <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">{{ _brand_ep.logo_text or (_brand_ep.artist_name + ' Shuttle') }}</span>
+        {%- endif %}
+      </a>
+      {%- else %}
       <a href="/" class="flex items-center gap-2.5">
         <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
           <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,10 +159,11 @@
         </div>
         <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">BTS 演唱會包車預約</span>
       </a>
+      {%- endif %}
       {% endblock %}
 
       <!-- Desktop links (event-aware) -->
-      {%- set _ep = event_page if event_page is defined else None %}
+      {%- set _ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
       {%- set _slug = _ep.slug if _ep else None %}
       <div class="hidden md:flex items-center gap-1">
         <a href="{{ '/events/' + _slug + '/booking' if _slug else '/booking' }}"

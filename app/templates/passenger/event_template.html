@@ -43,6 +43,7 @@
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(0,0,0,0.07);
+      padding-top: env(safe-area-inset-top);
     }
     .ev-nav a, .ev-nav button { color: #1a1a1a !important; }
     .ev-nav a:hover { background: rgba(0,0,0,0.06) !important; }
@@ -52,28 +53,36 @@
       border-top: 1px solid rgba(0,0,0,0.07);
     }
     .ev-mobile-panel a { color: #1a1a1a !important; }
+    .ev-nav:has(.ev-mobile-panel:not(.hidden)) { background: rgba(255,255,255,0.97) !important; }
     {%- elif rt.navbar == 'dark' %}
     .ev-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 50;
       background: rgba(10,10,10,0.97);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-top: env(safe-area-inset-top);
     }
     .ev-mobile-panel {
       background: rgba(10,10,10,0.98);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid rgba(255,255,255,0.07);
     }
+    .ev-nav:has(.ev-mobile-panel:not(.hidden)) { background: rgba(10,10,10,0.98) !important; }
     {%- else %}
     .ev-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 50;
       background: linear-gradient(to bottom, rgba(0,0,0,0.60), rgba(0,0,0,0));
+      padding-top: env(safe-area-inset-top);
     }
     .ev-mobile-panel {
       background: rgba(6,3,18,0.96);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid rgba(255,255,255,0.07);
     }
+    /* Header Gap 修正：選單展開時，Header（.ev-nav）背景改為與選單面板一致的不透明色，
+       避免頂部 56px Header 條仍是透明漸層、讓 Hero 透出，造成「選單從 Header 下方才開始」
+       的視覺斷層。僅在選單展開（.ev-mobile-panel 不是 .hidden）時套用，關閉時維持原本透明。 */
+    .ev-nav:has(.ev-mobile-panel:not(.hidden)) { background: rgba(6,3,18,0.96) !important; }
     {%- endif %}
 
     /* ═══════════════════════════════════════

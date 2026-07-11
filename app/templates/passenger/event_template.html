@@ -17,6 +17,7 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}" />{% endif %}
 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  <link href="/static/css/mobile-nav-overlay.css" rel="stylesheet" />
   <style>
     {%- set rt = ep.resolved_theme %}
     /* ── Event Theme CSS Variables ── */
@@ -33,48 +34,6 @@
     html { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; }
     body { background: var(--ev-bg); color: #fff; overflow-x: hidden; }
     img  { display: block; max-width: 100%; }
-
-    /* ═══════════════════════════════════════
-       SHARED NAV
-    ═══════════════════════════════════════ */
-    {%- if rt.navbar == 'light' %}
-    .ev-nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(0,0,0,0.07);
-    }
-    .ev-nav a, .ev-nav button { color: #1a1a1a !important; }
-    .ev-nav a:hover { background: rgba(0,0,0,0.06) !important; }
-    .ev-mobile-panel {
-      background: rgba(255,255,255,0.97);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(0,0,0,0.07);
-    }
-    .ev-mobile-panel a { color: #1a1a1a !important; }
-    {%- elif rt.navbar == 'dark' %}
-    .ev-nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-      background: rgba(10,10,10,0.97);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .ev-mobile-panel {
-      background: rgba(10,10,10,0.98);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255,255,255,0.07);
-    }
-    {%- else %}
-    .ev-nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.60), rgba(0,0,0,0));
-    }
-    .ev-mobile-panel {
-      background: rgba(6,3,18,0.96);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255,255,255,0.07);
-    }
-    {%- endif %}
 
     /* ═══════════════════════════════════════
        SHARED BOTTOM CTA
@@ -120,45 +79,66 @@
 {# Logo 永遠返回目前活動首頁，不提供自訂連結（不得寫死其他網址） #}
 {% set logo_href = '/events/' + ep.slug %}
 
-<nav class="ev-nav lp-nav">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+{% set _nav_links = [
+  ('/events/' + ep.slug + '/booking', '預約'),
+  ('/events/' + ep.slug + '/orders', '查詢訂單'),
+  ('/events/' + ep.slug + '/remittance', '匯款回報'),
+  ('/events/' + ep.slug + '/news', '最新公告'),
+] %}
+
+<!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
+<header class="mnav-header">
+  <div class="mnav-header-inner">
     {# 品牌設定：Logo Display Mode — System Logo（render 系統 Logo）或
        Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，Header 左側留空，
        不重複顯示 Logo）。兩者互斥，維持既有邏輯不變。 #}
-    <a href="{{ logo_href }}" class="flex items-center gap-2.5 shrink-0">
+    <a href="{{ logo_href }}" class="mnav-logo">
       {%- if not ep.uses_logo_hotspot %}
         {%- if ep.logo_image %}
-        <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}"
-             class="h-8 w-auto max-w-[160px] object-contain" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />
+        <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
         {%- else %}
-        <span class="text-sm font-semibold text-white tracking-tight" style="text-shadow:0 1px 3px rgba(0,0,0,.5);">
-          {{ ep.logo_text or (ep.artist_name + ' Shuttle') }}
-        </span>
+        <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
         {%- endif %}
       {%- endif %}
     </a>
-    <div class="hidden md:flex items-center gap-1">
-      <a href="/events/{{ ep.slug }}/booking"    class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">預約</a>
-      <a href="/events/{{ ep.slug }}/orders"     class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">查詢訂單</a>
-      <a href="/events/{{ ep.slug }}/remittance" class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">匯款回報</a>
-      <a href="/events/{{ ep.slug }}/news"       class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">最新公告</a>
+    <div class="mnav-inline-links">
+      {%- for href, label in _nav_links %}
+      <a href="{{ href }}">{{ label }}</a>
+      {%- endfor %}
     </div>
-    <button data-collapse-toggle="lp-mobile-menu" type="button"
-            class="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors">
+    <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
   </div>
-  <div id="lp-mobile-menu" class="hidden md:hidden ev-mobile-panel">
-    <div class="px-4 py-3 space-y-1">
-      <a href="/events/{{ ep.slug }}/booking"    class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">預約</a>
-      <a href="/events/{{ ep.slug }}/orders"     class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">查詢訂單</a>
-      <a href="/events/{{ ep.slug }}/remittance" class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">匯款回報</a>
-      <a href="/events/{{ ep.slug }}/news"       class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">最新公告</a>
-    </div>
+</header>
+
+<!-- Full Screen Overlay Menu -->
+<div class="mnav-overlay" aria-hidden="true">
+  <div class="mnav-overlay-header">
+    <a href="{{ logo_href }}" class="mnav-logo">
+      {%- if not ep.uses_logo_hotspot %}
+        {%- if ep.logo_image %}
+        <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
+        {%- else %}
+        <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
+        {%- endif %}
+      {%- endif %}
+    </a>
+    <button type="button" class="mnav-close" aria-label="關閉選單">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
   </div>
-</nav>
+  <nav class="mnav-overlay-menu">
+    {%- for href, label in _nav_links %}
+    {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+    <a href="{{ href }}">{{ label }}</a>
+    {%- endfor %}
+  </nav>
+</div>
 
 {# Desktop Guide：Desktop 開啟時不顯示 Landing Page（圖片+Hotspot），改顯示引導頁。
    全平台所有活動一律套用，非單一活動設定；Tablet/Mobile 不受影響，正常顯示 Landing Page。
@@ -232,13 +212,9 @@
 </div>
 
 <style>
-  /* Header Navigation 疊加於 Landing Image 上方（fixed，不影響圖片版面／比例）。
-     容器與其子層預設 pointer-events:none、僅實際連結/按鈕 pointer-events:auto，
-     確保 Landing Logo（Hotspot）模式下、Logo Hotspot 落在 Header 高度範圍內時仍可正常點擊，
-     不受空的 Header 左側區塊遮擋（維持既有 Logo Display Mode 行為不變）。 */
-  .lp-nav, .lp-nav * { pointer-events: none; }
-  .lp-nav a, .lp-nav button { pointer-events: auto; }
-  .lp-stage { position: relative; width: 100%; line-height: 0; }
+  /* mnav-header（Mobile Navigation V3）現在是不透明實色 Header，疊加於 Landing Image
+     上方（fixed，不影響圖片版面／比例），不需要再讓點擊穿透到底下的 Hotspot。 */
+  .lp-stage { position: relative; width: 100%; line-height: 0; margin-top: 56px; }
   .lp-image { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
   .lp-hotspots { position: absolute; inset: 0; }
   .lp-hotspot { position: absolute; display: block; }
@@ -258,7 +234,7 @@
   /* Desktop Guide：>=1024px（Desktop）取代 Landing Page；Tablet/Mobile（<1024px）不受影響。
      .dg-guide 本身的顯示規則統一在檔案最下方的共用 <style> 定義。 */
   @media (min-width: 1024px) {
-    .lp-nav, .lp-stage { display: none; }
+    .mnav-header, .lp-stage { display: none; }
   }
 </style>
 
@@ -283,47 +259,61 @@
 </div>
 
 <div class="dg-content">
-<nav class="ev-nav">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-    {%- set nav_link = '/events/' + ep.slug %}
-    <a href="{{ nav_link }}" class="flex items-center gap-2.5 shrink-0">
+{% set _nav_links = [
+  ('/events/' + ep.slug + '/booking', '預約'),
+  ('/events/' + ep.slug + '/orders', '查詢訂單'),
+  ('/events/' + ep.slug + '/remittance', '匯款回報'),
+  ('/events/' + ep.slug + '/news', '最新公告'),
+] %}
+{%- set nav_link = '/events/' + ep.slug %}
+
+<!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
+<header class="mnav-header">
+  <div class="mnav-header-inner">
+    <a href="{{ nav_link }}" class="mnav-logo">
       {%- if ep.logo_image %}
-      <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}"
-           class="h-8 w-auto max-w-[160px] object-contain" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));" />
+      <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
       {%- else %}
-      <div class="w-7 h-7 rounded-lg flex items-center justify-center"
-           style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-        </svg>
-      </div>
-      <span class="text-sm font-semibold text-white tracking-tight hidden sm:inline">
-        {{ ep.logo_text or (ep.artist_name + ' Shuttle') }}
-      </span>
+      <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
       {%- endif %}
     </a>
-    <div class="hidden md:flex items-center gap-1">
-      <a href="/events/{{ ep.slug }}/booking"    class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">預約</a>
-      <a href="/events/{{ ep.slug }}/orders"     class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">查詢訂單</a>
-      <a href="/events/{{ ep.slug }}/remittance" class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">匯款回報</a>
-      <a href="/events/{{ ep.slug }}/news"       class="px-3 py-1.5 text-sm font-medium rounded-lg text-white hover:bg-white/10 transition-colors">最新公告</a>
+    <div class="mnav-inline-links">
+      {%- for href, label in _nav_links %}
+      <a href="{{ href }}">{{ label }}</a>
+      {%- endfor %}
     </div>
-    <button data-collapse-toggle="ev-mobile-menu" type="button"
-            class="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors">
+    <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
   </div>
-  <div id="ev-mobile-menu" class="hidden md:hidden ev-mobile-panel">
-    <div class="px-4 py-3 space-y-1">
-      <a href="/events/{{ ep.slug }}/booking"    class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">預約</a>
-      <a href="/events/{{ ep.slug }}/orders"     class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">查詢訂單</a>
-      <a href="/events/{{ ep.slug }}/remittance" class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">匯款回報</a>
-      <a href="/events/{{ ep.slug }}/news"       class="block px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10">最新公告</a>
-    </div>
+</header>
+<div style="height:56px;"></div><!-- Header 高度佔位，避免 landing_html 內容被 fixed Header 蓋住 -->
+
+<!-- Full Screen Overlay Menu -->
+<div class="mnav-overlay" aria-hidden="true">
+  <div class="mnav-overlay-header">
+    <a href="{{ nav_link }}" class="mnav-logo">
+      {%- if ep.logo_image %}
+      <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
+      {%- else %}
+      <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
+      {%- endif %}
+    </a>
+    <button type="button" class="mnav-close" aria-label="關閉選單">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
   </div>
-</nav>
+  <nav class="mnav-overlay-menu">
+    {%- for href, label in _nav_links %}
+    {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+    <a href="{{ href }}">{{ label }}</a>
+    {%- endfor %}
+  </nav>
+</div>
 
 {% if ep.landing_css %}<style id="landing-custom-css">{{ ep.landing_css | scope_css(ep.slug) | safe }}</style>{% endif %}
 {{ ep.landing_html | safe }}
@@ -380,5 +370,6 @@
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+<script src="/static/js/mobile-nav-overlay.js"></script>
 </body>
 </html>

@@ -1,0 +1,173 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Mobile Navigation V3（Premium Edition）— Full Screen Overlay Navigation
+   共用元件，供 layouts/base.html 與 passenger/event_template.html 使用。
+   所有顏色一律讀取 --ev-primary / --ev-secondary / --ev-bg / --ev-text /
+   --ev-btn-text（= current_event.theme），不寫死黑色／白色／Bootstrap 色。
+══════════════════════════════════════════════════════════════════════ */
+
+.mnav-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  height: 56px;
+  background: var(--ev-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--ev-primary) 15%, transparent);
+}
+.mnav-header-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+@media (min-width: 640px) {
+  .mnav-header-inner { padding: 0 24px; }
+}
+
+.mnav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+}
+.mnav-logo img {
+  height: 32px; width: auto; max-width: 160px; object-fit: contain;
+}
+.mnav-logo-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ev-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 只在 Desktop（>=1024px）顯示的橫向連結；Mobile/Tablet 一律走 Overlay */
+.mnav-inline-links {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+@media (min-width: 1024px) {
+  .mnav-inline-links { display: flex; }
+}
+.mnav-inline-links a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ev-text);
+  text-decoration: none;
+  opacity: 0.75;
+  transition: opacity 0.15s, background-color 0.15s;
+}
+.mnav-inline-links a:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--ev-primary) 10%, transparent);
+}
+
+.mnav-toggle,
+.mnav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ev-text);
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+.mnav-toggle:hover, .mnav-close:hover {
+  background: color-mix(in srgb, var(--ev-primary) 10%, transparent);
+}
+@media (min-width: 1024px) {
+  .mnav-toggle { display: none; }
+}
+
+/* ── Full Screen Overlay ── */
+.mnav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Menu 背景：current_event.theme.secondary（未設定時 resolved_theme 已自動由 primary 推導），
+     疊加 backdrop-filter 增加品牌質感（提高不透明度避免完全露出 Hero/Landing）。 */
+  background: color-mix(in srgb, var(--ev-secondary) 94%, black 6%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  opacity: 0;
+  transform: translateY(-16px);
+  transition: opacity 280ms ease-out, transform 280ms ease-out;
+  visibility: hidden;
+  pointer-events: none;
+}
+.mnav-overlay.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+@media (min-width: 1024px) {
+  .mnav-overlay { display: none !important; }
+}
+
+.mnav-overlay-header {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+@media (min-width: 640px) {
+  .mnav-overlay-header { padding: 0 24px; }
+}
+
+.mnav-overlay-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  overflow-y: auto;
+}
+.mnav-overlay-menu a {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  padding: 16px 20px;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ev-text);
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s;
+}
+.mnav-overlay-menu a:hover,
+.mnav-overlay-menu a:focus-visible {
+  color: var(--ev-primary);
+  background: color-mix(in srgb, var(--ev-primary) 8%, transparent);
+}
+
+.mnav-divider {
+  width: 100%;
+  max-width: 320px;
+  height: 1px;
+  background: color-mix(in srgb, var(--ev-primary) 20%, transparent);
+}
+
+body.mnav-lock {
+  overflow: hidden;
+}

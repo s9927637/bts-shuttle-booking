@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}BTS Shuttle{% endblock %}</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+  <link href="/static/css/mobile-nav-overlay.css" rel="stylesheet" />
   <style>
     /* ── Theme Provider：Current Event Theme 唯一來源 ──────────────────────────
        有 event_page（current_event）時，全部 CSS 變數一律來自 event_page.resolved_theme；
@@ -17,6 +18,7 @@
     :root {
       --ev-primary:       {{ rt.primary }};
       --ev-primary-hover: {{ rt.primary }}dd;
+      --ev-secondary:     {{ rt.secondary }};
       --ev-btn-color:     {{ rt.btn_color }};
       --ev-btn-text:      {{ rt.btn_text }};
       --ev-bg:            {{ rt.bg }};
@@ -42,6 +44,7 @@
     :root {
       --ev-primary:       #9333ea;
       --ev-primary-hover: #7e22ce;
+      --ev-secondary:     #a855f7;
       --ev-btn-color:     #9333ea;
       --ev-btn-text:      #ffffff;
       --ev-bg:            #000000;
@@ -121,115 +124,80 @@
     .input-dark::placeholder { color: #6b7280; }
     .input-dark:focus { border-color: var(--ev-input-focus); box-shadow: 0 0 0 2px rgba(147,51,234,0.25); }
     .row-divider { border-top: 1px solid #1f2937; padding-top: 0.625rem; margin-top: 0; }
-    /* ── Navbar ── */
-    body > nav { background-color: var(--ev-nav-bg) !important; border-bottom-color: var(--ev-nav-border) !important; }
-    .nav-item { color: #9ca3af; }
-    .nav-item:hover { color: var(--ev-nav-text); background: var(--ev-accent-muted); }
-    .nav-active { color: var(--ev-btn-text) !important; background: var(--ev-nav-active-bg) !important; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-black text-white antialiased min-h-screen flex flex-col">
 
-  <!-- Navbar -->
-  <nav class="sticky top-0 z-40" style="background-color:var(--ev-nav-bg) !important; border-bottom:1px solid var(--ev-nav-border);">
-    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+  {%- set _brand_ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
+  {%- set _slug = _brand_ep.slug if _brand_ep else None %}
+  {%- set _nav_links = [
+    ('/events/' + _slug + '/booking' if _slug else '/booking', '預約', '/book'),
+    ('/events/' + _slug + '/orders' if _slug else '/orders/search', '查詢訂單', '/orders'),
+    ('/events/' + _slug + '/remittance' if _slug else '/payment/report', '匯款回報', '/payment'),
+    ('/events/' + _slug + '/news' if _slug else '/announcements', '最新公告', '/announcements'),
+  ] %}
+
+  <!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
+  <header class="mnav-header">
+    <div class="mnav-header-inner">
       {% block nav_brand %}
-      {%- set _brand_ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
       {%- if _brand_ep %}
-      <a href="/events/{{ _brand_ep.slug }}" class="flex items-center gap-2.5 shrink-0">
+      <a href="/events/{{ _brand_ep.slug }}" class="mnav-logo">
         {%- if _brand_ep.logo_image %}
-        <img src="{{ _brand_ep.logo_image }}" alt="{{ _brand_ep.logo_text or _brand_ep.artist_name }}"
-             class="h-7 w-auto max-w-[140px] object-contain" />
+        <img src="{{ _brand_ep.logo_image }}" alt="{{ _brand_ep.logo_text or _brand_ep.artist_name }}" />
         {%- else %}
-        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
-          <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-          </svg>
-        </div>
-        <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">{{ _brand_ep.logo_text or (_brand_ep.artist_name + ' Shuttle') }}</span>
+        <span class="mnav-logo-text">{{ _brand_ep.logo_text or (_brand_ep.artist_name + ' Shuttle') }}</span>
         {%- endif %}
       </a>
       {%- else %}
-      <a href="/" class="flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:var(--ev-primary);">
-          <svg class="w-4 h-4" style="color:var(--ev-btn-text);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-          </svg>
-        </div>
-        <span class="text-sm font-semibold tracking-tight" style="color:var(--ev-nav-text);">BTS 演唱會包車預約</span>
+      <a href="/" class="mnav-logo">
+        <span class="mnav-logo-text">BTS 演唱會包車預約</span>
       </a>
       {%- endif %}
       {% endblock %}
 
-      <!-- Desktop links (event-aware) -->
-      {%- set _ep = (event_page if (event_page is defined and event_page) else None) or (current_event if current_event is defined else None) %}
-      {%- set _slug = _ep.slug if _ep else None %}
-      <div class="hidden md:flex items-center gap-1">
-        <a href="{{ '/events/' + _slug + '/booking' if _slug else '/booking' }}"
-           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/book' in request.path %}nav-active{% endif %}">
-          預約
-        </a>
-        <a href="{{ '/events/' + _slug + '/orders' if _slug else '/orders/search' }}"
-           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/orders' in request.path %}nav-active{% endif %}">
-          查詢訂單
-        </a>
-        <a href="{{ '/events/' + _slug + '/remittance' if _slug else '/payment/report' }}"
-           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/payment' in request.path %}nav-active{% endif %}">
-          匯款回報
-        </a>
-        <a href="{{ '/events/' + _slug + '/news' if _slug else '/announcements' }}"
-           class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors nav-item {% if '/announcements' in request.path %}nav-active{% endif %}">
-          最新公告
-        </a>
+      <div class="mnav-inline-links">
+        {%- for href, label, match in _nav_links %}
+        <a href="{{ href }}" {% if match in request.path %}style="color:var(--ev-primary);opacity:1;"{% endif %}>{{ label }}</a>
+        {%- endfor %}
       </div>
 
-      <!-- Mobile hamburger -->
-      <button id="nav-toggle" type="button" aria-label="開啟選單"
-              class="md:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors">
-        <!-- Hamburger icon -->
-        <svg id="icon-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <!-- Close icon -->
-        <svg id="icon-close" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      </button>
+    </div>
+  </header>
+  <div style="height:56px;"></div><!-- Header 高度佔位，避免內容被 fixed Header 蓋住 -->
+
+  <!-- Full Screen Overlay Menu -->
+  <div class="mnav-overlay" aria-hidden="true">
+    <div class="mnav-overlay-header">
+      {%- if _brand_ep %}
+      <a href="/events/{{ _brand_ep.slug }}" class="mnav-logo">
+        {%- if _brand_ep.logo_image %}
+        <img src="{{ _brand_ep.logo_image }}" alt="{{ _brand_ep.logo_text or _brand_ep.artist_name }}" />
+        {%- else %}
+        <span class="mnav-logo-text">{{ _brand_ep.logo_text or (_brand_ep.artist_name + ' Shuttle') }}</span>
+        {%- endif %}
+      </a>
+      {%- else %}
+      <a href="/" class="mnav-logo"><span class="mnav-logo-text">BTS 演唱會包車預約</span></a>
+      {%- endif %}
+      <button type="button" class="mnav-close" aria-label="關閉選單">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
-  </nav>
-
-  <!-- Mobile menu overlay backdrop -->
-  <div id="nav-backdrop" class="hidden fixed inset-0 z-30 md:hidden"
-       style="background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"
-       onclick="closeNavMenu()"></div>
-
-  <!-- Mobile menu panel (fixed, below navbar, event-aware) -->
-  <div id="mobile-menu"
-       class="hidden fixed left-0 right-0 z-40 md:hidden"
-       style="top:56px; background:var(--ev-nav-bg,#000000); border-bottom:1px solid var(--ev-nav-border,rgba(255,255,255,0.10));">
-    <div class="px-4 py-3 space-y-1">
-      <a href="{{ '/events/' + _slug + '/booking' if _slug else '/booking' }}"
-         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/book' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
-        預約
-      </a>
-      <a href="{{ '/events/' + _slug + '/orders' if _slug else '/orders/search' }}"
-         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/orders' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
-        查詢訂單
-      </a>
-      <a href="{{ '/events/' + _slug + '/remittance' if _slug else '/payment/report' }}"
-         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/payment' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
-        匯款回報
-      </a>
-      <a href="{{ '/events/' + _slug + '/news' if _slug else '/announcements' }}"
-         class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
-                {% if '/announcements' in request.path %}nav-active{% else %}nav-item hover:bg-gray-900{% endif %}">
-        最新公告
-      </a>
-    </div>
+    <nav class="mnav-overlay-menu">
+      {%- for href, label, match in _nav_links %}
+      {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+      <a href="{{ href }}">{{ label }}</a>
+      {%- endfor %}
+    </nav>
   </div>
 
   <!-- Flash messages -->
@@ -256,47 +224,6 @@
   </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
-<script>
-  (function () {
-    var toggle   = document.getElementById('nav-toggle');
-    var menu     = document.getElementById('mobile-menu');
-    var backdrop = document.getElementById('nav-backdrop');
-    var iconOpen  = document.getElementById('icon-open');
-    var iconClose = document.getElementById('icon-close');
-    var isOpen   = false;
-
-    function openNavMenu() {
-      isOpen = true;
-      menu.classList.remove('hidden');
-      backdrop.classList.remove('hidden');
-      iconOpen.classList.add('hidden');
-      iconClose.classList.remove('hidden');
-      toggle.setAttribute('aria-label', '關閉選單');
-    }
-
-    function closeNavMenu() {
-      isOpen = false;
-      menu.classList.add('hidden');
-      backdrop.classList.add('hidden');
-      iconOpen.classList.remove('hidden');
-      iconClose.classList.add('hidden');
-      toggle.setAttribute('aria-label', '開啟選單');
-    }
-
-    window.closeNavMenu = closeNavMenu;
-
-    if (toggle) {
-      toggle.addEventListener('click', function (e) {
-        e.stopPropagation();
-        isOpen ? closeNavMenu() : openNavMenu();
-      });
-    }
-
-    // Close on Escape key
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && isOpen) closeNavMenu();
-    });
-  })();
-</script>
+<script src="/static/js/mobile-nav-overlay.js"></script>
 </body>
 </html>

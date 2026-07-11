@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════
-   Mobile Navigation V3（Premium Edition）— Full Screen Overlay Navigation
+   Floating Glass Navigation — 取代 Full Screen Overlay。
    共用元件，供 layouts/base.html 與 passenger/event_template.html 使用。
    所有顏色一律讀取 --ev-primary / --ev-secondary / --ev-bg / --ev-text /
    --ev-btn-text（= current_event.theme），不寫死黑色／白色／Bootstrap 色。
@@ -12,6 +12,11 @@
   height: 56px;
   background: var(--ev-bg);
   border-bottom: 1px solid color-mix(in srgb, var(--ev-primary) 15%, transparent);
+}
+/* Landing Page 專用：Navbar 永遠透明，直接覆蓋 Hero，不得白底／黑底 */
+.mnav-header--transparent {
+  background: transparent;
+  border-bottom: none;
 }
 .mnav-header-inner {
   max-width: 72rem;
@@ -35,6 +40,7 @@
 }
 .mnav-logo img {
   height: 32px; width: auto; max-width: 160px; object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
 }
 .mnav-logo-text {
   font-size: 0.95rem;
@@ -43,9 +49,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0,0,0,.45);
 }
 
-/* 只在 Desktop（>=1024px）顯示的橫向連結；Mobile/Tablet 一律走 Overlay */
+/* 只在 Desktop（>=1024px）顯示的橫向連結；Tablet/Mobile 一律走 Floating Glass Menu */
 .mnav-inline-links {
   display: none;
   align-items: center;
@@ -69,8 +76,8 @@
   background: color-mix(in srgb, var(--ev-primary) 10%, transparent);
 }
 
-.mnav-toggle,
-.mnav-close {
+.mnav-toggle {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,36 +90,32 @@
   flex-shrink: 0;
   transition: background-color 0.15s;
 }
-.mnav-toggle:hover, .mnav-close:hover {
+.mnav-toggle:hover {
   background: color-mix(in srgb, var(--ev-primary) 10%, transparent);
 }
 @media (min-width: 1024px) {
   .mnav-toggle { display: none; }
 }
+.mnav-icon-close { display: none; }
+.mnav-toggle[aria-expanded="true"] .mnav-icon-open { display: none; }
+.mnav-toggle[aria-expanded="true"] .mnav-icon-close { display: block; }
 
-/* ── Full Screen Overlay ── */
+/* ── Floating Glass Menu ──────────────────────────────────────────────
+   不再是 Full Screen Overlay：僅作為透明點擊層（點擊層本身不可見，
+   讓 Hero 保持可見），實際卡片為 .mnav-glass-card，高度依內容 auto、
+   上限約畫面 30~40%，不得全螢幕覆蓋。 ── */
 .mnav-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  /* Liquid Glass：預設（不支援 backdrop-filter 的瀏覽器）退回不透明 Theme Background
-     （current_event.theme.bg，非固定黑底）；支援 backdrop-filter 時才升級為半透明
-     current_event.theme.secondary（alpha 0.85）+ blur(24px)，讓目前 Landing Hero
-     透過模糊透出，形成液態玻璃質感。所有數值皆來自 current_event.theme，不另外設定。 */
-  background: var(--ev-bg);
+  background: transparent;
   opacity: 0;
-  transform: translateY(-16px);
-  transition: opacity 280ms ease-out, transform 280ms ease-out;
   visibility: hidden;
   pointer-events: none;
+  transition: opacity 200ms ease-out;
 }
 .mnav-overlay.is-open {
   opacity: 1;
-  transform: translateY(0);
   visibility: visible;
   pointer-events: auto;
 }
@@ -120,46 +123,45 @@
   .mnav-overlay { display: none !important; }
 }
 
-/* Liquid Glass 升級：僅在瀏覽器支援 backdrop-filter 時套用，否則維持上方的
-   不透明 Theme Background fallback。 */
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .mnav-overlay {
-    background: color-mix(in srgb, var(--ev-secondary) 85%, transparent);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-  }
+.mnav-glass-card {
+  position: absolute;
+  top: 68px;
+  left: 16px;
+  right: 16px;
+  max-width: 380px;
+  margin: 0 auto;
+  max-height: 40vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.25);
+  /* 背景：current_event.theme.secondary，alpha .82；文字：current_event.theme.text。
+     不支援 backdrop-filter 的瀏覽器：仍保有半透明 Theme Secondary 背景（不會退回純黑），
+     只是少了模糊效果，一樣不寫死黑底／白底。 */
+  background: color-mix(in srgb, var(--ev-secondary) 82%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.28);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
 }
-
-.mnav-overlay-header {
-  height: 56px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-}
-@media (min-width: 640px) {
-  .mnav-overlay-header { padding: 0 24px; }
+.mnav-overlay.is-open .mnav-glass-card {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .mnav-overlay-menu {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 24px;
-  overflow-y: auto;
+  padding: 12px;
 }
 .mnav-overlay-menu a {
   display: block;
   width: 100%;
-  max-width: 320px;
   text-align: center;
-  padding: 16px 20px;
+  padding: 14px 16px;
   border-radius: 14px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--ev-text);
   text-decoration: none;
@@ -173,7 +175,6 @@
 
 .mnav-divider {
   width: 100%;
-  max-width: 320px;
   height: 1px;
   background: color-mix(in srgb, var(--ev-primary) 20%, transparent);
 }

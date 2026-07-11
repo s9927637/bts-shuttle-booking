@@ -138,7 +138,7 @@
     ('/events/' + _slug + '/news' if _slug else '/announcements', '最新公告', '/announcements'),
   ] %}
 
-  <!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
+  <!-- Header：Floating Glass Navigation ── 不透明、統一 Theme Background -->
   <header class="mnav-header">
     <div class="mnav-header-inner">
       {% block nav_brand %}
@@ -164,40 +164,27 @@
       </div>
 
       <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 mnav-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg class="w-5 h-5 mnav-icon-close" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
   </header>
   <div style="height:56px;"></div><!-- Header 高度佔位，避免內容被 fixed Header 蓋住 -->
 
-  <!-- Full Screen Overlay Menu -->
+  <!-- Floating Glass Menu：非全螢幕，Hero/頁面內容維持可見 -->
   <div class="mnav-overlay" aria-hidden="true">
-    <div class="mnav-overlay-header">
-      {%- if _brand_ep %}
-      <a href="/events/{{ _brand_ep.slug }}" class="mnav-logo">
-        {%- if _brand_ep.logo_image %}
-        <img src="{{ _brand_ep.logo_image }}" alt="{{ _brand_ep.logo_text or _brand_ep.artist_name }}" />
-        {%- else %}
-        <span class="mnav-logo-text">{{ _brand_ep.logo_text or (_brand_ep.artist_name + ' Shuttle') }}</span>
-        {%- endif %}
-      </a>
-      {%- else %}
-      <a href="/" class="mnav-logo"><span class="mnav-logo-text">BTS 演唱會包車預約</span></a>
-      {%- endif %}
-      <button type="button" class="mnav-close" aria-label="關閉選單">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+    <div class="mnav-glass-card">
+      <nav class="mnav-overlay-menu">
+        {%- for href, label, match in _nav_links %}
+        {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+        <a href="{{ href }}">{{ label }}</a>
+        {%- endfor %}
+      </nav>
     </div>
-    <nav class="mnav-overlay-menu">
-      {%- for href, label, match in _nav_links %}
-      {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
-      <a href="{{ href }}">{{ label }}</a>
-      {%- endfor %}
-    </nav>
   </div>
 
   <!-- Flash messages -->

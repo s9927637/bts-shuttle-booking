@@ -86,8 +86,8 @@
   ('/events/' + ep.slug + '/news', '最新公告'),
 ] %}
 
-<!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
-<header class="mnav-header">
+<!-- Header：Floating Glass Navigation ── Landing Page 永遠透明，直接覆蓋 Hero -->
+<header class="mnav-header mnav-header--transparent">
   <div class="mnav-header-inner">
     {# 品牌設定：Logo Display Mode — System Logo（render 系統 Logo）或
        Landing Logo Hotspot（Logo 已內建於圖片，改用透明 Hotspot，Header 左側留空，
@@ -107,37 +107,26 @@
       {%- endfor %}
     </div>
     <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 mnav-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg class="w-5 h-5 mnav-icon-close" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
       </svg>
     </button>
   </div>
 </header>
 
-<!-- Full Screen Overlay Menu -->
+<!-- Floating Glass Menu：非全螢幕，Hero 維持可見 -->
 <div class="mnav-overlay" aria-hidden="true">
-  <div class="mnav-overlay-header">
-    <a href="{{ logo_href }}" class="mnav-logo">
-      {%- if not ep.uses_logo_hotspot %}
-        {%- if ep.logo_image %}
-        <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
-        {%- else %}
-        <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
-        {%- endif %}
-      {%- endif %}
-    </a>
-    <button type="button" class="mnav-close" aria-label="關閉選單">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
+  <div class="mnav-glass-card">
+    <nav class="mnav-overlay-menu">
+      {%- for href, label in _nav_links %}
+      {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+      <a href="{{ href }}">{{ label }}</a>
+      {%- endfor %}
+    </nav>
   </div>
-  <nav class="mnav-overlay-menu">
-    {%- for href, label in _nav_links %}
-    {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
-    <a href="{{ href }}">{{ label }}</a>
-    {%- endfor %}
-  </nav>
 </div>
 
 {# Desktop Guide：Desktop 開啟時不顯示 Landing Page（圖片+Hotspot），改顯示引導頁。
@@ -212,9 +201,9 @@
 </div>
 
 <style>
-  /* mnav-header（Mobile Navigation V3）現在是不透明實色 Header，疊加於 Landing Image
-     上方（fixed，不影響圖片版面／比例），不需要再讓點擊穿透到底下的 Hotspot。 */
-  .lp-stage { position: relative; width: 100%; line-height: 0; margin-top: 56px; }
+  /* mnav-header--transparent：Landing Page Header 永遠透明，直接覆蓋 Hero 上方（fixed，
+     不影響圖片版面／比例），不佔版位、不需要 margin-top 推開圖片。 */
+  .lp-stage { position: relative; width: 100%; line-height: 0; }
   .lp-image { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
   .lp-hotspots { position: absolute; inset: 0; }
   .lp-hotspot { position: absolute; display: block; }
@@ -267,8 +256,8 @@
 ] %}
 {%- set nav_link = '/events/' + ep.slug %}
 
-<!-- Header：Mobile Navigation V3（Premium Edition）── 不透明、統一 Theme Background -->
-<header class="mnav-header">
+<!-- Header：Floating Glass Navigation ── Landing Page 永遠透明，直接覆蓋 Hero -->
+<header class="mnav-header mnav-header--transparent">
   <div class="mnav-header-inner">
     <a href="{{ nav_link }}" class="mnav-logo">
       {%- if ep.logo_image %}
@@ -283,36 +272,26 @@
       {%- endfor %}
     </div>
     <button type="button" class="mnav-toggle" aria-label="開啟選單" aria-expanded="false">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 mnav-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
-    </button>
-  </div>
-</header>
-<div style="height:56px;"></div><!-- Header 高度佔位，避免 landing_html 內容被 fixed Header 蓋住 -->
-
-<!-- Full Screen Overlay Menu -->
-<div class="mnav-overlay" aria-hidden="true">
-  <div class="mnav-overlay-header">
-    <a href="{{ nav_link }}" class="mnav-logo">
-      {%- if ep.logo_image %}
-      <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" />
-      {%- else %}
-      <span class="mnav-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</span>
-      {%- endif %}
-    </a>
-    <button type="button" class="mnav-close" aria-label="關閉選單">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 mnav-icon-close" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
       </svg>
     </button>
   </div>
-  <nav class="mnav-overlay-menu">
-    {%- for href, label in _nav_links %}
-    {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
-    <a href="{{ href }}">{{ label }}</a>
-    {%- endfor %}
-  </nav>
+</header>
+
+<!-- Floating Glass Menu：非全螢幕，Hero 維持可見 -->
+<div class="mnav-overlay" aria-hidden="true">
+  <div class="mnav-glass-card">
+    <nav class="mnav-overlay-menu">
+      {%- for href, label in _nav_links %}
+      {%- if not loop.first %}<div class="mnav-divider"></div>{%- endif %}
+      <a href="{{ href }}">{{ label }}</a>
+      {%- endfor %}
+    </nav>
+  </div>
 </div>
 
 {% if ep.landing_css %}<style id="landing-custom-css">{{ ep.landing_css | scope_css(ep.slug) | safe }}</style>{% endif %}

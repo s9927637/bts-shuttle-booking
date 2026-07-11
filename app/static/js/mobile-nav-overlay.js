@@ -1,10 +1,10 @@
-/* Mobile Navigation V3（Premium Edition）— Full Screen Overlay Navigation
-   共用控制邏輯：開/關動畫、ESC 關閉、點背景關閉、Body 禁止 Scroll、Focus Trap。 */
+/* Floating Glass Navigation — 共用控制邏輯：開/關動畫、ESC 關閉、點背景（卡片外）關閉、
+   Body 禁止 Scroll、Focus Trap。取代先前的 Full Screen Overlay。 */
 (function () {
   function init() {
-    var toggle   = document.querySelector('.mnav-toggle');
-    var overlay  = document.querySelector('.mnav-overlay');
-    var closeBtn = document.querySelector('.mnav-close');
+    var toggle = document.querySelector('.mnav-toggle');
+    var overlay = document.querySelector('.mnav-overlay');
+    var card = document.querySelector('.mnav-glass-card');
     if (!toggle || !overlay) return;
 
     var lastFocused = null;
@@ -59,11 +59,10 @@
       if (overlay.classList.contains('is-open')) close();
       else open();
     });
-    if (closeBtn) closeBtn.addEventListener('click', close);
 
-    // 點背景關閉：overlay 本身、或 Header／Menu 的空白容器區域（非連結/按鈕本身）
+    // 點卡片外（Hero／空白處）關閉；點卡片內（含空白區域）不關閉，連結照常導頁
     overlay.addEventListener('click', function (e) {
-      if (e.target.closest('a, button')) return;
+      if (card && card.contains(e.target)) return;
       close();
     });
 

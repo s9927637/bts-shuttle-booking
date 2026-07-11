@@ -160,6 +160,21 @@
   </div>
 </nav>
 
+{# Desktop Guide：Desktop 開啟時不顯示 Landing Page（圖片+Hotspot），改顯示引導頁。
+   全平台所有活動一律套用，非單一活動設定；Tablet/Mobile 不受影響，正常顯示 Landing Page。
+   純 CSS 斷點切換（與下方 Hotspot 斷點同一組），不影響 SEO/Metadata/OG（皆在 <head> 內，與畫面顯示無關）。 #}
+<div class="dg-guide">
+  <div class="dg-guide-inner">
+    {%- if ep.logo_image %}
+    <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" class="dg-logo" />
+    {%- else %}
+    <div class="dg-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</div>
+    {%- endif %}
+    <h1 class="dg-title">請使用平板或手機開啟</h1>
+    <p class="dg-desc">為提供最佳的預約體驗，本平台目前僅支援平板與手機裝置瀏覽。</p>
+  </div>
+</div>
+
 <div class="lp-stage">
   <picture>
     {%- if ep.landing_image_mobile %}<source media="(max-width: 639px)" srcset="{{ ep.landing_image_mobile }}">{%- endif %}
@@ -239,6 +254,12 @@
     .lp-hotspots-tablet  { display: none; }
     .lp-hotspots-mobile  { display: block; }
   }
+
+  /* Desktop Guide：>=1024px（Desktop）取代 Landing Page；Tablet/Mobile（<1024px）不受影響。
+     .dg-guide 本身的顯示規則統一在檔案最下方的共用 <style> 定義。 */
+  @media (min-width: 1024px) {
+    .lp-nav, .lp-stage { display: none; }
+  }
 </style>
 
 {% elif ep.has_custom_landing %}
@@ -247,6 +268,21 @@
    包含系統共用 nav（預約/查詢訂單/匯款回報/最新公告）。
    新活動請一律使用上方「圖片 + Hotspot」。
 ──────────────────────────────────────────────────────────────── #}
+{# Desktop Guide：Desktop 開啟時不顯示 Landing Page，改顯示引導頁（全平台所有活動皆套用，
+   含本頁這種舊版 HTML/CSS Landing，如 BTS）。純 CSS 斷點切換，不影響 SEO/Metadata/OG。 #}
+<div class="dg-guide">
+  <div class="dg-guide-inner">
+    {%- if ep.logo_image %}
+    <img src="{{ ep.logo_image }}" alt="{{ ep.logo_text or ep.artist_name }}" class="dg-logo" />
+    {%- else %}
+    <div class="dg-logo-text">{{ ep.logo_text or (ep.artist_name + ' Shuttle') }}</div>
+    {%- endif %}
+    <h1 class="dg-title">請使用平板或手機開啟</h1>
+    <p class="dg-desc">為提供最佳的預約體驗，本平台目前僅支援平板與手機裝置瀏覽。</p>
+  </div>
+</div>
+
+<div class="dg-content">
 <nav class="ev-nav">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
     {%- set nav_link = '/events/' + ep.slug %}
@@ -323,7 +359,25 @@
   {% endif %}
 </footer>
 {% endif %}
+</div><!-- /.dg-content -->
 {% endif %}
+
+<style>
+  /* Desktop Guide（舊版 HTML/CSS Landing 分支，如 BTS）：>=1024px 取代整個 Landing 內容 */
+  .dg-guide { display: none; }
+  @media (min-width: 1024px) {
+    .dg-content { display: none; }
+    .dg-guide {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; width: 100%; background: var(--ev-bg); padding: 24px;
+    }
+    .dg-guide-inner { text-align: center; max-width: 420px; }
+    .dg-logo { height: 40px; width: auto; max-width: 220px; object-fit: contain; margin: 0 auto 28px; }
+    .dg-logo-text { font-size: 1.1rem; font-weight: 700; color: var(--ev-text); margin-bottom: 28px; }
+    .dg-title { font-size: 1.3rem; font-weight: 800; color: var(--ev-text); margin-bottom: 12px; }
+    .dg-desc { font-size: 0.9rem; line-height: 1.7; color: var(--ev-text); opacity: 0.7; }
+  }
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 </body>

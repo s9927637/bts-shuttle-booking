@@ -99,11 +99,11 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  /* Menu 背景：current_event.theme.secondary（未設定時 resolved_theme 已自動由 primary 推導），
-     疊加 backdrop-filter 增加品牌質感（提高不透明度避免完全露出 Hero/Landing）。 */
-  background: color-mix(in srgb, var(--ev-secondary) 94%, black 6%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* Liquid Glass：預設（不支援 backdrop-filter 的瀏覽器）退回不透明 Theme Background
+     （current_event.theme.bg，非固定黑底）；支援 backdrop-filter 時才升級為半透明
+     current_event.theme.secondary（alpha 0.85）+ blur(24px)，讓目前 Landing Hero
+     透過模糊透出，形成液態玻璃質感。所有數值皆來自 current_event.theme，不另外設定。 */
+  background: var(--ev-bg);
   opacity: 0;
   transform: translateY(-16px);
   transition: opacity 280ms ease-out, transform 280ms ease-out;
@@ -118,6 +118,16 @@
 }
 @media (min-width: 1024px) {
   .mnav-overlay { display: none !important; }
+}
+
+/* Liquid Glass 升級：僅在瀏覽器支援 backdrop-filter 時套用，否則維持上方的
+   不透明 Theme Background fallback。 */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .mnav-overlay {
+    background: color-mix(in srgb, var(--ev-secondary) 85%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
 }
 
 .mnav-overlay-header {

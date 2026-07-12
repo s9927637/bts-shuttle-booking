@@ -70,23 +70,13 @@ def _gen_group_id() -> str:
 
 @passenger_bp.route("/")
 def home():
-    from app.models.event_page import EventPage
     announcements = (
         Announcement.query
         .filter(Announcement.status == "已發布")
         .order_by(Announcement.is_pinned.desc(), Announcement.created_at.desc())
         .limit(3).all()
     )
-    # Phase 6：從 DB 讀取活動，取代硬寫 BTS
-    published_events = (
-        EventPage.query
-        .filter(EventPage.deleted_at.is_(None), EventPage.status == "已發布")
-        .order_by(EventPage.event_date.asc(), EventPage.created_at.desc())
-        .limit(6).all()
-    )
-    return render_template("passenger/home.html",
-                           announcements=announcements,
-                           published_events=published_events)
+    return render_template("passenger/home.html", announcements=announcements)
 
 
 @passenger_bp.route("/announcements")

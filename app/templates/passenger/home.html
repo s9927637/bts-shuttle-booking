@@ -543,68 +543,6 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     Phase 6：動態活動列表（從 DB 讀取，不寫死 BTS）
-     ════════════════════════════════════════════════════ -->
-{% if published_events %}
-<section style="background:#060312;padding:64px 24px 80px;border-top:1px solid rgba(255,255,255,0.06);">
-  <div style="max-width:1100px;margin:0 auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
-      <div>
-        <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                  color:#a78bfa;margin-bottom:6px;">所有活動</p>
-        <h2 style="font-size:1.6rem;font-weight:900;letter-spacing:-0.02em;color:#fff;">開放預約中</h2>
-      </div>
-      <a href="/events"
-         style="font-size:0.8rem;font-weight:600;color:#a78bfa;
-                border:1px solid rgba(167,139,250,0.3);border-radius:8px;
-                padding:8px 16px;text-decoration:none;transition:all 0.15s;">
-        查看全部 →
-      </a>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
-      {% for ev in published_events %}
-      <a href="/events/{{ ev.slug }}"
-         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-                border-radius:14px;overflow:hidden;text-decoration:none;display:block;
-                transition:all 0.2s;">
-        {% set thumb = ev.thumbnail_image or ev.banner_image or ev.cover_image %}
-        {% if thumb %}
-        <img src="{{ thumb }}" alt="{{ ev.title }}"
-             style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" loading="lazy" />
-        {% else %}
-        <div style="width:100%;aspect-ratio:16/9;background:rgba(88,28,135,0.25);
-                    display:flex;align-items:center;justify-content:center;">
-          <svg width="32" height="32" fill="none" stroke="rgba(167,139,250,0.4)" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
-          </svg>
-        </div>
-        {% endif %}
-        <div style="padding:14px 16px;">
-          <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
-                    color:#a78bfa;margin-bottom:4px;">{{ ev.category_label }}</p>
-          <p style="font-size:0.95rem;font-weight:800;color:#fff;letter-spacing:-0.01em;
-                    margin-bottom:4px;line-height:1.3;">{{ ev.title }}</p>
-          <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:10px;">
-            {% if ev.event_date %}{{ ev.event_date }}{% endif %}
-            {% if ev.venue %} · {{ ev.venue }}{% elif ev.departure_city %} · {{ ev.departure_city }}{% endif %}
-          </p>
-          {% if ev.price %}
-          <p style="font-size:0.8rem;font-weight:700;color:#fff;">
-            NT${{ '{:,}'.format(ev.price) }}
-            <span style="font-size:0.68rem;font-weight:400;color:rgba(255,255,255,0.4);">/ 人</span>
-          </p>
-          {% endif %}
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 </body>
 </html>

@@ -120,9 +120,6 @@
                  value="{{ form.passenger_count or (event_page.min_group_size or 1 if event_page else 1) }}" required
                  oninput="onPaxInput(this)" onchange="onPaxInput(this)" onblur="onPaxInput(this)"
                  class="input-dark" />
-          {% if event_page and event_page.min_group_size and event_page.min_group_size > 1 %}
-          <p class="mt-1.5 text-xs text-gray-500">本活動採包車制，每筆訂單至少 {{ event_page.min_group_size }} 人。</p>
-          {% endif %}
         </div>
       </div>
 

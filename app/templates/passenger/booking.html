@@ -116,9 +116,13 @@
             人數 <span class="text-red-400">*</span>
           </label>
           <input type="number" id="passenger_count" name="passenger_count"
-                 min="1" max="50" value="{{ form.passenger_count or 1 }}" required
-                 oninput="calcTotal(this.value)"
+                 min="{{ event_page.min_group_size or 1 if event_page else 1 }}" max="50"
+                 value="{{ form.passenger_count or (event_page.min_group_size or 1 if event_page else 1) }}" required
+                 oninput="onPaxInput(this)" onchange="onPaxInput(this)" onblur="onPaxInput(this)"
                  class="input-dark" />
+          {% if event_page and event_page.min_group_size and event_page.min_group_size > 1 %}
+          <p class="mt-1.5 text-xs text-gray-500">本活動採包車制，每筆訂單至少 {{ event_page.min_group_size }} 人。</p>
+          {% endif %}
         </div>
       </div>
 
@@ -495,6 +499,8 @@
   const NX200_TOTAL   = {{ nx200_total }};
   const NX200_DEPOSIT = {{ nx200_deposit }};
   const NX200_BALANCE = {{ nx200_balance | default(0) }};
+  // 包車模式：每筆訂單最少人數（依 EventPage.min_group_size，無活動或未設定則為 1）
+  const MIN_GROUP_SIZE = {{ event_page.min_group_size or 1 if event_page else 1 }};
 
   // 活動價格規則：{dateId|'any': {locId|'any': {price, deposit}}}
   const EP_PRICE_RULES = {{ ep_price_rules_json | tojson | safe }};
@@ -592,12 +598,12 @@
       // Radio dot
       if (radioMin) { radioMin.classList.add('border-purple-500');  radioMin.classList.remove('border-gray-600'); radioMin.querySelector('div').style.background = '#a855f7'; }
       if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600');  radioNx.querySelector('div').style.background = 'transparent'; }
-      // 解鎖人數，重設為 1，恢復每人費用
+      // 解鎖人數，重設為活動最少人數，恢復每人費用
       paxInput.disabled = false;
       paxInput.style.opacity = '';
-      paxInput.value = 1;
+      paxInput.value = MIN_GROUP_SIZE;
       document.getElementById('price_per_person_display').textContent = 'NT$ ' + PRICE.toLocaleString();
-      calcTotal(1);
+      calcTotal(MIN_GROUP_SIZE);
     }
   }
 
@@ -620,9 +626,18 @@
 
   function calcTotal(count) {
     if (currentVehicle === 'nx200') return;
-    const n = Math.max(1, parseInt(count) || 1);
+    const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
     document.getElementById('count_display').textContent = n + ' 人';
     _applyDiscountDisplay(n * PRICE, n * DEPOSIT, n * BALANCE);
+  }
+
+  // 前端即時限制：人數不得低於 MIN_GROUP_SIZE（點擊減號／手動輸入／blur／change／input 皆會觸發）
+  function onPaxInput(el) {
+    const n = parseInt(el.value, 10);
+    if (isNaN(n) || n < MIN_GROUP_SIZE) {
+      el.value = MIN_GROUP_SIZE;
+    }
+    calcTotal(el.value);
   }
 
   calcTotal(document.getElementById('passenger_count').value);

@@ -247,8 +247,7 @@
         </div>
         <div>
           <p class="text-sm font-semibold text-white">九座商旅車</p>
-          <p class="text-xs text-gray-400 mt-0.5">共乘接送・適合 1〜8 人</p>
-          <p class="text-xs text-purple-300 mt-1">NT${{ '{:,}'.format(price_per_person) }} / 人</p>
+          <p class="text-xs text-gray-400 mt-0.5">最多 {{ event_page.seats_per_vehicle if event_page and event_page.seats_per_vehicle else 8 }} 位乘客</p>
         </div>
       </label>
 

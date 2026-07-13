@@ -861,6 +861,55 @@
             </div>
           </div>
 
+          <!-- 車輛方案（Vehicle Options V2）-->
+          <div class="space-y-3">
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">車輛方案</h4>
+            <p class="text-xs text-gray-400">建立活動時已自動建立 8 個常用方案；可自行新增、編輯、排序、啟用/停用或刪除</p>
+            <div id="bc-vo-list" class="space-y-2"></div>
+            <div class="border border-dashed border-gray-200 rounded-xl p-3 space-y-2">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1">方案名稱 *</label>
+                  <input type="text" id="bc-new-vo-name" placeholder="尊榮商務" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1">方案說明（選填）</label>
+                  <input type="text" id="bc-new-vo-desc" placeholder="VIP 商務接送" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1">最多乘客數 *</label>
+                  <input type="number" id="bc-new-vo-capacity" min="1" value="4" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1">推薦標籤（選填）</label>
+                  <input type="text" id="bc-new-vo-badge" placeholder="👑 尊榮推薦" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div class="sm:col-span-2">
+                  <label class="block text-xs text-gray-400 mb-1">車型範例（選填，逗號分隔）</label>
+                  <input type="text" id="bc-new-vo-models" placeholder="Toyota Alphard, Lexus LM" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1">價格模式</label>
+                  <select id="bc-new-vo-pricing-mode" onchange="bcToggleVoPriceInput(this)" class="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+                    <option value="event_price">使用活動價格</option>
+                    <option value="fixed">固定價格</option>
+                    <option value="markup">加價</option>
+                  </select>
+                </div>
+                <div id="bc-new-vo-price-wrap" class="hidden">
+                  <label class="block text-xs text-gray-400 mb-1" id="bc-new-vo-price-label">NT$</label>
+                  <input type="number" id="bc-new-vo-price" min="0" placeholder="0" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                </div>
+              </div>
+              <button type="button" onclick="bcAddVehicleOption()"
+                      class="px-3 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">
+                + 新增車輛方案
+              </button>
+            </div>
+          </div>
+
           <!-- 價格規則 -->
           <div class="space-y-3">
             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">價格規則</h4>
@@ -1549,6 +1598,107 @@ window.addEventListener('load', function() {
     bcToast('已刪除', true); await bcLoadLocs();
   }
 
+  // ── 車輛方案（Vehicle Options V2）────────────────────────────────────────
+  const PRICING_MODE_LABELS = {event_price: '使用活動價格', fixed: '固定價格', markup: '加價'};
+  let _vos = [];
+  function bcToggleVoPriceInput(sel) {
+    const wrap  = document.getElementById('bc-new-vo-price-wrap');
+    const label = document.getElementById('bc-new-vo-price-label');
+    if (sel.value === 'fixed')      { wrap.classList.remove('hidden'); label.textContent = '固定價格 NT$'; }
+    else if (sel.value === 'markup'){ wrap.classList.remove('hidden'); label.textContent = '加價 +NT$'; }
+    else                             { wrap.classList.add('hidden'); }
+  }
+  function bcRenderVehicleOptions() {
+    const el = document.getElementById('bc-vo-list');
+    el.innerHTML = _vos.length ? '' : '<p class="text-xs text-gray-400">尚未設定車輛方案</p>';
+    _vos.forEach(v => {
+      const priceLabel = v.pricing_mode === 'fixed' ? ('固定 NT$' + (v.price || 0).toLocaleString())
+                        : v.pricing_mode === 'markup' ? ('加價 +NT$' + (v.price_adjustment || 0).toLocaleString())
+                        : '使用活動價格';
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 flex-wrap text-xs';
+      row.innerHTML = `<span class="font-semibold text-gray-800">${v.name}</span>
+        <span class="text-gray-500">最多 ${v.capacity} 位</span>
+        <span class="text-gray-400">${priceLabel}</span>
+        ${v.badge ? `<span class="text-indigo-500">${v.badge}</span>` : ''}
+        ${v.is_default ? '<span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">預設</span>' : ''}
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" ${v.is_visible ? 'checked' : ''} onchange="bcToggleVoField(${v.id},'is_visible',this.checked)" class="rounded" />
+          <span class="text-gray-500">前台顯示</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" ${v.is_active ? 'checked' : ''} onchange="bcToggleVoField(${v.id},'is_active',this.checked)" class="rounded" />
+          <span class="text-gray-500">啟用</span>
+        </label>
+        <button type="button" onclick="bcSetVoDefault(${v.id})" class="text-gray-500 hover:text-indigo-600 px-1">設為預設</button>
+        <button type="button" onclick="bcDeleteVehicleOption(${v.id})" class="text-red-500 hover:text-red-700 ml-auto px-2">刪除</button>`;
+      el.appendChild(row);
+    });
+  }
+  async function bcLoadVehicleOptions() {
+    const r = await fetch(API + '/vehicle-options');
+    _vos = await r.json();
+    bcRenderVehicleOptions();
+  }
+  async function bcAddVehicleOption() {
+    const name = document.getElementById('bc-new-vo-name').value.trim();
+    if (!name) { bcToast('請輸入方案名稱', false); return; }
+    const pricingMode = document.getElementById('bc-new-vo-pricing-mode').value;
+    const priceVal = document.getElementById('bc-new-vo-price').value;
+    const payload = {
+      name,
+      description: document.getElementById('bc-new-vo-desc').value.trim() || null,
+      example_models: document.getElementById('bc-new-vo-models').value.trim() || null,
+      capacity: parseInt(document.getElementById('bc-new-vo-capacity').value) || 4,
+      badge: document.getElementById('bc-new-vo-badge').value.trim() || null,
+      pricing_mode: pricingMode,
+      price: pricingMode === 'fixed' ? (parseInt(priceVal) || 0) : null,
+      price_adjustment: pricingMode === 'markup' ? (parseInt(priceVal) || 0) : null,
+      sort_order: _vos.length,
+    };
+    const r = await fetch(API + '/vehicle-options', {
+      method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      bcToast('已新增車輛方案', true);
+      ['bc-new-vo-name','bc-new-vo-desc','bc-new-vo-models','bc-new-vo-badge','bc-new-vo-price'].forEach(i => document.getElementById(i).value = '');
+      document.getElementById('bc-new-vo-capacity').value = 4;
+      document.getElementById('bc-new-vo-pricing-mode').value = 'event_price';
+      document.getElementById('bc-new-vo-price-wrap').classList.add('hidden');
+      await bcLoadVehicleOptions();
+    } else {
+      const e = await r.json(); bcToast(e.error || '新增失敗', false);
+    }
+  }
+  async function bcToggleVoField(id, field, value) {
+    await fetch(API + '/vehicle-options/' + id, {
+      method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+      body: JSON.stringify({[field]: value})
+    });
+    _vos = _vos.map(v => v.id === id ? {...v, [field]: value} : v);
+  }
+  async function bcSetVoDefault(id) {
+    // 一次只能有一個預設方案：先把其他方案的 is_default 清掉，再設定這個
+    await Promise.all(_vos.filter(v => v.is_default && v.id !== id).map(v =>
+      fetch(API + '/vehicle-options/' + v.id, {
+        method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+        body: JSON.stringify({is_default: false})
+      })
+    ));
+    await fetch(API + '/vehicle-options/' + id, {
+      method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+      body: JSON.stringify({is_default: true})
+    });
+    bcToast('已設為預設方案', true);
+    await bcLoadVehicleOptions();
+  }
+  async function bcDeleteVehicleOption(id) {
+    if (!confirm('確定刪除此車輛方案？已使用此方案的歷史訂單不受影響（訂單會保留當時的方案名稱快照）。')) return;
+    await fetch(API + '/vehicle-options/' + id, {method: 'DELETE', headers: {'X-CSRFToken': '{{ csrf_token() }}'}});
+    bcToast('已刪除', true); await bcLoadVehicleOptions();
+  }
+
   // ── 價格規則 ──────────────────────────────────────────────────────────────
   let _rules = [];
   function bcRenderRules() {
@@ -1663,13 +1813,15 @@ window.addEventListener('load', function() {
   window.bcAddLocation = bcAddLocation; window.bcToggleLoc = bcToggleLoc; window.bcDeleteLoc = bcDeleteLoc;
   window.bcAddPriceRule = bcAddPriceRule; window.bcDeleteRule = bcDeleteRule;
   window.bcSaveFormConfig = bcSaveFormConfig; window.bcSaveConfig = bcSaveConfig; window.bcSaveNotes = bcSaveNotes;
+  window.bcToggleVoPriceInput = bcToggleVoPriceInput; window.bcAddVehicleOption = bcAddVehicleOption;
+  window.bcToggleVoField = bcToggleVoField; window.bcSetVoDefault = bcSetVoDefault; window.bcDeleteVehicleOption = bcDeleteVehicleOption;
 
   // 開啟 details 時載入資料
   const det = document.querySelector('#booking-config-panel details');
   if (det) {
     det.addEventListener('toggle', async function() {
       if (det.open) {
-        await Promise.all([bcLoadDates(), bcLoadLocs()]);
+        await Promise.all([bcLoadDates(), bcLoadLocs(), bcLoadVehicleOptions()]);
         await bcLoadRules();
         await bcLoadFormConfig();
       }

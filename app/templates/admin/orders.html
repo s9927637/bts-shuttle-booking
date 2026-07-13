@@ -219,7 +219,9 @@
         <td class="px-6 py-4 text-gray-600">{{ order.departure_date }}</td>
         <td class="px-6 py-4 text-gray-900 font-medium">{{ order.passenger_count }} 人</td>
         <td class="px-6 py-4 text-xs">
-          {% if order.vehicle_type == 'nx200' %}
+          {% if order.vehicle_option_name %}
+          <span class="text-gray-600">{{ order.vehicle_option_name }}</span>
+          {% elif order.vehicle_type == 'nx200' %}
           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">NX200 專屬包車</span>
           {% else %}
           <span class="text-gray-600">九座商旅車</span>

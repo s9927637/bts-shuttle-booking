@@ -32,6 +32,15 @@ class Order(db.Model):
     # 活動專屬欄位（NULL = 原 BTS 訂單，向前相容）
     pickup_location     = db.Column(db.String(100), nullable=True)   # 上車地點名稱（快照，不存 FK）
 
+    # Vehicle Options（車輛方案 V2）：快照欄位，避免日後修改／刪除方案影響歷史訂單顯示。
+    # 僅新增資料記錄，不影響既有 Pricing Engine／Booking Logic／Dispatch。
+    vehicle_option_id = db.Column(
+        db.Integer, db.ForeignKey("event_vehicle_options.id", ondelete="SET NULL"), nullable=True
+    )
+    vehicle_option_name         = db.Column(db.String(100), nullable=True)
+    vehicle_option_capacity     = db.Column(db.Integer, nullable=True)
+    vehicle_option_pricing_mode = db.Column(db.String(20), nullable=True)
+
     # 活動頁串接（NULL = 原 BTS 訂單，不影響既有資料）
     event_page_id = db.Column(
         db.Integer,

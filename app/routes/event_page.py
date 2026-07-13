@@ -227,6 +227,19 @@ def ep_create():
     )
     db.session.add(ep)
     db.session.commit()
+
+    # Vehicle Options：建立活動時預設建立 8 個車輛方案（九座商旅車為預設選中）
+    from app.models.event_vehicle_option import EventVehicleOption, DEFAULT_VEHICLE_OPTIONS
+    for i, opt in enumerate(DEFAULT_VEHICLE_OPTIONS):
+        db.session.add(EventVehicleOption(
+            event_id=ep.id,
+            name=opt["name"],
+            capacity=opt["capacity"],
+            is_default=opt.get("is_default", False),
+            sort_order=i,
+        ))
+    db.session.commit()
+
     flash(f"✓ 已建立活動「{title}」，網址：/events/{slug}　← 現在可上傳 Hero 圖片", "success")
     return redirect(url_for("event_page.ep_edit", ep_id=ep.id))
 
@@ -1246,6 +1259,99 @@ def api_price_rule_update(ep_id, rule_id):
 def api_price_rule_delete(ep_id, rule_id):
     rule = EventPriceRule.query.filter_by(id=rule_id, event_page_id=ep_id).first_or_404()
     db.session.delete(rule)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── 車輛方案（Vehicle Options V2）────────────────────────────────────────────
+# 僅新增 Vehicle Options 架構，不修改 Pricing Engine／Booking Logic／Order Flow／Dispatch。
+
+from app.models.event_vehicle_option import EventVehicleOption, PRICING_MODES
+
+
+def _vo_dict(v):
+    return {
+        "id": v.id, "name": v.name, "description": v.description,
+        "example_models": v.example_models, "capacity": v.capacity, "image": v.image,
+        "pricing_mode": v.pricing_mode, "price": v.price, "price_adjustment": v.price_adjustment,
+        "badge": v.badge, "sort_order": v.sort_order,
+        "is_default": v.is_default, "is_visible": v.is_visible, "is_active": v.is_active,
+    }
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/vehicle-options", methods=["GET"])
+def api_vehicle_options_list(ep_id):
+    ep = EventPage.query.get_or_404(ep_id)
+    opts = EventVehicleOption.query.filter_by(event_id=ep.id).order_by(EventVehicleOption.sort_order).all()
+    return jsonify([_vo_dict(v) for v in opts])
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/vehicle-options", methods=["POST"])
+def api_vehicle_option_create(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+    ep = EventPage.query.get_or_404(ep_id)
+    data = request.get_json(force=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "方案名稱必填"}), 400
+    pricing_mode = data.get("pricing_mode") or "event_price"
+    if pricing_mode not in PRICING_MODES:
+        return jsonify({"error": "無效的價格模式"}), 400
+    v = EventVehicleOption(
+        event_id=ep.id,
+        name=name,
+        description=(data.get("description") or "").strip() or None,
+        example_models=(data.get("example_models") or "").strip() or None,
+        capacity=int(data.get("capacity") or 4),
+        image=(data.get("image") or "").strip() or None,
+        pricing_mode=pricing_mode,
+        price=int(data["price"]) if data.get("price") not in (None, "") else None,
+        price_adjustment=int(data["price_adjustment"]) if data.get("price_adjustment") not in (None, "") else None,
+        badge=(data.get("badge") or "").strip() or None,
+        sort_order=int(data.get("sort_order") or 0),
+        is_default=bool(data.get("is_default", False)),
+        is_visible=bool(data.get("is_visible", True)),
+        is_active=bool(data.get("is_active", True)),
+    )
+    db.session.add(v)
+    db.session.commit()
+    return jsonify({"ok": True, "id": v.id}), 201
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/vehicle-options/<int:vo_id>", methods=["PUT"])
+def api_vehicle_option_update(ep_id, vo_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+    v = EventVehicleOption.query.filter_by(id=vo_id, event_id=ep_id).first_or_404()
+    data = request.get_json(force=True) or {}
+    if "name"             in data: v.name             = (data["name"] or "").strip() or v.name
+    if "description"      in data: v.description      = (data["description"] or "").strip() or None
+    if "example_models"   in data: v.example_models   = (data["example_models"] or "").strip() or None
+    if "capacity"         in data: v.capacity         = int(data["capacity"]) if data["capacity"] else v.capacity
+    if "image"            in data: v.image            = (data["image"] or "").strip() or None
+    if "pricing_mode"     in data and data["pricing_mode"] in PRICING_MODES:
+        v.pricing_mode = data["pricing_mode"]
+    if "price"            in data: v.price            = int(data["price"]) if data["price"] not in (None, "") else None
+    if "price_adjustment" in data: v.price_adjustment = int(data["price_adjustment"]) if data["price_adjustment"] not in (None, "") else None
+    if "badge"            in data: v.badge            = (data["badge"] or "").strip() or None
+    if "sort_order"       in data: v.sort_order        = int(data["sort_order"])
+    if "is_default"       in data: v.is_default        = bool(data["is_default"])
+    if "is_visible"       in data: v.is_visible        = bool(data["is_visible"])
+    if "is_active"        in data: v.is_active         = bool(data["is_active"])
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@event_page_bp.route("/api/events/<int:ep_id>/vehicle-options/<int:vo_id>", methods=["DELETE"])
+def api_vehicle_option_delete(ep_id, vo_id):
+    guard = _require_admin()
+    if guard:
+        return guard
+    v = EventVehicleOption.query.filter_by(id=vo_id, event_id=ep_id).first_or_404()
+    db.session.delete(v)
     db.session.commit()
     return jsonify({"ok": True})
 

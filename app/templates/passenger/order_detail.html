@@ -67,7 +67,8 @@
       <div class="flex justify-between row-divider">
         <span class="text-gray-500">車輛方案</span>
         <span class="text-gray-200">
-          {% if order.vehicle_type == 'nx200' %}NX200 專屬包車{% else %}九座商旅車{% endif %}
+          {% if order.vehicle_option_name %}{{ order.vehicle_option_name }}
+          {% elif order.vehicle_type == 'nx200' %}NX200 專屬包車{% else %}九座商旅車{% endif %}
         </span>
       </div>
       <div class="flex justify-between row-divider">

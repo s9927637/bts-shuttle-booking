@@ -146,9 +146,14 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
     ep_pickup_locations = []
     ep_price_rules_json = {}
     ep_form_config      = {}
+    ep_vehicle_options  = []
     if event_page:
         ep_booking_dates    = EventBookingDate.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventBookingDate.sort_order).all()
         ep_pickup_locations = EventPickupLocation.query.filter_by(event_page_id=event_page.id, is_active=True).order_by(EventPickupLocation.sort_order).all()
+        from app.models.event_vehicle_option import EventVehicleOption
+        ep_vehicle_options  = EventVehicleOption.query.filter_by(
+            event_id=event_page.id, is_active=True, is_visible=True
+        ).order_by(EventVehicleOption.sort_order).all()
         for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
             dk = str(rule.booking_date_id or 'any')
             lk = str(rule.location_id or 'any')
@@ -177,6 +182,7 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                            ep_pickup_locations=ep_pickup_locations,
                            ep_price_rules_json=ep_price_rules_json,
                            ep_form_config=ep_form_config,
+                           ep_vehicle_options=ep_vehicle_options,
                            form=form or {})
 
 
@@ -209,6 +215,13 @@ def booking_submit():
     display_name = request.form.get("display_name", "").strip() or None
 
     vehicle_type = request.form.get("vehicle_type", "minibus").strip()
+
+    # Vehicle Options（車輛方案 V2）：僅記錄快照，不影響既有計價／驗證邏輯
+    vehicle_option_id_raw = request.form.get("vehicle_option_id", "").strip()
+    vehicle_option = None
+    if vehicle_option_id_raw and vehicle_option_id_raw.isdigit():
+        from app.models.event_vehicle_option import EventVehicleOption
+        vehicle_option = EventVehicleOption.query.get(int(vehicle_option_id_raw))
 
     # 活動頁模式
     event_page_id_raw = request.form.get("event_page_id", "").strip()
@@ -346,6 +359,10 @@ def booking_submit():
             discount_amount   = discount_amount,
             event_page_id     = event_page.id if event_page else None,
             pickup_location   = pickup_location_val if event_page else None,
+            vehicle_option_id            = vehicle_option.id if vehicle_option else None,
+            vehicle_option_name          = vehicle_option.name if vehicle_option else None,
+            vehicle_option_capacity      = vehicle_option.capacity if vehicle_option else None,
+            vehicle_option_pricing_mode  = vehicle_option.pricing_mode if vehicle_option else None,
         )
         if applied_coupon:
             applied_coupon.use_count += 1

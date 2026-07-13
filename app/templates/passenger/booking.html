@@ -237,8 +237,57 @@
     <div class="card-dark space-y-4">
       <h2 class="section-title">車輛方案</h2>
       <input type="hidden" name="vehicle_type" id="vehicle_type" value="minibus" />
+      <input type="hidden" name="vehicle_option_id" id="vehicle_option_id" value="{% if ep_vehicle_options %}{% for vo in ep_vehicle_options %}{% if vo.is_default %}{{ vo.id }}{% endif %}{% endfor %}{% endif %}" />
 
-      <!-- 方案一：九座商旅車 -->
+      {% if event_page and ep_vehicle_options %}
+        {% if ep_vehicle_options|length == 1 %}
+          {% set vo = ep_vehicle_options[0] %}
+          <!-- 單一車輛方案：簡易卡片，不顯示選擇器 -->
+          <div id="plan-minibus" class="flex items-center gap-3 p-4 rounded-xl border-2 border-purple-600 bg-purple-950/20">
+            <div class="w-4 h-4 rounded-full border-2 border-purple-500 flex items-center justify-center shrink-0">
+              <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-white">{{ vo.name }}</p>
+              {% if vo.example_models_list %}
+              <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
+              {% endif %}
+              <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
+              {% if vo.pricing_mode == 'fixed' %}
+              <p class="text-xs text-purple-300 mt-1">固定價格 NT${{ '{:,}'.format(vo.price or 0) }}</p>
+              {% elif vo.pricing_mode == 'markup' %}
+              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment or 0) }}</p>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <!-- 多個車輛方案：選擇清單 -->
+          {% for vo in ep_vehicle_options %}
+          <label id="vo-plan-{{ vo.id }}"
+                 class="flex items-center gap-3 p-4 rounded-xl border-2 {% if vo.is_default %}border-purple-600 bg-purple-950/20{% else %}border-gray-700 bg-gray-900/50{% endif %} cursor-pointer transition-all"
+                 onclick="selectVehicleOption({{ vo.id }})">
+            <div class="w-4 h-4 rounded-full border-2 {% if vo.is_default %}border-purple-500{% else %}border-gray-600{% endif %} flex items-center justify-center shrink-0" id="vo-radio-{{ vo.id }}">
+              <div class="w-2 h-2 rounded-full {% if vo.is_default %}bg-purple-500{% else %}bg-transparent{% endif %}"></div>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-white">{{ vo.name }}</p>
+              {% if vo.example_models_list %}
+              <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
+              {% endif %}
+              <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
+              {% if vo.pricing_mode == 'fixed' %}
+              <p class="text-xs text-purple-300 mt-1">固定價格 NT${{ '{:,}'.format(vo.price or 0) }}</p>
+              {% elif vo.pricing_mode == 'markup' %}
+              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment or 0) }}</p>
+              {% endif %}
+            </div>
+          </label>
+          {% endfor %}
+        {% endif %}
+      {% else %}
+      <!-- 方案一：九座商旅車（未設定車輛方案時的原始預設卡片） -->
       <label id="plan-minibus"
              class="flex items-center gap-3 p-4 rounded-xl border-2 border-purple-600 bg-purple-950/20 cursor-pointer transition-all"
              onclick="selectVehicle('minibus')">
@@ -250,6 +299,7 @@
           <p class="text-xs text-gray-400 mt-0.5">最多 {{ event_page.seats_per_vehicle if event_page and event_page.seats_per_vehicle else 8 }} 位乘客</p>
         </div>
       </label>
+      {% endif %}
 
       <!-- 方案二：NX200（活動模式不提供） -->
       {% if not event_page %}
@@ -563,6 +613,24 @@
       mapLink.classList.add('hidden');
     }
     _applyPriceRule();
+  }
+
+  // Vehicle Options（車輛方案 V2）：多方案清單的選取（僅切換 UI 選中狀態與快照 id，不影響計價）
+  function selectVehicleOption(id) {
+    document.getElementById('vehicle_option_id').value = id;
+    document.querySelectorAll('[id^="vo-plan-"]').forEach(function (card) {
+      const isSelected = card.id === 'vo-plan-' + id;
+      const radio = document.getElementById('vo-radio-' + card.id.replace('vo-plan-', ''));
+      if (isSelected) {
+        card.classList.add('border-purple-600', 'bg-purple-950/20');
+        card.classList.remove('border-gray-700', 'bg-gray-900/50');
+        if (radio) { radio.classList.add('border-purple-500'); radio.classList.remove('border-gray-600'); radio.querySelector('div').style.background = '#a855f7'; }
+      } else {
+        card.classList.remove('border-purple-600', 'bg-purple-950/20');
+        card.classList.add('border-gray-700', 'bg-gray-900/50');
+        if (radio) { radio.classList.remove('border-purple-500'); radio.classList.add('border-gray-600'); radio.querySelector('div').style.background = 'transparent'; }
+      }
+    });
   }
 
   function selectVehicle(type) {

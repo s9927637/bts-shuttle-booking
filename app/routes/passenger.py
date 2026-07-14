@@ -60,10 +60,15 @@ def _gen_order_no(order_id: int, event_page=None) -> str:
     return f"{prefix}-{date_str}-{seq:04d}"
 
 
-def _gen_group_id() -> str:
+def _gen_group_id(event_page=None) -> str:
+    """同行代碼：原 BTS 傳統流程（無 event_page）維持既有 BTS-FRIEND- 前綴，不受影響。
+    活動流程（有 event_page）改為 {order_prefix}-FRIEND-，避免非 BTS 活動仍顯示 BTS 字樣。"""
     chars = string.ascii_uppercase + string.digits
     suffix = ''.join(random.choices(chars, k=6))
-    return f"BTS-FRIEND-{suffix}"
+    if not event_page:
+        return f"BTS-FRIEND-{suffix}"
+    prefix = (event_page.order_prefix or event_page.slug[:3] or "EVT").strip().upper()
+    return f"{prefix}-FRIEND-{suffix}"
 
 
 # ── 首頁 ────────────────────────────────────────────────────────────────────
@@ -344,10 +349,10 @@ def booking_submit():
                 group_id   = friend_code
                 show_group = "joined"
             else:
-                group_id   = _gen_group_id()
+                group_id   = _gen_group_id(event_page)
                 show_group = "created"
         else:
-            group_id = _gen_group_id()
+            group_id = _gen_group_id(event_page)
 
         order = Order(
             order_no          = "TEMP",

@@ -36,7 +36,7 @@
         </select>
         {% else %}
         <input type="text" id="order_no" name="order_no" required
-               placeholder="BTS-KHH-000001"
+               placeholder="{{ (event_page.order_prefix or event_page.slug[:3] or 'EVT')|upper if event_page else 'BTS' }}-KHH-000001"
                value="{{ prefill_order_no or (line_orders[0].order_no if line_orders else '') }}"
                class="input-dark font-mono" />
         {% endif %}

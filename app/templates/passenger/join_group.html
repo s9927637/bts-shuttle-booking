@@ -111,7 +111,7 @@
             訂單編號 <span class="text-red-400">*</span>
           </label>
           <input type="text" name="order_no" required
-                 placeholder="BTS-KHH-000001"
+                 placeholder="{{ (event_page.order_prefix or event_page.slug[:3] or 'EVT')|upper if event_page else 'BTS' }}-KHH-000001"
                  id="join-order-no"
                  class="input-dark font-mono" />
           <p class="mt-1.5 text-xs text-gray-500">請輸入您在預約時取得的訂單編號</p>

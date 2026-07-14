@@ -56,7 +56,7 @@
     <div>
       <label class="block text-xs font-medium text-gray-400 mb-1.5">訂單編號 <span class="text-red-400">*</span></label>
       <input type="text" name="order_no" value="{{ order_no or '' }}"
-             placeholder="BTS-KHH-000001"
+             placeholder="{{ (event_page.order_prefix or event_page.slug[:3] or 'EVT')|upper if event_page else 'BTS' }}-KHH-000001"
              class="input-dark font-mono" />
     </div>
     <div>

@@ -253,6 +253,9 @@
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              {% if vo.pricing_mode == 'markup' and vo.price_adjustment %}
+              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment) }}</p>
+              {% endif %}
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </div>
@@ -271,6 +274,9 @@
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              {% if vo.pricing_mode == 'markup' and vo.price_adjustment %}
+              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment) }}</p>
+              {% endif %}
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </label>
@@ -367,14 +373,14 @@
       <div class="flex items-center justify-between py-3 border-b border-gray-800">
         <div>
           <p class="text-sm font-medium text-gray-200">立即匯款訂金</p>
-          <p class="text-xs text-gray-500 mt-0.5">預約後完成匯款，每人 NT$300</p>
+          <p id="deposit_note" class="text-xs text-gray-500 mt-0.5">預約後完成匯款</p>
         </div>
         <span id="deposit_display" class="text-base font-bold text-white">NT$ 300</span>
       </div>
       <div class="flex items-center justify-between py-3">
         <div>
           <p class="text-sm font-medium text-gray-200">搭車當日支付尾款</p>
-          <p class="text-xs text-gray-500 mt-0.5">現金交給司機，每人 NT$1,700</p>
+          <p id="balance_note" class="text-xs text-gray-500 mt-0.5">現金交給司機</p>
         </div>
         <span id="balance_display" class="text-base font-bold text-white">NT$ 1,700</span>
       </div>
@@ -386,7 +392,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
       </svg>
       <p class="text-xs text-amber-400 leading-relaxed">
-        送出預約後請至「<strong>匯款回報</strong>」頁面完成訂金匯款，確認後即完成預約。尾款 NT$1,700/人 於搭車當日現金交給司機。
+        送出預約後請至「<strong>匯款回報</strong>」頁面完成訂金匯款，確認後即完成預約。尾款於搭車當日現金交給司機。
       </p>
     </div>
 
@@ -542,10 +548,12 @@
   const EP_LOC_IDS = {
     {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
   };
-  // 車輛方案（包車模式）：id -> {pricing_mode, price}。pricing_mode == 'fixed' 時，
-  // 總價改用車輛固定價格，不隨人數變動；其餘模式維持人數 × 每人價的既有計價邏輯。
+  // 車輛方案（包車模式）：id -> {pricing_mode, price, price_adjustment}。
+  // pricing_mode == 'fixed'：總價改用車輛固定價格，不隨人數變動。
+  // pricing_mode == 'markup'：總價 = (人數 × 每人價) + price_adjustment。
+  // pricing_mode == 'event_price'：維持既有人數 × 每人價計價邏輯。
   const EP_VEHICLE_OPTIONS = {
-    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"pricing_mode": {{ vo.pricing_mode | tojson }}, "price": {{ vo.price | tojson }}},{% endfor %}
+    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"pricing_mode": {{ vo.pricing_mode | tojson }}, "price": {{ vo.price | tojson }}, "price_adjustment": {{ vo.price_adjustment | tojson }}},{% endfor %}
   };
 
   let _activeDateId   = null;
@@ -707,6 +715,17 @@
       if (hintEl) hintEl.classList.remove('hidden');
       document.getElementById('price_per_person_display').textContent = 'NT$ ' + fixedTotal.toLocaleString();
       _applyDiscountDisplay(fixedTotal, dep, Math.max(0, fixedTotal - dep));
+      return;
+    }
+
+    // 加價方案：總價 = (人數 × 每人價) + price_adjustment，仍隨人數變動，僅加價金額固定。
+    if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'markup' && _activeVehicleOption.price_adjustment !== null) {
+      const adj = _activeVehicleOption.price_adjustment;
+      const total = (n * PRICE) + adj;
+      const dep   = n * DEPOSIT;
+      if (labelEl) labelEl.textContent = '每人費用';
+      if (hintEl) hintEl.classList.add('hidden');
+      _applyDiscountDisplay(total, dep, Math.max(0, total - dep));
       return;
     }
 

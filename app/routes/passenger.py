@@ -321,10 +321,14 @@ def booking_submit():
             deposit_amount  = passenger_count * deposit_per
             balance_amount  = passenger_count * balance_per
 
-            # 包車模式（第一階段）：車輛方案為固定價格時，總價改用車輛固定價（不隨人數變動）。
+            # 包車模式：車輛方案為固定價格時，總價改用車輛固定價（不隨人數變動）。
             # 訂金仍依每人訂金 × 人數計算，尾款 = 固定總價 - 訂金，保留既有保留座位機制。
             if vehicle_option and vehicle_option.pricing_mode == "fixed" and vehicle_option.price is not None:
                 total_amount   = vehicle_option.price
+                balance_amount = max(0, total_amount - deposit_amount)
+            # 加價方案：總價 = (人數 × 每人價) + price_adjustment，仍隨人數變動，僅加價金額固定。
+            elif vehicle_option and vehicle_option.pricing_mode == "markup" and vehicle_option.price_adjustment is not None:
+                total_amount   = (passenger_count * price_per) + vehicle_option.price_adjustment
                 balance_amount = max(0, total_amount - deposit_amount)
 
         # 折扣碼套用

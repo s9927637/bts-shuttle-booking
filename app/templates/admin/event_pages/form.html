@@ -841,7 +841,25 @@
           <div class="space-y-3">
             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">上車地點</h4>
             <div id="bc-locs-list" class="space-y-2"></div>
-            <div class="flex gap-2 items-end flex-wrap">
+
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">輸入模式</label>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-new-loc-mode" id="bc-new-loc-mode-fixed" value="fixed" checked
+                         onchange="bcToggleLocModeInputs()" class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">固定選項（Dropdown）</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-new-loc-mode" id="bc-new-loc-mode-custom" value="custom"
+                         onchange="bcToggleLocModeInputs()" class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">自行輸入（Text Input）</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">選擇「自行輸入」後，前台將改為文字輸入框，不再顯示固定地點下拉選單。</p>
+            </div>
+
+            <div id="bc-new-loc-fixed-fields" class="flex gap-2 items-end flex-wrap">
               <div>
                 <label class="block text-xs text-gray-400 mb-1">地點名稱</label>
                 <input type="text" id="bc-new-loc-name" placeholder="台北車站" class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
@@ -854,16 +872,11 @@
                 <label class="block text-xs text-gray-400 mb-1">Google Maps URL（選填）</label>
                 <input type="text" id="bc-new-loc-map" placeholder="https://maps.google.com/…" class="w-48 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
               </div>
-              <button type="button" onclick="bcAddLocation()"
-                      class="px-3 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">
-                + 新增地點
-              </button>
             </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="bc-new-loc-custom" class="rounded" />
-              <span class="text-xs text-gray-600">允許乘客自行輸入上車地點</span>
-            </label>
-            <p class="text-xs text-gray-400">勾選後，地點名稱可留空；前台將改為文字輸入框，不會顯示固定地點下拉選單。</p>
+            <button type="button" onclick="bcAddLocation()"
+                    class="px-3 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">
+              + 新增地點
+            </button>
           </div>
 
           <!-- 車輛方案（Vehicle Options V2）-->
@@ -1552,10 +1565,10 @@ window.addEventListener('load', function() {
       row.innerHTML = `<span class="text-xs font-semibold text-gray-700">${l.name || '（乘客自行輸入）'}</span>
         <span class="text-xs text-gray-500">${l.address || ''}</span>
         ${l.map_url ? `<a href="${l.map_url}" target="_blank" rel="noopener" class="text-xs text-indigo-500 underline">地圖</a>` : ''}
-        ${l.is_custom_location ? '<span class="text-xs px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">自行輸入</span>' : ''}
+        <span class="text-xs px-1.5 py-0.5 rounded ${l.is_custom_location ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'}">${l.is_custom_location ? '自行輸入' : '固定選項'}</span>
         <label class="flex items-center gap-1 ml-auto cursor-pointer">
           <input type="checkbox" ${l.is_custom_location ? 'checked' : ''} onchange="bcToggleLocCustom(${l.id},this.checked)" class="rounded" />
-          <span class="text-xs text-gray-500">自行輸入</span>
+          <span class="text-xs text-gray-500">切換為自行輸入</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="checkbox" ${l.is_active ? 'checked' : ''} onchange="bcToggleLoc(${l.id},this.checked)" class="rounded" />
@@ -1583,11 +1596,15 @@ window.addEventListener('load', function() {
     _locs = await r.json();
     bcRenderLocs();
   }
+  function bcToggleLocModeInputs() {
+    const custom = document.getElementById('bc-new-loc-mode-custom').checked;
+    document.getElementById('bc-new-loc-fixed-fields').classList.toggle('hidden', custom);
+  }
   async function bcAddLocation() {
     const name   = document.getElementById('bc-new-loc-name').value.trim();
     const addr   = document.getElementById('bc-new-loc-addr').value.trim();
     const map    = document.getElementById('bc-new-loc-map').value.trim();
-    const custom = document.getElementById('bc-new-loc-custom').checked;
+    const custom = document.getElementById('bc-new-loc-mode-custom').checked;
     if (!name && !custom) { bcToast('請輸入地點名稱', false); return; }
     const r = await fetch(API + '/pickup-locations', {
       method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
@@ -1596,7 +1613,8 @@ window.addEventListener('load', function() {
     if (r.ok) {
       bcToast('已新增地點', true);
       ['bc-new-loc-name','bc-new-loc-addr','bc-new-loc-map'].forEach(i => document.getElementById(i).value = '');
-      document.getElementById('bc-new-loc-custom').checked = false;
+      document.getElementById('bc-new-loc-mode-fixed').checked = true;
+      bcToggleLocModeInputs();
       await bcLoadLocs();
     } else { const e = await r.json(); bcToast(e.error || '新增失敗', false); }
   }
@@ -1835,6 +1853,7 @@ window.addEventListener('load', function() {
   window.bcAddDate = bcAddDate; window.bcToggleDate = bcToggleDate; window.bcDeleteDate = bcDeleteDate;
   window.bcAddLocation = bcAddLocation; window.bcToggleLoc = bcToggleLoc; window.bcDeleteLoc = bcDeleteLoc;
   window.bcToggleLocCustom = bcToggleLocCustom;
+  window.bcToggleLocModeInputs = bcToggleLocModeInputs;
   window.bcAddPriceRule = bcAddPriceRule; window.bcDeleteRule = bcDeleteRule;
   window.bcSaveFormConfig = bcSaveFormConfig; window.bcSaveConfig = bcSaveConfig; window.bcSaveNotes = bcSaveNotes;
   window.bcToggleVoPriceInput = bcToggleVoPriceInput; window.bcAddVehicleOption = bcAddVehicleOption;

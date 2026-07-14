@@ -1451,6 +1451,9 @@ def api_booking_config_save(ep_id):
     ep.seats_per_vehicle     = _int_or_none(data.get("seats_per_vehicle")) or 8
     ep.deposit_required      = bool(data.get("deposit_required", True))
     ep.friend_group_enabled  = bool(data.get("friend_group_enabled", True))
+    from app.models.event_page import PRICING_STRATEGIES
+    pricing_strategy_in = data.get("pricing_strategy")
+    ep.pricing_strategy = pricing_strategy_in if pricing_strategy_in in PRICING_STRATEGIES else "passenger"
     ep.balance_payment_method = _str_or_none(data.get("balance_payment_method")) or "transfer"
     ep.purchase_notes        = _str_or_none(data.get("purchase_notes"))
     ep.cancellation_policy   = _str_or_none(data.get("cancellation_policy"))

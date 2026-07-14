@@ -1,6 +1,9 @@
 from datetime import datetime
 from app import db
 
+# 計價模式：'passenger'（依人數計價，共乘）｜'vehicle'（依車輛計價，包車）
+PRICING_STRATEGIES = ["passenger", "vehicle"]
+
 
 class EventPage(db.Model):
     __tablename__ = "event_pages"
@@ -58,6 +61,10 @@ class EventPage(db.Model):
     # 朋友同行功能開關：共乘活動預設開啟；包車／機場接送／企業包車等活動可關閉，
     # 關閉後前台不顯示「朋友同行」相關區塊，但既有 group_id 產生邏輯不受影響。
     friend_group_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    # 計價模式：'passenger'（依人數計價，共乘，預設）｜'vehicle'（依車輛計價，包車）。
+    # 取代 Phase 1 的 slug 白名單 Feature Flag。EventVehicleOption.pricing_mode 不受影響，
+    # 該欄位仍僅代表「價格來源」（使用價格規則／固定價格／加價），與此計價模式為不同概念。
+    pricing_strategy = db.Column(db.String(20), nullable=False, default="passenger")
     # Phase 7: Booking Config — deposit & payment
     deposit_required    = db.Column(db.Boolean,  nullable=False, default=True)
     balance_payment_method = db.Column(db.String(50), nullable=True, default='transfer')  # 'transfer'|'cash'|'any'

@@ -47,15 +47,10 @@ DEPARTURE_OPTIONS = [
 ]
 AVAILABLE_DATES = {opt["value"] for opt in DEPARTURE_OPTIONS if not opt["disabled"]}
 
-# Pricing & Payment Refactor（Phase 1）：計價策略 Feature Flag。
-# 暫以 slug 白名單決定 Vehicle Mode，不新增 Database Schema。
-# 下一階段若允許 migration，建議正式改為 EventPage.pricing_strategy 欄位（passenger/vehicle）。
-VEHICLE_MODE_EVENT_SLUGS = {"fujii-kaze-test"}
-
-
 def _pricing_strategy(event_page) -> str:
-    """回傳 'vehicle'（依車輛計價）或 'passenger'（依人數計價，預設，含 BTS 傳統流程）。"""
-    if event_page and event_page.slug in VEHICLE_MODE_EVENT_SLUGS:
+    """回傳 'vehicle'（依車輛計價）或 'passenger'（依人數計價，預設，含 BTS 傳統流程）。
+    正式來源為 EventPage.pricing_strategy（取代 Phase 1 的 slug 白名單 Feature Flag）。"""
+    if event_page and event_page.pricing_strategy == "vehicle":
         return "vehicle"
     return "passenger"
 

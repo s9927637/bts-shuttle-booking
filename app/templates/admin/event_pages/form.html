@@ -813,6 +813,28 @@
               </div>
             </div>
             <div class="border border-gray-200 rounded-xl p-3 space-y-2">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">【計價模式】</p>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-pricing-strategy" id="bc-pricing-strategy-passenger" value="passenger"
+                         {% if (page.pricing_strategy or 'passenger') == 'passenger' %}checked{% endif %}
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">依人數計價（共乘）</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-pricing-strategy" id="bc-pricing-strategy-vehicle" value="vehicle"
+                         {% if page.pricing_strategy == 'vehicle' %}checked{% endif %}
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">依車輛計價（包車）</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-400">
+                依人數計價：價格 = 價格規則（Price Rule）× 人數，維持既有共乘邏輯。<br>
+                依車輛計價：價格 = 所選車輛方案的 Final Price，不因人數變動；車輛方案的「價格來源」設定
+                （使用價格規則／固定價格／加價）決定 Final Price 如何計算。
+              </p>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-3 space-y-2">
               <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">【功能開關】</p>
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="bc-friend-group-enabled"
@@ -1872,6 +1894,7 @@ window.addEventListener('load', function() {
       max_capacity: document.getElementById('bc-max-cap').value || null,
       deposit_required: document.getElementById('bc-deposit-required').checked,
       friend_group_enabled: document.getElementById('bc-friend-group-enabled').checked,
+      pricing_strategy: document.getElementById('bc-pricing-strategy-vehicle').checked ? 'vehicle' : 'passenger',
       balance_payment_method: document.getElementById('bc-balance-method').value,
       purchase_notes: document.getElementById('bc-purchase-notes').value,
       cancellation_policy: document.getElementById('bc-cancel-policy').value,

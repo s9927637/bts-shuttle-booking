@@ -99,11 +99,16 @@
           <label for="passenger_count" class="block mb-1.5 text-xs font-medium text-gray-400">
             人數 <span class="text-red-400">*</span>
           </label>
-          <input type="number" id="passenger_count" name="passenger_count"
-                 min="{{ event_page.min_group_size or 1 if event_page else 1 }}" max="50"
-                 value="{{ form.passenger_count or (event_page.min_group_size or 1 if event_page else 1) }}" required
-                 oninput="onPaxInput(this)" onchange="onPaxInput(this)" onblur="onPaxInput(this)"
-                 class="input-dark" />
+          {% set pax_min = event_page.min_group_size or 1 if event_page else 1 %}
+          {% set pax_max = event_page.max_group_size or 50 if event_page else 50 %}
+          {% set pax_selected = (form.passenger_count | int) if form.passenger_count else pax_min %}
+          <select id="passenger_count" name="passenger_count" required
+                  onchange="onPaxInput(this)"
+                  class="input-dark">
+            {% for n in range(pax_min, pax_max + 1) %}
+            <option value="{{ n }}" {% if n == pax_selected %}selected{% endif %}>{{ n }} 人</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
 

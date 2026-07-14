@@ -1448,8 +1448,9 @@ def api_booking_config_save(ep_id):
     ep.min_group_size        = _int_or_none(data.get("min_group_size")) or 1
     ep.max_group_size        = _int_or_none(data.get("max_group_size"))
     ep.max_capacity          = _int_or_none(data.get("max_capacity"))
-    ep.seats_per_vehicle     = _int_or_none(data.get("seats_per_vehicle")) or 9
+    ep.seats_per_vehicle     = _int_or_none(data.get("seats_per_vehicle")) or 8
     ep.deposit_required      = bool(data.get("deposit_required", True))
+    ep.friend_group_enabled  = bool(data.get("friend_group_enabled", True))
     ep.balance_payment_method = _str_or_none(data.get("balance_payment_method")) or "transfer"
     ep.purchase_notes        = _str_or_none(data.get("purchase_notes"))
     ep.cancellation_policy   = _str_or_none(data.get("cancellation_policy"))

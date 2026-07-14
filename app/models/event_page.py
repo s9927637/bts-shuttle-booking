@@ -52,7 +52,12 @@ class EventPage(db.Model):
     min_group_size      = db.Column(db.Integer, nullable=True, default=1)
     max_group_size      = db.Column(db.Integer, nullable=True)        # NULL = 無限制
     max_capacity        = db.Column(db.Integer, nullable=True)        # 全活動總座位上限，NULL = 無限制
-    seats_per_vehicle   = db.Column(db.Integer, nullable=True, default=9)
+    # 可搭乘乘客數（不含司機）。舊資料若為 9（含司機的總座位數），前台顯示仍會沿用既有值，
+    # 僅新設定的預設值改為 8，避免管理員混淆。
+    seats_per_vehicle   = db.Column(db.Integer, nullable=True, default=8)
+    # 朋友同行功能開關：共乘活動預設開啟；包車／機場接送／企業包車等活動可關閉，
+    # 關閉後前台不顯示「朋友同行」相關區塊，但既有 group_id 產生邏輯不受影響。
+    friend_group_enabled = db.Column(db.Boolean, nullable=False, default=True)
     # Phase 7: Booking Config — deposit & payment
     deposit_required    = db.Column(db.Boolean,  nullable=False, default=True)
     balance_payment_method = db.Column(db.String(50), nullable=True, default='transfer')  # 'transfer'|'cash'|'any'

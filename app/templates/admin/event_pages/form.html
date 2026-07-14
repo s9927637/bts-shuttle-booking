@@ -787,8 +787,9 @@
               </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">每車座位數</label>
-                <input type="number" id="bc-seats" min="1" value="{{ page.seats_per_vehicle or 9 }}"
+                <input type="number" id="bc-seats" min="1" value="{{ page.seats_per_vehicle or 8 }}"
                        class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                <p class="text-xs text-gray-400 mt-1">請填寫可搭乘乘客數（不含司機）。</p>
               </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">總座位上限（空=無限）</label>
@@ -810,6 +811,24 @@
                   <option value="any"      {% if page.balance_payment_method == 'any'      %}selected{% endif %}>均可</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1.5">朋友同行功能</label>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-friend-group" id="bc-friend-group-on" value="on"
+                         {% if page.friend_group_enabled != False %}checked{% endif %}
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">開啟（預設）</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-friend-group" id="bc-friend-group-off" value="off"
+                         {% if page.friend_group_enabled == False %}checked{% endif %}
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">關閉</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">關閉後前台預約頁不顯示「朋友同行」區塊，適用於包車／機場接送／企業包車等活動。</p>
             </div>
             <button type="button" onclick="bcSaveConfig()"
                     class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
@@ -897,6 +916,7 @@
                 <div>
                   <label class="block text-xs text-gray-400 mb-1">最多乘客數 *</label>
                   <input type="number" id="bc-new-vo-capacity" min="1" value="4" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                  <p class="text-xs text-gray-400 mt-1">請填寫可搭乘乘客數（不含司機）。</p>
                 </div>
                 <div>
                   <label class="block text-xs text-gray-400 mb-1">推薦標籤（選填）</label>
@@ -1835,6 +1855,7 @@ window.addEventListener('load', function() {
       seats_per_vehicle: document.getElementById('bc-seats').value || null,
       max_capacity: document.getElementById('bc-max-cap').value || null,
       deposit_required: document.getElementById('bc-deposit-required').checked,
+      friend_group_enabled: document.getElementById('bc-friend-group-on').checked,
       balance_payment_method: document.getElementById('bc-balance-method').value,
       purchase_notes: document.getElementById('bc-purchase-notes').value,
       cancellation_policy: document.getElementById('bc-cancel-policy').value,

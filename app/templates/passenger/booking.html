@@ -21,7 +21,7 @@
   </div>
 
   <!-- 朋友邀請提示 -->
-  {% if prefill_friend_code %}
+  {% if prefill_friend_code and (not event_page or event_page.friend_group_enabled) %}
   <div class="mb-6 flex items-start gap-3 px-4 py-3.5 bg-purple-950/40 border border-purple-800/50 rounded-xl">
     <svg class="w-4 h-4 text-purple-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -209,7 +209,8 @@
       </div>
     </div>
 
-    <!-- 朋友同行 -->
+    <!-- 朋友同行（活動可關閉此功能，例如包車／機場接送／企業包車） -->
+    {% if not event_page or event_page.friend_group_enabled %}
     <div class="card-dark space-y-4">
       <h2 class="section-title">朋友同行 <span class="text-xs font-normal text-gray-500">（選填）</span></h2>
 
@@ -240,6 +241,7 @@
         </p>
       </div>
     </div>
+    {% endif %}
 
     <!-- 車輛方案 -->
     <div class="card-dark space-y-4">

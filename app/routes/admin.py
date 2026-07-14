@@ -346,22 +346,48 @@ def order_create():
         if not event_page:
             raise ValueError("找不到所選活動")
 
-        pc           = int(request.form["passenger_count"])
-        vehicle_type = request.form.get("vehicle_type", "minibus").strip()
-        payment_status = request.form.get("payment_status", "待付款")
+        pc              = int(request.form["passenger_count"])
+        vehicle_type    = request.form.get("vehicle_type", "minibus").strip()
+        payment_status  = request.form.get("payment_status", "待付款")
+        departure_date_val = request.form["departure_date"].strip()
+
+        # 依所選活動的實際定價計算金額，取代原本寫死的 BTS 單價（2000/300/1700）。
+        # 優先序與前台 booking_submit() 一致（僅省略地點維度，因後台建單表單無地點欄位）：
+        # 日期價格規則 > 全局價格規則 > EventPage.price/deposit > 全站預設常數。
+        from app.models.event_booking import EventBookingDate, EventPriceRule
+        booking_date_obj = EventBookingDate.query.filter_by(
+            event_page_id=event_page.id, date_value=departure_date_val, is_active=True
+        ).first()
+        rule = None
+        if booking_date_obj:
+            rule = EventPriceRule.query.filter_by(
+                event_page_id=event_page.id, booking_date_id=booking_date_obj.id, location_id=None
+            ).first()
+        if not rule:
+            rule = EventPriceRule.query.filter_by(
+                event_page_id=event_page.id, booking_date_id=None, location_id=None
+            ).first()
+        if rule:
+            price_per   = rule.price
+            deposit_per = rule.deposit
+        else:
+            price_per   = event_page.price   or PRICE_PER_PERSON
+            deposit_per = event_page.deposit or DEPOSIT_PER_PERSON
+        balance_per = price_per - deposit_per
+
         order = Order(
             order_no        = "TEMP",
             event_page_id   = event_page.id,
             contact_name    = request.form["contact_name"].strip(),
             phone           = request.form["phone"].strip(),
             emergency_phone = request.form.get("emergency_phone", "").strip() or None,
-            departure_date  = request.form["departure_date"].strip(),
+            departure_date  = departure_date_val,
             passenger_count = pc,
             companion_names = request.form.get("companion_names", "").strip() or None,
             remark          = request.form.get("remark", "").strip() or None,
-            total_amount    = pc * 2000,
-            deposit_amount  = pc * 300,
-            balance_amount  = pc * 1700,
+            total_amount    = pc * price_per,
+            deposit_amount  = pc * deposit_per,
+            balance_amount  = pc * balance_per,
             payment_status  = payment_status,
             vehicle_type    = vehicle_type,
             vehicle_id      = int(request.form["vehicle_id"]) if request.form.get("vehicle_id") else None,
@@ -424,6 +450,9 @@ def order_edit(order_id):
         order.companion_names = request.form.get("companion_names", "").strip() or None
         order.remark          = request.form.get("remark", "").strip() or None
         order.total_amount    = int(request.form["total_amount"])
+        # 總金額調整後，尾款自動重新計算（訂金維持不變，尾款 = 新總金額 − 訂金），
+        # 避免總金額與尾款脫節（原本編輯後尾款完全不會更新的既有問題）。
+        order.balance_amount  = max(0, order.total_amount - order.deposit_amount)
         new_status            = request.form.get("payment_status", order.payment_status)
         order.payment_status  = new_status
         order.vehicle_type    = request.form.get("vehicle_type", order.vehicle_type or "minibus").strip()

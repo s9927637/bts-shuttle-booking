@@ -11,11 +11,13 @@
 {% if event_pages is not none %}
 <div class="col-span-2">
   <label class="block text-xs font-medium text-gray-500 mb-1">活動（Event）<span class="text-red-400">*</span></label>
-  <select name="event_page_id" required
+  <select name="event_page_id" id="create_event_page_id" required
+          onchange="calcCreateTotal(document.querySelector('.create-count-input').value)"
           class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
     <option value="">— 請選擇活動 —</option>
     {% for ep in event_pages %}
     <option value="{{ ep.id }}"
+      data-price="{{ ep.price or '' }}" data-deposit="{{ ep.deposit or '' }}"
       {% if order and order.event_page_id == ep.id %}selected
       {% elif not order and default_event_id and default_event_id == ep.id %}selected{% endif %}>
       {{ ep.artist_name }} — {{ ep.title[:20] }}
@@ -271,6 +273,7 @@
                     data-companion-names="{{ order.companion_names or '' }}"
                     data-remark="{{ order.remark or '' }}"
                     data-total-amount="{{ order.total_amount }}"
+                    data-deposit-amount="{{ order.deposit_amount }}"
                     data-payment-status="{{ order.payment_status }}"
                     data-vehicle-type="{{ order.vehicle_type or 'minibus' }}"
                     data-vehicle-id="{{ order.vehicle_id or '' }}"
@@ -484,8 +487,8 @@
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">人數 <span class="text-red-400">*</span></label>
             <input id="edit_passenger_count" name="passenger_count" type="number" min="1" required
-                   oninput="calcEditTotal(this.value)"
                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            <p class="text-xs text-gray-400 mt-1">變更人數不會自動調整總金額，請於下方「總金額」欄位手動確認／調整。</p>
           </div>
 
           <div class="col-span-2">
@@ -496,12 +499,26 @@
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">總金額 (NT$)</label>
-            <div id="edit_total_display"
+            <label class="block text-xs font-medium text-gray-500 mb-1">總金額 (NT$) <span class="text-red-400">*</span></label>
+            <input id="edit_total_amount" name="total_amount" type="number" min="0" required
+                   oninput="calcEditBalancePreview()"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 font-semibold" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">訂金 (NT$，不可於此調整)</label>
+            <div id="edit_deposit_display"
+                 class="flex items-center px-3 py-2 text-sm border border-gray-100 rounded-xl bg-gray-50 text-gray-600">
+              NT$ 0
+            </div>
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-500 mb-1">尾款預覽 (NT$ = 總金額 − 訂金，儲存後自動生效)</label>
+            <div id="edit_balance_preview"
                  class="flex items-center px-3 py-2 text-sm border border-gray-100 rounded-xl bg-gray-50 font-semibold text-gray-900">
               NT$ 0
             </div>
-            <input id="edit_total_amount" name="total_amount" type="hidden" value="0" />
           </div>
 
           <div>
@@ -598,18 +615,25 @@
 <script>
 const PRICE_PER_PERSON = {{ price_per_person }};
 
+// 新增訂單：總金額預覽依所選活動的票價估算（實際金額以送出後伺服器依當日價格規則
+// 精算為準，此處僅為即時預覽，日期／地點專屬價格規則可能與此預覽略有差異）。
 function calcCreateTotal(count) {
-  const n     = Math.max(1, parseInt(count) || 1);
-  const total = n * PRICE_PER_PERSON;
-  document.querySelector('.create-total-display').textContent = 'NT$ ' + total.toLocaleString();
+  const n   = Math.max(1, parseInt(count) || 1);
+  const sel = document.getElementById('create_event_page_id');
+  const opt = sel ? sel.options[sel.selectedIndex] : null;
+  const unitPrice = (opt && opt.dataset.price) ? parseInt(opt.dataset.price, 10) : PRICE_PER_PERSON;
+  const total = n * unitPrice;
+  document.querySelector('.create-total-display').textContent = 'NT$ ' + total.toLocaleString() + '（預覽，實際以送出後計算為準）';
   document.querySelector('.create-total-input').value         = total;
 }
 
-function calcEditTotal(count) {
-  const n     = Math.max(1, parseInt(count) || 1);
-  const total = n * PRICE_PER_PERSON;
-  document.getElementById('edit_total_display').textContent = 'NT$ ' + total.toLocaleString();
-  document.getElementById('edit_total_amount').value        = total;
+// 編輯訂單：總金額由管理員直接輸入，此函式僅更新尾款預覽（尾款 = 總金額 − 訂金），
+// 不會反過來依人數重新計算總金額，避免用錯誤的單價覆蓋既有金額。
+function calcEditBalancePreview() {
+  const total   = parseInt(document.getElementById('edit_total_amount').value, 10) || 0;
+  const deposit = parseInt(document.getElementById('edit_total_amount').dataset.depositAmount, 10) || 0;
+  const balance = Math.max(0, total - deposit);
+  document.getElementById('edit_balance_preview').textContent = 'NT$ ' + balance.toLocaleString();
 }
 
 function fillEditModal(btn) {
@@ -626,7 +650,10 @@ function fillEditModal(btn) {
   document.getElementById('edit_remark').value          = d.remark;
   document.getElementById('edit_payment_status').value  = d.paymentStatus;
   document.getElementById('edit_vehicle_id').value      = d.vehicleId;
-  calcEditTotal(d.passengerCount);
+  document.getElementById('edit_total_amount').value    = d.totalAmount;
+  document.getElementById('edit_total_amount').dataset.depositAmount = d.depositAmount;
+  document.getElementById('edit_deposit_display').textContent = 'NT$ ' + (parseInt(d.depositAmount, 10) || 0).toLocaleString();
+  calcEditBalancePreview();
 
   // 活動資訊（唯讀）
   document.getElementById('edit_event_title').textContent   = d.eventTitle  || '—';

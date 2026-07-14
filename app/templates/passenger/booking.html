@@ -537,6 +537,9 @@
   const NX200_BALANCE = {{ nx200_balance | default(0) }};
   // 包車模式：每筆訂單最少人數（依 EventPage.min_group_size，無活動或未設定則為 1）
   const MIN_GROUP_SIZE = {{ event_page.min_group_size or 1 if event_page else 1 }};
+  // 計價策略（Pricing & Payment Refactor Phase 1）：'vehicle' 或 'passenger'（預設）。
+  // Vehicle Mode 下，價格一律採用 Vehicle Option Final Price，不乘以人數。
+  const PRICING_STRATEGY = {{ pricing_strategy | tojson }};
 
   // 活動價格規則：{dateId|'any': {locId|'any': {price, deposit}}}
   const EP_PRICE_RULES = {{ ep_price_rules_json | tojson | safe }};
@@ -704,31 +707,31 @@
     const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
     document.getElementById('count_display').textContent = n + ' 人';
 
-    // 包車模式：車輛方案為固定價格時，總價直接採用車輛固定價，不隨人數變動；
-    // 訂金仍依每人訂金 × 人數計算，尾款 = 固定總價 − 訂金。
     const labelEl = document.getElementById('price_per_person_label');
     const hintEl  = document.getElementById('fixed-price-hint');
-    if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'fixed' && _activeVehicleOption.price !== null) {
-      const fixedTotal = _activeVehicleOption.price;
-      const dep = n * DEPOSIT;
-      if (labelEl) labelEl.textContent = '車輛固定價';
+
+    // Vehicle Mode：價格 = Vehicle Option Final Price，完全不乘以人數。
+    // 「使用價格規則」：Final = Base Price（PRICE，來自 Price Rules）
+    // 「固定價格」：Final = vo.price（忽略 Price Rules）
+    // 「加價」：Final = Base Price + price_adjustment
+    // 訂金／尾款皆為單一金額（不乘以人數），尾款 = Final − 訂金。
+    if (PRICING_STRATEGY === 'vehicle' && _activeVehicleOption) {
+      let finalPrice;
+      if (_activeVehicleOption.pricing_mode === 'fixed' && _activeVehicleOption.price !== null) {
+        finalPrice = _activeVehicleOption.price;
+      } else if (_activeVehicleOption.pricing_mode === 'markup' && _activeVehicleOption.price_adjustment !== null) {
+        finalPrice = PRICE + _activeVehicleOption.price_adjustment;
+      } else {
+        finalPrice = PRICE;
+      }
+      if (labelEl) labelEl.textContent = '車輛方案價格';
       if (hintEl) hintEl.classList.remove('hidden');
-      document.getElementById('price_per_person_display').textContent = 'NT$ ' + fixedTotal.toLocaleString();
-      _applyDiscountDisplay(fixedTotal, dep, Math.max(0, fixedTotal - dep));
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + finalPrice.toLocaleString();
+      _applyDiscountDisplay(finalPrice, DEPOSIT, Math.max(0, finalPrice - DEPOSIT));
       return;
     }
 
-    // 加價方案：總價 = (人數 × 每人價) + price_adjustment，仍隨人數變動，僅加價金額固定。
-    if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'markup' && _activeVehicleOption.price_adjustment !== null) {
-      const adj = _activeVehicleOption.price_adjustment;
-      const total = (n * PRICE) + adj;
-      const dep   = n * DEPOSIT;
-      if (labelEl) labelEl.textContent = '每人費用';
-      if (hintEl) hintEl.classList.add('hidden');
-      _applyDiscountDisplay(total, dep, Math.max(0, total - dep));
-      return;
-    }
-
+    // Passenger Mode（預設，含 BTS 傳統流程）：價格 = 人數 × Base Price，維持既有邏輯。
     if (labelEl) labelEl.textContent = '每人費用';
     if (hintEl) hintEl.classList.add('hidden');
     _applyDiscountDisplay(n * PRICE, n * DEPOSIT, n * BALANCE);

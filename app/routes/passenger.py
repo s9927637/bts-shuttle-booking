@@ -47,6 +47,18 @@ DEPARTURE_OPTIONS = [
 ]
 AVAILABLE_DATES = {opt["value"] for opt in DEPARTURE_OPTIONS if not opt["disabled"]}
 
+# Pricing & Payment Refactor（Phase 1）：計價策略 Feature Flag。
+# 暫以 slug 白名單決定 Vehicle Mode，不新增 Database Schema。
+# 下一階段若允許 migration，建議正式改為 EventPage.pricing_strategy 欄位（passenger/vehicle）。
+VEHICLE_MODE_EVENT_SLUGS = {"fujii-kaze-test"}
+
+
+def _pricing_strategy(event_page) -> str:
+    """回傳 'vehicle'（依車輛計價）或 'passenger'（依人數計價，預設，含 BTS 傳統流程）。"""
+    if event_page and event_page.slug in VEHICLE_MODE_EVENT_SLUGS:
+        return "vehicle"
+    return "passenger"
+
 
 def _gen_order_no(order_id: int, event_page=None) -> str:
     """訂單編號：原 BTS 傳統流程（無 event_page）維持既有格式，不受影響。
@@ -188,6 +200,7 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                            ep_price_rules_json=ep_price_rules_json,
                            ep_form_config=ep_form_config,
                            ep_vehicle_options=ep_vehicle_options,
+                           pricing_strategy=_pricing_strategy(event_page),
                            form=form or {})
 
 
@@ -317,19 +330,24 @@ def booking_submit():
                     raise ValueError(f"最少需預約 {min_g} 人。")
                 if max_g and passenger_count > max_g:
                     raise ValueError(f"每次最多預約 {max_g} 人。")
-            total_amount    = passenger_count * price_per
-            deposit_amount  = passenger_count * deposit_per
-            balance_amount  = passenger_count * balance_per
-
-            # 包車模式：車輛方案為固定價格時，總價改用車輛固定價（不隨人數變動）。
-            # 訂金仍依每人訂金 × 人數計算，尾款 = 固定總價 - 訂金，保留既有保留座位機制。
-            if vehicle_option and vehicle_option.pricing_mode == "fixed" and vehicle_option.price is not None:
-                total_amount   = vehicle_option.price
+            # 計價策略（Pricing & Payment Refactor Phase 1）：
+            # Passenger Mode（預設，含 BTS 傳統流程）＝ 人數 × Base Price，維持既有邏輯不變。
+            # Vehicle Mode（目前僅 fujii-kaze-test）＝ Vehicle Option Final Price，完全不乘以人數；
+            # Price Rules 的 price_per/deposit_per 僅作為「使用價格規則」與「加價」的 Base Price 來源。
+            if _pricing_strategy(event_page) == "vehicle" and vehicle_option:
+                if vehicle_option.pricing_mode == "fixed" and vehicle_option.price is not None:
+                    final_price = vehicle_option.price
+                elif vehicle_option.pricing_mode == "markup" and vehicle_option.price_adjustment is not None:
+                    final_price = price_per + vehicle_option.price_adjustment
+                else:
+                    final_price = price_per
+                total_amount   = final_price
+                deposit_amount = deposit_per
                 balance_amount = max(0, total_amount - deposit_amount)
-            # 加價方案：總價 = (人數 × 每人價) + price_adjustment，仍隨人數變動，僅加價金額固定。
-            elif vehicle_option and vehicle_option.pricing_mode == "markup" and vehicle_option.price_adjustment is not None:
-                total_amount   = (passenger_count * price_per) + vehicle_option.price_adjustment
-                balance_amount = max(0, total_amount - deposit_amount)
+            else:
+                total_amount    = passenger_count * price_per
+                deposit_amount  = passenger_count * deposit_per
+                balance_amount  = passenger_count * balance_per
 
         # 折扣碼套用
         from app.models.coupon import Coupon

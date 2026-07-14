@@ -109,6 +109,7 @@
             <option value="{{ n }}" {% if n == pax_selected %}selected{% endif %}>{{ n }} 人</option>
             {% endfor %}
           </select>
+          <p id="fixed-price-hint" class="hidden mt-1.5 text-xs text-gray-500">本活動採包車預約。價格依車輛方案計算，不依乘車人數計費。</p>
         </div>
       </div>
 
@@ -340,7 +341,7 @@
       <h2 class="section-title mb-4">費用明細</h2>
       <div class="space-y-2">
         <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-400">每人費用</span>
+          <span id="price_per_person_label" class="text-gray-400">每人費用</span>
           <span id="price_per_person_display" class="font-medium text-gray-300">NT$ 2,000</span>
         </div>
         <div class="flex items-center justify-between text-sm">
@@ -541,12 +542,27 @@
   const EP_LOC_IDS = {
     {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
   };
+  // 車輛方案（包車模式）：id -> {pricing_mode, price}。pricing_mode == 'fixed' 時，
+  // 總價改用車輛固定價格，不隨人數變動；其餘模式維持人數 × 每人價的既有計價邏輯。
+  const EP_VEHICLE_OPTIONS = {
+    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"pricing_mode": {{ vo.pricing_mode | tojson }}, "price": {{ vo.price | tojson }}},{% endfor %}
+  };
 
   let _activeDateId   = null;
   let _activeLocId    = null;
   let currentVehicle = 'minibus';
   let _appliedDiscount = 0;
   let _termsAccepted = false;
+  // 目前選中的車輛方案定價資訊（單一方案時於頁面載入即設定，多方案時於 selectVehicleOption() 更新）
+  let _activeVehicleOption = null;
+  {% if ep_vehicle_options|length == 1 %}
+  _activeVehicleOption = EP_VEHICLE_OPTIONS[{{ ep_vehicle_options[0].id }}] || null;
+  {% elif ep_vehicle_options %}
+  {% set default_vo = ep_vehicle_options|selectattr('is_default')|first %}
+  {% if default_vo %}
+  _activeVehicleOption = EP_VEHICLE_OPTIONS[{{ default_vo.id }}] || null;
+  {% endif %}
+  {% endif %}
 
   function _lookupPriceRule(dateId, locId) {
     const dk = dateId ? String(dateId) : 'any';
@@ -595,7 +611,7 @@
     _applyPriceRule();
   }
 
-  // Vehicle Options（車輛方案 V2）：多方案清單的選取（僅切換 UI 選中狀態與快照 id，不影響計價）
+  // Vehicle Options（車輛方案 V2）：多方案清單的選取
   function selectVehicleOption(id) {
     document.getElementById('vehicle_option_id').value = id;
     document.querySelectorAll('[id^="vo-plan-"]').forEach(function (card) {
@@ -611,6 +627,10 @@
         if (radio) { radio.classList.remove('border-purple-500'); radio.classList.add('border-gray-600'); radio.querySelector('div').style.background = 'transparent'; }
       }
     });
+    // 包車模式：切換車輛方案時，若為固定價格則立即改用固定總價重新計算
+    _activeVehicleOption = EP_VEHICLE_OPTIONS[id] || null;
+    const paxEl = document.getElementById('passenger_count');
+    if (paxEl) calcTotal(paxEl.value);
   }
 
   function selectVehicle(type) {
@@ -675,6 +695,23 @@
     if (currentVehicle === 'nx200') return;
     const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
     document.getElementById('count_display').textContent = n + ' 人';
+
+    // 包車模式：車輛方案為固定價格時，總價直接採用車輛固定價，不隨人數變動；
+    // 訂金仍依每人訂金 × 人數計算，尾款 = 固定總價 − 訂金。
+    const labelEl = document.getElementById('price_per_person_label');
+    const hintEl  = document.getElementById('fixed-price-hint');
+    if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'fixed' && _activeVehicleOption.price !== null) {
+      const fixedTotal = _activeVehicleOption.price;
+      const dep = n * DEPOSIT;
+      if (labelEl) labelEl.textContent = '車輛固定價';
+      if (hintEl) hintEl.classList.remove('hidden');
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + fixedTotal.toLocaleString();
+      _applyDiscountDisplay(fixedTotal, dep, Math.max(0, fixedTotal - dep));
+      return;
+    }
+
+    if (labelEl) labelEl.textContent = '每人費用';
+    if (hintEl) hintEl.classList.add('hidden');
     _applyDiscountDisplay(n * PRICE, n * DEPOSIT, n * BALANCE);
   }
 

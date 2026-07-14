@@ -321,6 +321,12 @@ def booking_submit():
             deposit_amount  = passenger_count * deposit_per
             balance_amount  = passenger_count * balance_per
 
+            # 包車模式（第一階段）：車輛方案為固定價格時，總價改用車輛固定價（不隨人數變動）。
+            # 訂金仍依每人訂金 × 人數計算，尾款 = 固定總價 - 訂金，保留既有保留座位機制。
+            if vehicle_option and vehicle_option.pricing_mode == "fixed" and vehicle_option.price is not None:
+                total_amount   = vehicle_option.price
+                balance_amount = max(0, total_amount - deposit_amount)
+
         # 折扣碼套用
         from app.models.coupon import Coupon
         coupon_code_input = request.form.get("coupon_code", "").strip().upper()

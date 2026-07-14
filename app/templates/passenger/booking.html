@@ -248,11 +248,6 @@
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
-              {% if vo.pricing_mode == 'fixed' %}
-              <p class="text-xs text-purple-300 mt-1">固定價格 NT${{ '{:,}'.format(vo.price or 0) }}</p>
-              {% elif vo.pricing_mode == 'markup' %}
-              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment or 0) }}</p>
-              {% endif %}
             </div>
           </div>
         {% else %}
@@ -271,11 +266,6 @@
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
-              {% if vo.pricing_mode == 'fixed' %}
-              <p class="text-xs text-purple-300 mt-1">固定價格 NT${{ '{:,}'.format(vo.price or 0) }}</p>
-              {% elif vo.pricing_mode == 'markup' %}
-              <p class="text-xs text-purple-300 mt-1">加價 +NT${{ '{:,}'.format(vo.price_adjustment or 0) }}</p>
-              {% endif %}
             </div>
           </label>
           {% endfor %}

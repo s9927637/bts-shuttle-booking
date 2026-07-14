@@ -245,11 +245,22 @@ def booking_submit():
             if not dep:
                 raise ValueError("請填寫出發日期。")
 
-            # 取得上車地點（存快照名稱）
-            pickup_location_val = request.form.get("pickup_location", "").strip() or None
+            # 取得上車地點（存快照名稱）／乘客自行輸入上車地點
+            from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule
+            custom_loc = EventPickupLocation.query.filter_by(
+                event_page_id=event_page.id, is_active=True, is_custom_location=True
+            ).first()
+
+            pickup_location_val      = None
+            pickup_location_text_val = None
+            if custom_loc:
+                pickup_location_text_val = request.form.get("pickup_location_text", "").strip() or None
+                if not pickup_location_text_val:
+                    raise ValueError("請輸入上車地點。")
+            else:
+                pickup_location_val = request.form.get("pickup_location", "").strip() or None
 
             # 查詢價格規則（優先順序：日期+地點 > 日期 > 地點 > 全局）
-            from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule
             booking_date_obj = EventBookingDate.query.filter_by(event_page_id=event_page.id, date_value=dep, is_active=True).first()
             location_obj = None
             if pickup_location_val:
@@ -274,7 +285,8 @@ def booking_submit():
             balance_per = price_per - deposit_per
         else:
             # 原 BTS 模式：驗證場次
-            pickup_location_val = None
+            pickup_location_val      = None
+            pickup_location_text_val = None
             if dep not in AVAILABLE_DATES:
                 raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
             price_per   = PRICE_PER_PERSON
@@ -359,6 +371,7 @@ def booking_submit():
             discount_amount   = discount_amount,
             event_page_id     = event_page.id if event_page else None,
             pickup_location   = pickup_location_val if event_page else None,
+            pickup_location_text = pickup_location_text_val if event_page else None,
             vehicle_option_id            = vehicle_option.id if vehicle_option else None,
             vehicle_option_name          = vehicle_option.name if vehicle_option else None,
             vehicle_option_capacity      = vehicle_option.capacity if vehicle_option else None,

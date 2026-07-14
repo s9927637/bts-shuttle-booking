@@ -31,6 +31,7 @@ class Order(db.Model):
 
     # 活動專屬欄位（NULL = 原 BTS 訂單，向前相容）
     pickup_location     = db.Column(db.String(100), nullable=True)   # 上車地點名稱（快照，不存 FK）
+    pickup_location_text = db.Column(db.String(200), nullable=True)  # 乘客自行輸入的上車地點（自訂模式）
 
     # Vehicle Options（車輛方案 V2）：快照欄位，避免日後修改／刪除方案影響歷史訂單顯示。
     # 僅新增資料記錄，不影響既有 Pricing Engine／Booking Logic／Dispatch。

@@ -60,6 +60,12 @@
         <span class="text-gray-500">出發日期</span>
         <span class="text-gray-200">{{ order.departure_date }}</span>
       </div>
+      {% if order.pickup_location_text or order.pickup_location %}
+      <div class="flex justify-between row-divider">
+        <span class="text-gray-500">上車地點</span>
+        <span class="text-gray-200">{{ order.pickup_location_text or order.pickup_location }}</span>
+      </div>
+      {% endif %}
       <div class="flex justify-between row-divider">
         <span class="text-gray-500">接送方案</span>
         <span class="text-gray-200">來回接送</span>

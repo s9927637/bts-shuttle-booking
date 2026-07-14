@@ -1165,7 +1165,8 @@ def api_locations_list(ep_id):
     locs = EventPickupLocation.query.filter_by(event_page_id=ep.id).order_by(EventPickupLocation.sort_order).all()
     return jsonify([{
         "id": l.id, "name": l.name, "address": l.address,
-        "map_url": l.map_url, "sort_order": l.sort_order, "is_active": l.is_active
+        "map_url": l.map_url, "sort_order": l.sort_order, "is_active": l.is_active,
+        "is_custom_location": l.is_custom_location,
     } for l in locs])
 
 
@@ -1173,8 +1174,9 @@ def api_locations_list(ep_id):
 def api_location_create(ep_id):
     ep = EventPage.query.get_or_404(ep_id)
     data = request.get_json(force=True) or {}
+    is_custom = bool(data.get("is_custom_location", False))
     name = (data.get("name") or "").strip()
-    if not name:
+    if not name and not is_custom:
         return jsonify({"error": "name 必填"}), 400
     loc = EventPickupLocation(
         event_page_id=ep.id,
@@ -1183,6 +1185,7 @@ def api_location_create(ep_id):
         map_url=(data.get("map_url") or "").strip() or None,
         sort_order=int(data.get("sort_order") or 0),
         is_active=bool(data.get("is_active", True)),
+        is_custom_location=is_custom,
     )
     db.session.add(loc)
     db.session.commit()
@@ -1193,11 +1196,17 @@ def api_location_create(ep_id):
 def api_location_update(ep_id, loc_id):
     loc = EventPickupLocation.query.filter_by(id=loc_id, event_page_id=ep_id).first_or_404()
     data = request.get_json(force=True) or {}
-    if "name"       in data: loc.name       = data["name"].strip()
-    if "address"    in data: loc.address    = (data["address"] or "").strip() or None
-    if "map_url"    in data: loc.map_url    = (data["map_url"] or "").strip() or None
-    if "sort_order" in data: loc.sort_order = int(data["sort_order"])
-    if "is_active"  in data: loc.is_active  = bool(data["is_active"])
+    is_custom = data.get("is_custom_location", loc.is_custom_location)
+    if "name" in data:
+        name = (data["name"] or "").strip()
+        if not name and not is_custom:
+            return jsonify({"error": "name 必填"}), 400
+        loc.name = name
+    if "address"            in data: loc.address            = (data["address"] or "").strip() or None
+    if "map_url"            in data: loc.map_url             = (data["map_url"] or "").strip() or None
+    if "sort_order"         in data: loc.sort_order          = int(data["sort_order"])
+    if "is_active"          in data: loc.is_active           = bool(data["is_active"])
+    if "is_custom_location" in data: loc.is_custom_location  = bool(data["is_custom_location"])
     db.session.commit()
     return jsonify({"ok": True})
 

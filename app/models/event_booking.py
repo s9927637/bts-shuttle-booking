@@ -49,6 +49,8 @@ class EventPickupLocation(db.Model):
     map_url      = db.Column(db.String(500), nullable=True)    # Google Maps 連結
     sort_order   = db.Column(db.Integer, nullable=False, default=0)
     is_active    = db.Column(db.Boolean, nullable=False, default=True)
+    # 乘客自行輸入上車地點：true = 前台改為文字輸入框，不顯示固定地點下拉選單
+    is_custom_location = db.Column(db.Boolean, nullable=False, default=False)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
     event_page = db.relationship("EventPage", backref=db.backref(

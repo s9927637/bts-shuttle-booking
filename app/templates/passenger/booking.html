@@ -123,7 +123,17 @@
         </div>
       </div>
 
-      {% if ep_pickup_locations %}
+      {% set custom_loc = ep_pickup_locations|selectattr('is_custom_location')|first %}
+      {% if custom_loc %}
+      <div>
+        <label for="pickup_location_text" class="block mb-1.5 text-xs font-medium text-gray-400">
+          上車地點 <span class="text-red-400">*</span>
+        </label>
+        <textarea id="pickup_location_text" name="pickup_location_text" rows="2" required
+                  placeholder="請輸入上車地址或明顯地標&#10;例如：&#10;台北車站東三門&#10;板橋高鐵站北二門&#10;台北101&#10;XX飯店門口"
+                  class="input-dark resize-none">{{ form.get('pickup_location_text') or '' }}</textarea>
+      </div>
+      {% elif ep_pickup_locations %}
       <div>
         <label class="block mb-1.5 text-xs font-medium text-gray-400">
           上車地點 <span class="text-red-400">*</span>

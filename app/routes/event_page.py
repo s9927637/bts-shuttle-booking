@@ -1118,6 +1118,9 @@ def api_booking_dates_list(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/booking-dates", methods=["POST"])
 def api_booking_date_create(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     ep = EventPage.query.get_or_404(ep_id)
     data = request.get_json(force=True) or {}
     date_value = (data.get("date_value") or "").strip()
@@ -1138,6 +1141,9 @@ def api_booking_date_create(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/booking-dates/<int:date_id>", methods=["PUT"])
 def api_booking_date_update(ep_id, date_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     d = EventBookingDate.query.filter_by(id=date_id, event_page_id=ep_id).first_or_404()
     data = request.get_json(force=True) or {}
     if "date_value" in data: d.date_value = data["date_value"].strip()
@@ -1151,6 +1157,9 @@ def api_booking_date_update(ep_id, date_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/booking-dates/<int:date_id>", methods=["DELETE"])
 def api_booking_date_delete(ep_id, date_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     d = EventBookingDate.query.filter_by(id=date_id, event_page_id=ep_id).first_or_404()
     db.session.delete(d)
     db.session.commit()
@@ -1172,6 +1181,9 @@ def api_locations_list(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/pickup-locations", methods=["POST"])
 def api_location_create(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     ep = EventPage.query.get_or_404(ep_id)
     data = request.get_json(force=True) or {}
     is_custom = bool(data.get("is_custom_location", False))
@@ -1194,6 +1206,9 @@ def api_location_create(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/pickup-locations/<int:loc_id>", methods=["PUT"])
 def api_location_update(ep_id, loc_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     loc = EventPickupLocation.query.filter_by(id=loc_id, event_page_id=ep_id).first_or_404()
     data = request.get_json(force=True) or {}
     is_custom = data.get("is_custom_location", loc.is_custom_location)
@@ -1213,6 +1228,9 @@ def api_location_update(ep_id, loc_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/pickup-locations/<int:loc_id>", methods=["DELETE"])
 def api_location_delete(ep_id, loc_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     loc = EventPickupLocation.query.filter_by(id=loc_id, event_page_id=ep_id).first_or_404()
     db.session.delete(loc)
     db.session.commit()
@@ -1233,6 +1251,9 @@ def api_price_rules_list(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/price-rules", methods=["POST"])
 def api_price_rule_create(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     ep = EventPage.query.get_or_404(ep_id)
     data = request.get_json(force=True) or {}
     price = data.get("price")
@@ -1253,6 +1274,9 @@ def api_price_rule_create(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/price-rules/<int:rule_id>", methods=["PUT"])
 def api_price_rule_update(ep_id, rule_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     rule = EventPriceRule.query.filter_by(id=rule_id, event_page_id=ep_id).first_or_404()
     data = request.get_json(force=True) or {}
     if "price"           in data: rule.price           = int(data["price"])
@@ -1266,6 +1290,9 @@ def api_price_rule_update(ep_id, rule_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/price-rules/<int:rule_id>", methods=["DELETE"])
 def api_price_rule_delete(ep_id, rule_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     rule = EventPriceRule.query.filter_by(id=rule_id, event_page_id=ep_id).first_or_404()
     db.session.delete(rule)
     db.session.commit()
@@ -1381,6 +1408,9 @@ def api_form_config_list(ep_id):
 @event_page_bp.route("/api/events/<int:ep_id>/form-config", methods=["POST"])
 def api_form_config_upsert(ep_id):
     """批次更新：傳入 [{field_name, is_visible, is_required, label_override}]"""
+    guard = _require_admin()
+    if guard:
+        return guard
     ep = EventPage.query.get_or_404(ep_id)
     items = request.get_json(force=True) or []
     for item in items:
@@ -1402,6 +1432,9 @@ def api_form_config_upsert(ep_id):
 
 @event_page_bp.route("/api/events/<int:ep_id>/booking-config", methods=["POST"])
 def api_booking_config_save(ep_id):
+    guard = _require_admin()
+    if guard:
+        return guard
     ep = EventPage.query.get_or_404(ep_id)
     data = request.get_json(force=True) or {}
 

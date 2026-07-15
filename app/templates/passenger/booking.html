@@ -548,7 +548,7 @@
     {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
   };
   // 車輛方案：id -> {name, price_adjustment}。Final Price = Price Rule（Base Price）+ price_adjustment，
-  // 可為負數（折扣）。Vehicle Mode 下不乘以人數，Passenger Mode 下乘以人數，見 calcTotal()。
+  // 可為負數（折扣）。Vehicle Mode 下不乘以人數，Passenger Mode 下乘以人數，見 recalculateBookingSummary()。
   const EP_VEHICLE_OPTIONS = {
     {% for vo in ep_vehicle_options %}{{ vo.id }}: {"name": {{ vo.name | tojson }}, "price_adjustment": {{ vo.price_adjustment | tojson }}},{% endfor %}
   };
@@ -579,18 +579,9 @@
     return null;
   }
 
-  function _applyPriceRule() {
-    const rule = _lookupPriceRule(_activeDateId, _activeLocId);
-    PRICE = rule ? rule.price : BASE_PRICE;
-    const ppEl = document.getElementById('price_per_person_display');
-    if (ppEl) ppEl.textContent = 'NT$ ' + PRICE.toLocaleString();
-    const paxEl = document.getElementById('passenger_count');
-    if (paxEl) calcTotal(paxEl.value);
-  }
-
   function onDateChange(dateValue) {
     _activeDateId = EP_DATE_IDS[dateValue] || null;
-    _applyPriceRule();
+    recalculateBookingSummary(document.getElementById('passenger_count').value);
   }
 
   function onLocationChange(locName) {
@@ -605,7 +596,7 @@
     } else if (mapLink) {
       mapLink.classList.add('hidden');
     }
-    _applyPriceRule();
+    recalculateBookingSummary(document.getElementById('passenger_count').value);
   }
 
   // Vehicle Options（車輛方案 V2）：多方案清單的選取
@@ -627,7 +618,7 @@
     // 包車模式：切換車輛方案時，若為固定價格則立即改用固定總價重新計算
     _activeVehicleOption = EP_VEHICLE_OPTIONS[id] || null;
     const paxEl = document.getElementById('passenger_count');
-    if (paxEl) calcTotal(paxEl.value);
+    if (paxEl) recalculateBookingSummary(paxEl.value);
   }
 
   function selectVehicle(type) {
@@ -666,8 +657,7 @@
       paxInput.disabled = false;
       paxInput.style.opacity = '';
       paxInput.value = MIN_GROUP_SIZE;
-      document.getElementById('price_per_person_display').textContent = 'NT$ ' + PRICE.toLocaleString();
-      calcTotal(MIN_GROUP_SIZE);
+      recalculateBookingSummary(MIN_GROUP_SIZE);
     }
   }
 
@@ -688,18 +678,35 @@
     }
   }
 
-  function calcTotal(count) {
+  // Booking Summary 統一重新計算流程（Booking Summary Synchronization Fix）。
+  // 任何價格相關變更（Vehicle Option／日期／上車地點／人數／折扣碼）都必須呼叫這個
+  // 唯一入口，依序重新計算 Final Price → Deposit → Balance → Payment Summary，
+  // 避免像過去「切車輛只更新總價、訂金/尾款沿用舊值」的不同步問題。
+  //
+  // 流程：
+  //   1. 依目前 _activeDateId／_activeLocId 重新查 Price Rule → 更新 PRICE（Base Price）
+  //   2. Final Price = PRICE + 目前選中車輛方案的 price_adjustment
+  //   3. Total = 依 PRICING_STRATEGY 決定（依車輛計價：Final Price；依人數計價：Final Price × 人數）
+  //   4. Deposit = calcDepositAmount(Total, 人數)（一律用「目前」Final Price/Total 重新算，不使用第一次載入的值）
+  //   5. Balance = Total − Deposit
+  //   6. 寫回 DOM：費用明細（Booking Summary）＋ 付款方式（Payment Summary）
+  function recalculateBookingSummary(count) {
     if (currentVehicle === 'nx200') return;
     const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
+
+    // 步驟 1：重新查 Price Rule（每次都重新查，不依賴是否曾觸發過 onDateChange/onLocationChange，
+    // 修正單一日期／單一地點活動〔無下拉選單可觸發 onchange〕從未套用正確 Price Rule 的問題）。
+    const rule = _lookupPriceRule(_activeDateId, _activeLocId);
+    PRICE = rule ? rule.price : BASE_PRICE;
 
     const labelEl     = document.getElementById('price_per_person_label');
     const hintEl      = document.getElementById('fixed-price-hint');
     const countRowLbl = document.getElementById('count_row_label');
     const countRowVal = document.getElementById('count_display');
 
-    // Vehicle Option Pricing 簡化版：Final Price = Price Rule（Base Price，PRICE）+ price_adjustment。
-    // Vehicle Mode：總價 = Final Price，完全不乘以人數。費用明細顯示「車輛費用／車輛方案」，不顯示人數。
-    // Passenger Mode（預設，含 BTS 傳統流程）：總價 = Final Price × 人數，維持既有共乘邏輯，顯示「每人費用／人數」。
+    // 步驟 2-3：Final Price = Price Rule（Base Price）+ price_adjustment；
+    // Vehicle Mode：Total = Final Price，完全不乘以人數。
+    // Passenger Mode（預設，含 BTS 傳統流程）：Total = Final Price × 人數。
     const adjustment = (_activeVehicleOption && _activeVehicleOption.price_adjustment) || 0;
     const finalPrice = PRICE + adjustment;
     const isVehicleMode = PRICING_STRATEGY === 'vehicle';
@@ -717,12 +724,15 @@
       if (countRowVal) countRowVal.textContent = n + ' 人';
     }
 
+    // 步驟 4-6：Deposit／Balance 一律依「目前」Total 重新計算（見 calcDepositAmount 說明），
+    // 再統一寫回 Payment Summary（訂金／尾款）與 Booking Summary（總金額）。
     const deposit = calcDepositAmount(total, n);
     _applyDiscountDisplay(total, deposit, Math.max(0, total - deposit));
   }
 
-  // 訂金方式（Deposit Type Enhancement）：'percentage' 依總價百分比計算；'fixed' 為固定金額
-  // （依人數計價時 ×人數，依車輛計價時為單一金額，不隨人數變動）。
+  // 訂金方式（Deposit Type Enhancement）：'percentage' 依「目前」總價百分比即時計算；
+  // 'fixed' 為固定金額（依人數計價時 ×人數，依車輛計價時為單一金額，不隨人數變動）。
+  // 不得使用第一次載入的訂金值——此函式每次都依傳入的 totalAmount／n 重新計算。
   function calcDepositAmount(totalAmount, n) {
     if (DEPOSIT_TYPE === 'percentage') {
       return Math.round(totalAmount * DEPOSIT_PERCENTAGE / 100);
@@ -736,10 +746,10 @@
     if (isNaN(n) || n < MIN_GROUP_SIZE) {
       el.value = MIN_GROUP_SIZE;
     }
-    calcTotal(el.value);
+    recalculateBookingSummary(el.value);
   }
 
-  calcTotal(document.getElementById('passenger_count').value);
+  recalculateBookingSummary(document.getElementById('passenger_count').value);
 
   // ── 折扣碼邏輯 ────────────────────────────────────────────────────────────
 
@@ -753,7 +763,7 @@
       codeField.value = '';
       resultEl.className = 'hidden text-xs leading-relaxed';
       document.getElementById('discount-row').classList.add('hidden');
-      calcTotal(document.getElementById('passenger_count').value);
+      recalculateBookingSummary(document.getElementById('passenger_count').value);
       return;
     }
 
@@ -780,7 +790,7 @@
         resultEl.textContent = '✗ ' + data.message;
         document.getElementById('discount-row').classList.add('hidden');
       }
-      calcTotal(document.getElementById('passenger_count').value);
+      recalculateBookingSummary(document.getElementById('passenger_count').value);
     } catch(e) {
       resultEl.className = 'text-xs leading-relaxed text-red-400';
       resultEl.textContent = '✗ 驗證失敗，請稍後再試';

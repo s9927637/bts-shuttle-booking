@@ -1041,7 +1041,7 @@
               </div>
             </div>
             <div class="grid grid-cols-3 gap-2 text-xs pt-1 border-t border-indigo-100">
-              <div>
+              <div id="bc-preview-base-wrap">
                 <p class="text-gray-500">Base Price</p>
                 <p id="bc-preview-base" class="font-medium text-gray-800">—</p>
               </div>
@@ -1050,7 +1050,7 @@
                 <p id="bc-preview-source" class="font-medium text-gray-800">—</p>
               </div>
               <div>
-                <p class="text-gray-500">最終價格</p>
+                <p id="bc-preview-final-label" class="text-gray-500">最終價格</p>
                 <p id="bc-preview-final" class="font-semibold text-indigo-700">—</p>
               </div>
             </div>
@@ -1821,13 +1821,20 @@ window.addEventListener('load', function() {
   function bcUpdatePricePreview() {
     const strategyEl = document.getElementById('bc-preview-strategy');
     const sourceEl   = document.getElementById('bc-preview-source');
+    const baseWrapEl = document.getElementById('bc-preview-base-wrap');
     const baseEl     = document.getElementById('bc-preview-base');
+    const finalLblEl = document.getElementById('bc-preview-final-label');
     const finalEl    = document.getElementById('bc-preview-final');
     if (!strategyEl) return;
 
     const vehicleRadio = document.getElementById('bc-pricing-strategy-vehicle');
     const isVehicle = vehicleRadio && vehicleRadio.checked;
     strategyEl.textContent = isVehicle ? '依車輛計價' : '依人數計價';
+
+    // 依車輛計價模式：不顯示 Base Price，僅呈現車輛方案／價格調整／車輛費用
+    // （與前台費用明細一致，避免出現前台已移除的「基本價格」欄位）。
+    if (baseWrapEl) baseWrapEl.classList.toggle('hidden', isVehicle);
+    if (finalLblEl) finalLblEl.textContent = isVehicle ? '車輛費用' : '每人費用';
 
     const base = bcGetBasePrice();
     baseEl.textContent = 'NT$' + base.price.toLocaleString();

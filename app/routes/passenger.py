@@ -325,24 +325,20 @@ def booking_submit():
                     raise ValueError(f"最少需預約 {min_g} 人。")
                 if max_g and passenger_count > max_g:
                     raise ValueError(f"每次最多預約 {max_g} 人。")
-            # 計價策略（Pricing & Payment Refactor Phase 1）：
-            # Passenger Mode（預設，含 BTS 傳統流程）＝ 人數 × Base Price，維持既有邏輯不變。
-            # Vehicle Mode（目前僅 fujii-kaze-test）＝ Vehicle Option Final Price，完全不乘以人數；
-            # Price Rules 的 price_per/deposit_per 僅作為「使用價格規則」與「加價」的 Base Price 來源。
-            if _pricing_strategy(event_page) == "vehicle" and vehicle_option:
-                if vehicle_option.pricing_mode == "fixed" and vehicle_option.price is not None:
-                    final_price = vehicle_option.price
-                elif vehicle_option.pricing_mode == "markup" and vehicle_option.price_adjustment is not None:
-                    final_price = price_per + vehicle_option.price_adjustment
-                else:
-                    final_price = price_per
+            # 計價策略（Vehicle Option Pricing 簡化版）：
+            # Final Price = Price Rule（Base Price）+ Price Adjustment（vehicle_option.price_adjustment，可為負數，預設 0）。
+            # Passenger Mode（預設，含 BTS 傳統流程）＝ Final Price × 人數。
+            # Vehicle Mode（目前僅 pricing_strategy == 'vehicle' 的活動）＝ Final Price，完全不乘以人數。
+            adjustment  = (vehicle_option.price_adjustment or 0) if vehicle_option else 0
+            final_price = price_per + adjustment
+            if _pricing_strategy(event_page) == "vehicle":
                 total_amount   = final_price
                 deposit_amount = deposit_per
                 balance_amount = max(0, total_amount - deposit_amount)
             else:
-                total_amount    = passenger_count * price_per
+                total_amount    = passenger_count * final_price
                 deposit_amount  = passenger_count * deposit_per
-                balance_amount  = passenger_count * balance_per
+                balance_amount  = max(0, total_amount - deposit_amount)
 
         # 折扣碼套用
         from app.models.coupon import Coupon

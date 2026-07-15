@@ -33,10 +33,15 @@ class EventVehicleOption(db.Model):
     capacity        = db.Column(db.Integer, nullable=False, default=4)
     image           = db.Column(db.String(500), nullable=True)
 
-    # 價格模式：event_price（使用活動價格，預設）／fixed（固定價格）／markup（加價）
+    # 【已停用，保留欄位不刪除】原「價格來源」三態設計（event_price/fixed/markup）。
+    # Vehicle Option Pricing 簡化版之後，計價一律採 Final Price = Price Rule + price_adjustment，
+    # 不再讀取 pricing_mode／price。欄位保留是為了不影響既有資料，詳見對應 migration 說明。
     pricing_mode      = db.Column(db.String(20), nullable=False, default="event_price")
-    price             = db.Column(db.Integer, nullable=True)   # pricing_mode == 'fixed' 時使用
-    price_adjustment  = db.Column(db.Integer, nullable=True)   # pricing_mode == 'markup' 時使用（+$）
+    price             = db.Column(db.Integer, nullable=True)
+
+    # 價格調整（Price Adjustment）：Final Price = Price Rule（Base Price）+ price_adjustment。
+    # 可為負數（折扣），預設 0（與 Base Price 相同）。
+    price_adjustment  = db.Column(db.Integer, nullable=False, default=0)
 
     badge      = db.Column(db.String(50), nullable=True)       # 推薦標籤，例：👑 尊榮推薦
     sort_order = db.Column(db.Integer, nullable=False, default=0)

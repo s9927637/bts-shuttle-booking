@@ -1302,7 +1302,7 @@ def api_price_rule_delete(ep_id, rule_id):
 # ── 車輛方案（Vehicle Options V2）────────────────────────────────────────────
 # 僅新增 Vehicle Options 架構，不修改 Pricing Engine／Booking Logic／Order Flow／Dispatch。
 
-from app.models.event_vehicle_option import EventVehicleOption, PRICING_MODES
+from app.models.event_vehicle_option import EventVehicleOption
 
 
 def _vo_dict(v):
@@ -1332,9 +1332,7 @@ def api_vehicle_option_create(ep_id):
     name = (data.get("name") or "").strip()
     if not name:
         return jsonify({"error": "方案名稱必填"}), 400
-    pricing_mode = data.get("pricing_mode") or "event_price"
-    if pricing_mode not in PRICING_MODES:
-        return jsonify({"error": "無效的價格模式"}), 400
+    # Vehicle Option Pricing 簡化版：不再收 pricing_mode／price，一律 Final Price = Price Rule + price_adjustment。
     v = EventVehicleOption(
         event_id=ep.id,
         name=name,
@@ -1342,9 +1340,7 @@ def api_vehicle_option_create(ep_id):
         example_models=(data.get("example_models") or "").strip() or None,
         capacity=int(data.get("capacity") or 4),
         image=(data.get("image") or "").strip() or None,
-        pricing_mode=pricing_mode,
-        price=int(data["price"]) if data.get("price") not in (None, "") else None,
-        price_adjustment=int(data["price_adjustment"]) if data.get("price_adjustment") not in (None, "") else None,
+        price_adjustment=int(data["price_adjustment"]) if data.get("price_adjustment") not in (None, "") else 0,
         badge=(data.get("badge") or "").strip() or None,
         sort_order=int(data.get("sort_order") or 0),
         is_default=bool(data.get("is_default", False)),
@@ -1368,10 +1364,7 @@ def api_vehicle_option_update(ep_id, vo_id):
     if "example_models"   in data: v.example_models   = (data["example_models"] or "").strip() or None
     if "capacity"         in data: v.capacity         = int(data["capacity"]) if data["capacity"] else v.capacity
     if "image"            in data: v.image            = (data["image"] or "").strip() or None
-    if "pricing_mode"     in data and data["pricing_mode"] in PRICING_MODES:
-        v.pricing_mode = data["pricing_mode"]
-    if "price"            in data: v.price            = int(data["price"]) if data["price"] not in (None, "") else None
-    if "price_adjustment" in data: v.price_adjustment = int(data["price_adjustment"]) if data["price_adjustment"] not in (None, "") else None
+    if "price_adjustment" in data: v.price_adjustment = int(data["price_adjustment"]) if data["price_adjustment"] not in (None, "") else 0
     if "badge"            in data: v.badge            = (data["badge"] or "").strip() or None
     if "sort_order"       in data: v.sort_order        = int(data["sort_order"])
     if "is_default"       in data: v.is_default        = bool(data["is_default"])

@@ -970,16 +970,8 @@
                   <input type="text" id="bc-new-vo-models" placeholder="Toyota Alphard, Lexus LM" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
                 </div>
                 <div>
-                  <label class="block text-xs text-gray-400 mb-1">價格來源</label>
-                  <select id="bc-new-vo-pricing-mode" onchange="bcToggleVoPriceInput(this)" class="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
-                    <option value="event_price">使用價格規則</option>
-                    <option value="fixed">覆寫價格</option>
-                    <option value="markup">加價</option>
-                  </select>
-                </div>
-                <div id="bc-new-vo-price-wrap" class="hidden">
-                  <label class="block text-xs text-gray-400 mb-1" id="bc-new-vo-price-label">NT$</label>
-                  <input type="number" id="bc-new-vo-price" min="0" placeholder="0" oninput="bcUpdateVoPriceHint()" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+                  <label class="block text-xs text-gray-400 mb-1">價格調整（選填，可為負數）</label>
+                  <input type="number" id="bc-new-vo-price-adjustment" value="0" oninput="bcUpdateVoPriceHint()" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
                 </div>
               </div>
               <div id="bc-new-vo-price-hint" class="text-xs leading-relaxed"></div>
@@ -1006,12 +998,12 @@
             </div>
             <div class="grid grid-cols-3 gap-2 text-xs pt-1 border-t border-indigo-100">
               <div>
-                <p class="text-gray-500">價格來源</p>
-                <p id="bc-preview-source" class="font-medium text-gray-800">—</p>
-              </div>
-              <div>
                 <p class="text-gray-500">Base Price</p>
                 <p id="bc-preview-base" class="font-medium text-gray-800">—</p>
+              </div>
+              <div>
+                <p class="text-gray-500">價格調整</p>
+                <p id="bc-preview-source" class="font-medium text-gray-800">—</p>
               </div>
               <div>
                 <p class="text-gray-500">最終價格</p>
@@ -1732,8 +1724,8 @@ window.addEventListener('load', function() {
     bcToast('已刪除', true); await bcLoadLocs();
   }
 
-  // ── 車輛方案（Vehicle Options V2）────────────────────────────────────────
-  const PRICING_MODE_LABELS = {event_price: '使用價格規則', fixed: '覆寫價格', markup: '加價'};
+  // ── 車輛方案（Vehicle Option Pricing 簡化版）─────────────────────────────
+  // Final Price = Price Rule（Base Price）+ price_adjustment，不再有「價格來源」三選一。
   let _vos = [];
 
   // Base Price：優先取全局價格規則（日期+地點皆留空），無規則時 fallback 活動全局定價。
@@ -1743,36 +1735,21 @@ window.addEventListener('load', function() {
     return {price: {{ (page.price or 2000) }}, deposit: {{ (page.deposit or 300) }}};
   }
 
-  function bcToggleVoPriceInput(sel) {
-    const wrap  = document.getElementById('bc-new-vo-price-wrap');
-    const label = document.getElementById('bc-new-vo-price-label');
-    if (sel.value === 'fixed')      { wrap.classList.remove('hidden'); label.textContent = '覆寫價格 NT$'; }
-    else if (sel.value === 'markup'){ wrap.classList.remove('hidden'); label.textContent = '加價 +NT$'; }
-    else                             { wrap.classList.add('hidden'); }
-    bcUpdateVoPriceHint();
-  }
-
   function bcUpdateVoPriceHint() {
     const hintEl = document.getElementById('bc-new-vo-price-hint');
     if (!hintEl) return;
-    const sel  = document.getElementById('bc-new-vo-pricing-mode');
     const base = bcGetBasePrice();
-    const priceVal = parseInt(document.getElementById('bc-new-vo-price').value, 10) || 0;
-
-    if (sel.value === 'event_price') {
-      if (_rules.length === 0) {
-        hintEl.innerHTML = '<p class="text-amber-600">尚未設定價格規則，請先建立價格規則。</p>';
-      } else {
-        hintEl.innerHTML = '<p class="text-gray-500">使用目前活動的價格規則（依日期／上車地點取得 Base Price）。</p>'
-          + '<p class="text-gray-700 mt-1">Base Price：NT$' + base.price.toLocaleString() + '（依全局價格規則）</p>';
-      }
-    } else if (sel.value === 'markup') {
-      const final = base.price + priceVal;
-      hintEl.innerHTML = '<p class="text-gray-500">Base Price：NT$' + base.price.toLocaleString() + ' ＋ 加價 NT$' + priceVal.toLocaleString() + '</p>'
-        + '<p class="font-semibold text-indigo-600 mt-1">最終價格：NT$' + final.toLocaleString() + '</p>';
-    } else if (sel.value === 'fixed') {
-      hintEl.innerHTML = '<p class="font-semibold text-indigo-600">最終價格：NT$' + priceVal.toLocaleString() + '（不使用 Price Rules）</p>';
+    const adj  = parseInt(document.getElementById('bc-new-vo-price-adjustment').value, 10) || 0;
+    if (_rules.length === 0) {
+      hintEl.innerHTML = '<p class="text-amber-600">尚未設定價格規則，請先建立價格規則。</p>';
+      return;
     }
+    const final = base.price + adj;
+    const adjLabel = adj > 0 ? ('＋ 價格調整 NT$' + adj.toLocaleString())
+                   : adj < 0 ? ('－ 價格調整 NT$' + Math.abs(adj).toLocaleString())
+                   : '（無價格調整）';
+    hintEl.innerHTML = '<p class="text-gray-500">Base Price：NT$' + base.price.toLocaleString() + ' ' + adjLabel + '</p>'
+      + '<p class="font-semibold text-indigo-600 mt-1">最終價格：NT$' + final.toLocaleString() + '</p>';
   }
 
   function bcUpdatePricingStrategyHint() {
@@ -1781,7 +1758,7 @@ window.addEventListener('load', function() {
     const isVehicle = document.getElementById('bc-pricing-strategy-vehicle').checked;
     const base = bcGetBasePrice();
     hintEl.textContent = isVehicle
-      ? ('Base Price 將作為每台車的基礎價格。例如：NT$' + base.price.toLocaleString() + ' / 車（實際金額可依 Vehicle Option 加價或覆寫）')
+      ? ('Base Price 將作為每台車的基礎價格。例如：NT$' + base.price.toLocaleString() + ' / 車（實際金額可依 Vehicle Option 價格調整）')
       : ('Base Price 將作為每人價格。例如：NT$' + base.price.toLocaleString() + ' / 人');
   }
 
@@ -1815,31 +1792,28 @@ window.addEventListener('load', function() {
 
     const sel = document.getElementById('bc-preview-vo-select');
     const vo  = _vos.find(v => String(v.id) === sel.value);
+    const adj = vo ? (vo.price_adjustment || 0) : 0;
+    sourceEl.textContent = vo ? (adj >= 0 ? ('+NT$' + adj.toLocaleString()) : ('－NT$' + Math.abs(adj).toLocaleString())) : '—';
 
+    const final = base.price + adj;
     if (!isVehicle) {
-      sourceEl.textContent = '（依人數計價，不使用車輛方案價格來源）';
-      finalEl.textContent  = 'NT$' + base.price.toLocaleString() + ' / 人';
+      finalEl.textContent = 'NT$' + final.toLocaleString() + ' / 人';
       return;
     }
     if (!vo) {
-      sourceEl.textContent = '—';
-      finalEl.textContent  = '—';
+      finalEl.textContent = '—';
       return;
     }
-    sourceEl.textContent = PRICING_MODE_LABELS[vo.pricing_mode] || vo.pricing_mode;
-    let final;
-    if (vo.pricing_mode === 'fixed' && vo.price != null) final = vo.price;
-    else if (vo.pricing_mode === 'markup' && vo.price_adjustment != null) final = base.price + vo.price_adjustment;
-    else final = base.price;
     finalEl.textContent = 'NT$' + final.toLocaleString();
   }
   function bcRenderVehicleOptions() {
     const el = document.getElementById('bc-vo-list');
     el.innerHTML = _vos.length ? '' : '<p class="text-xs text-gray-400">尚未設定車輛方案</p>';
     _vos.forEach(v => {
-      const priceLabel = v.pricing_mode === 'fixed' ? ('固定 NT$' + (v.price || 0).toLocaleString())
-                        : v.pricing_mode === 'markup' ? ('加價 +NT$' + (v.price_adjustment || 0).toLocaleString())
-                        : '使用活動價格';
+      const adj = v.price_adjustment || 0;
+      const priceLabel = adj > 0 ? ('價格調整 +NT$' + adj.toLocaleString())
+                        : adj < 0 ? ('價格調整 －NT$' + Math.abs(adj).toLocaleString())
+                        : '使用價格規則（無調整）';
       const row = document.createElement('div');
       row.className = 'flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 flex-wrap text-xs';
       row.innerHTML = `<span class="font-semibold text-gray-800">${v.name}</span>
@@ -1869,17 +1843,14 @@ window.addEventListener('load', function() {
   async function bcAddVehicleOption() {
     const name = document.getElementById('bc-new-vo-name').value.trim();
     if (!name) { bcToast('請輸入方案名稱', false); return; }
-    const pricingMode = document.getElementById('bc-new-vo-pricing-mode').value;
-    const priceVal = document.getElementById('bc-new-vo-price').value;
+    const adjVal = document.getElementById('bc-new-vo-price-adjustment').value;
     const payload = {
       name,
       description: document.getElementById('bc-new-vo-desc').value.trim() || null,
       example_models: document.getElementById('bc-new-vo-models').value.trim() || null,
       capacity: parseInt(document.getElementById('bc-new-vo-capacity').value) || 4,
       badge: document.getElementById('bc-new-vo-badge').value.trim() || null,
-      pricing_mode: pricingMode,
-      price: pricingMode === 'fixed' ? (parseInt(priceVal) || 0) : null,
-      price_adjustment: pricingMode === 'markup' ? (parseInt(priceVal) || 0) : null,
+      price_adjustment: parseInt(adjVal) || 0,
       sort_order: _vos.length,
     };
     const r = await fetch(API + '/vehicle-options', {
@@ -1888,10 +1859,10 @@ window.addEventListener('load', function() {
     });
     if (r.ok) {
       bcToast('已新增車輛方案', true);
-      ['bc-new-vo-name','bc-new-vo-desc','bc-new-vo-models','bc-new-vo-badge','bc-new-vo-price'].forEach(i => document.getElementById(i).value = '');
+      ['bc-new-vo-name','bc-new-vo-desc','bc-new-vo-models','bc-new-vo-badge'].forEach(i => document.getElementById(i).value = '');
       document.getElementById('bc-new-vo-capacity').value = 4;
-      document.getElementById('bc-new-vo-pricing-mode').value = 'event_price';
-      document.getElementById('bc-new-vo-price-wrap').classList.add('hidden');
+      document.getElementById('bc-new-vo-price-adjustment').value = 0;
+      document.getElementById('bc-new-vo-price-hint').innerHTML = '';
       await bcLoadVehicleOptions();
     } else {
       const e = await r.json(); bcToast(e.error || '新增失敗', false);
@@ -2046,7 +2017,7 @@ window.addEventListener('load', function() {
   window.bcToggleLocModeInputs = bcToggleLocModeInputs;
   window.bcAddPriceRule = bcAddPriceRule; window.bcDeleteRule = bcDeleteRule;
   window.bcSaveFormConfig = bcSaveFormConfig; window.bcSaveConfig = bcSaveConfig; window.bcSaveNotes = bcSaveNotes;
-  window.bcToggleVoPriceInput = bcToggleVoPriceInput; window.bcAddVehicleOption = bcAddVehicleOption;
+  window.bcAddVehicleOption = bcAddVehicleOption;
   window.bcToggleVoField = bcToggleVoField; window.bcSetVoDefault = bcSetVoDefault; window.bcDeleteVehicleOption = bcDeleteVehicleOption;
   window.bcUpdateVoPriceHint = bcUpdateVoPriceHint;
   window.bcUpdatePricingStrategyHint = bcUpdatePricingStrategyHint;

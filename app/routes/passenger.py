@@ -151,8 +151,10 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
     from app.models.event_booking import EventBookingDate, EventPickupLocation, EventPriceRule, EventFormConfig
 
     price_per   = (event_page.price   or PRICE_PER_PERSON)   if event_page else PRICE_PER_PERSON
-    deposit_per = (event_page.deposit or DEPOSIT_PER_PERSON)  if event_page else DEPOSIT_PER_PERSON
-    balance_per = price_per - deposit_per
+    # 訂金方式（Deposit Type Enhancement）：訂金一律由事件層級決定，不再逐條 Price Rule 設定。
+    deposit_type       = event_page.deposit_type       if event_page else "fixed"
+    deposit_fixed       = (event_page.deposit or DEPOSIT_PER_PERSON) if event_page else DEPOSIT_PER_PERSON
+    deposit_percentage = event_page.deposit_percentage if event_page else 30
 
     ep_booking_dates    = []
     ep_pickup_locations = []
@@ -169,7 +171,8 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
         for rule in EventPriceRule.query.filter_by(event_page_id=event_page.id).all():
             dk = str(rule.booking_date_id or 'any')
             lk = str(rule.location_id or 'any')
-            ep_price_rules_json.setdefault(dk, {})[lk] = {'price': rule.price, 'deposit': rule.deposit}
+            # 訂金已改由事件層級「訂金方式」統一決定，Price Rule 僅提供 Base Price。
+            ep_price_rules_json.setdefault(dk, {})[lk] = {'price': rule.price}
         for fc in EventFormConfig.query.filter_by(event_page_id=event_page.id).all():
             ep_form_config[fc.field_name] = {
                 'visible':  fc.is_visible,
@@ -179,8 +182,9 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
 
     return render_template("passenger/booking.html",
                            price_per_person=price_per,
-                           deposit_per_person=deposit_per,
-                           balance_per_person=balance_per,
+                           deposit_type=deposit_type,
+                           deposit_fixed=deposit_fixed,
+                           deposit_percentage=deposit_percentage,
                            nx200_pax=NX200_PAX,
                            nx200_total=NX200_TOTAL,
                            nx200_deposit=NX200_DEPOSIT,
@@ -289,22 +293,21 @@ def booking_submit():
             if not rule:
                 rule = EventPriceRule.query.filter_by(event_page_id=event_page.id, booking_date_id=None, location_id=None).first()
 
-            if rule:
-                price_per   = rule.price
-                deposit_per = rule.deposit
-            else:
-                price_per   = event_page.price   or PRICE_PER_PERSON
-                deposit_per = event_page.deposit or DEPOSIT_PER_PERSON
-            balance_per = price_per - deposit_per
+            price_per = rule.price if rule else (event_page.price or PRICE_PER_PERSON)
+            # 訂金方式（Deposit Type Enhancement）：訂金不再逐條 Price Rule 設定，一律由事件層級決定，見下方計算。
+            deposit_type       = event_page.deposit_type
+            deposit_fixed      = event_page.deposit or DEPOSIT_PER_PERSON
+            deposit_percentage = event_page.deposit_percentage
         else:
             # 原 BTS 模式：驗證場次
             pickup_location_val      = None
             pickup_location_text_val = None
             if dep not in AVAILABLE_DATES:
                 raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
-            price_per   = PRICE_PER_PERSON
-            deposit_per = DEPOSIT_PER_PERSON
-            balance_per = BALANCE_PER_PERSON
+            price_per          = PRICE_PER_PERSON
+            deposit_type       = "fixed"
+            deposit_fixed      = DEPOSIT_PER_PERSON
+            deposit_percentage = 30
 
         # 車輛方案計價
         if vehicle_type == "nx200" and not event_page:
@@ -331,14 +334,17 @@ def booking_submit():
             # Vehicle Mode（目前僅 pricing_strategy == 'vehicle' 的活動）＝ Final Price，完全不乘以人數。
             adjustment  = (vehicle_option.price_adjustment or 0) if vehicle_option else 0
             final_price = price_per + adjustment
-            if _pricing_strategy(event_page) == "vehicle":
-                total_amount   = final_price
-                deposit_amount = deposit_per
-                balance_amount = max(0, total_amount - deposit_amount)
+            strategy = _pricing_strategy(event_page)
+            total_amount = final_price if strategy == "vehicle" else passenger_count * final_price
+
+            # 訂金方式（Deposit Type Enhancement）：
+            # 'percentage'：訂金 = 總價 × deposit_percentage%（依人數計價／依車輛計價皆同一公式，因總價已依模式算好）。
+            # 'fixed'：固定金額，依人數計價時 ×人數，依車輛計價時為單一金額。
+            if deposit_type == "percentage":
+                deposit_amount = round(total_amount * deposit_percentage / 100)
             else:
-                total_amount    = passenger_count * final_price
-                deposit_amount  = passenger_count * deposit_per
-                balance_amount  = max(0, total_amount - deposit_amount)
+                deposit_amount = deposit_fixed if strategy == "vehicle" else passenger_count * deposit_fixed
+            balance_amount = max(0, total_amount - deposit_amount)
 
         # 折扣碼套用
         from app.models.coupon import Coupon

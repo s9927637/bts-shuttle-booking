@@ -4,6 +4,9 @@ from app import db
 # 計價模式：'passenger'（依人數計價，共乘）｜'vehicle'（依車輛計價，包車）
 PRICING_STRATEGIES = ["passenger", "vehicle"]
 
+# 訂金方式：'fixed'（固定金額，沿用 EventPage.deposit）｜'percentage'（總價 × 百分比）
+DEPOSIT_TYPES = ["fixed", "percentage"]
+
 
 class EventPage(db.Model):
     __tablename__ = "event_pages"
@@ -68,6 +71,11 @@ class EventPage(db.Model):
     # Phase 7: Booking Config — deposit & payment
     deposit_required    = db.Column(db.Boolean,  nullable=False, default=True)
     balance_payment_method = db.Column(db.String(50), nullable=True, default='transfer')  # 'transfer'|'cash'|'any'
+    # 訂金方式（Deposit Type Enhancement）：取代逐條 Price Rule 自訂訂金，訂金一律由此決定。
+    # 'fixed'：固定金額，沿用 EventPage.deposit（依人數計價時 ×人數，依車輛計價時為單一金額）。
+    # 'percentage'：訂金 = 總價 × deposit_percentage%。
+    deposit_type       = db.Column(db.String(20), nullable=False, default="fixed")
+    deposit_percentage = db.Column(db.Integer,    nullable=False, default=30)
     # Phase 9: 購票說明文字
     purchase_notes      = db.Column(db.Text, nullable=True)
     cancellation_policy = db.Column(db.Text, nullable=True)

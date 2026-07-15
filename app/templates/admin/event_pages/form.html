@@ -800,6 +800,7 @@
             <div class="flex flex-wrap gap-4 items-center">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="bc-deposit-required" {% if page.deposit_required != False %}checked{% endif %}
+                       onchange="bcToggleDepositTypePanel()"
                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-400" />
                 <span class="text-sm text-gray-600">收取訂金</span>
               </label>
@@ -812,20 +813,63 @@
                 </select>
               </div>
             </div>
+
+            <!-- 訂金方式（Deposit Type Enhancement）：收取訂金時展開 -->
+            <div id="bc-deposit-type-panel" class="border border-gray-200 rounded-xl p-3 space-y-2"
+                 style="{% if page.deposit_required == False %}display:none;{% endif %}">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">訂金方式 *</p>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-deposit-type" id="bc-deposit-type-fixed" value="fixed"
+                         {% if (page.deposit_type or 'fixed') == 'fixed' %}checked{% endif %}
+                         onchange="bcToggleDepositTypeInputs(); bcUpdateDepositPreview();"
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">固定金額</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="bc-deposit-type" id="bc-deposit-type-percentage" value="percentage"
+                         {% if page.deposit_type == 'percentage' %}checked{% endif %}
+                         onchange="bcToggleDepositTypeInputs(); bcUpdateDepositPreview();"
+                         class="text-indigo-600" />
+                  <span class="text-xs text-gray-600">百分比</span>
+                </label>
+              </div>
+              <div id="bc-deposit-fixed-wrap">
+                <label id="bc-deposit-fixed-label" class="block text-xs text-gray-400 mb-1">固定金額（每人）</label>
+                <input type="number" id="bc-deposit-fixed-amount" min="0" value="{{ page.deposit or 300 }}"
+                       oninput="bcUpdateDepositPreview()"
+                       class="w-32 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+              </div>
+              <div id="bc-deposit-percentage-wrap" class="hidden">
+                <label class="block text-xs text-gray-400 mb-1">百分比（%）</label>
+                <input type="number" id="bc-deposit-percentage-value" min="1" max="100" value="{{ page.deposit_percentage or 30 }}"
+                       oninput="bcUpdateDepositPreview()"
+                       class="w-32 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
+              </div>
+              <p class="text-xs text-gray-400">
+                固定金額：依計價模式自動切換 Label（依人數計價＝每人；依車輛計價＝每車）。<br>
+                百分比：訂金 = 總價 × 百分比，尾款 = 總價 － 訂金，隨車輛方案／人數即時計算。
+              </p>
+              <div id="bc-deposit-preview" class="grid grid-cols-3 gap-2 text-xs pt-2 border-t border-gray-100">
+                <div><p class="text-gray-500">總價</p><p id="bc-deposit-preview-total" class="font-medium text-gray-800">—</p></div>
+                <div><p class="text-gray-500">訂金</p><p id="bc-deposit-preview-deposit" class="font-medium text-gray-800">—</p></div>
+                <div><p class="text-gray-500">尾款</p><p id="bc-deposit-preview-balance" class="font-semibold text-indigo-700">—</p></div>
+              </div>
+            </div>
             <div class="border border-gray-200 rounded-xl p-3 space-y-2">
               <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">【計價模式】</p>
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-1.5 cursor-pointer">
                   <input type="radio" name="bc-pricing-strategy" id="bc-pricing-strategy-passenger" value="passenger"
                          {% if (page.pricing_strategy or 'passenger') == 'passenger' %}checked{% endif %}
-                         onchange="bcUpdatePricingStrategyHint(); bcUpdatePricePreview();"
+                         onchange="bcUpdatePricingStrategyHint(); bcUpdatePricePreview(); bcUpdateDepositFixedLabel(); bcUpdateDepositPreview();"
                          class="text-indigo-600" />
                   <span class="text-xs text-gray-600">依人數計價（共乘）</span>
                 </label>
                 <label class="flex items-center gap-1.5 cursor-pointer">
                   <input type="radio" name="bc-pricing-strategy" id="bc-pricing-strategy-vehicle" value="vehicle"
                          {% if page.pricing_strategy == 'vehicle' %}checked{% endif %}
-                         onchange="bcUpdatePricingStrategyHint(); bcUpdatePricePreview();"
+                         onchange="bcUpdatePricingStrategyHint(); bcUpdatePricePreview(); bcUpdateDepositFixedLabel(); bcUpdateDepositPreview();"
                          class="text-indigo-600" />
                   <span class="text-xs text-gray-600">依車輛計價（包車）</span>
                 </label>
@@ -992,7 +1036,7 @@
               </div>
               <div>
                 <label class="block text-gray-500 mb-1">車輛方案</label>
-                <select id="bc-preview-vo-select" onchange="bcUpdatePricePreview()"
+                <select id="bc-preview-vo-select" onchange="bcUpdatePricePreview(); bcUpdateDepositPreview();"
                         class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-400 focus:outline-none"></select>
               </div>
             </div>
@@ -1017,6 +1061,7 @@
           <div class="space-y-3">
             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">價格規則</h4>
             <p class="text-xs text-gray-400">日期 + 地點均留空 = 全局預設（優先：日期+地點 > 日期 > 地點 > 全局）</p>
+            <p class="text-xs text-amber-600">訂金已改由下方【付款方式】的「訂金方式」統一設定，此處僅設定 Base Price（票價）。</p>
             <div id="bc-rules-list" class="space-y-2"></div>
             <div class="flex gap-2 items-end flex-wrap">
               <div>
@@ -1032,12 +1077,8 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs text-gray-400 mb-1">票價</label>
+                <label class="block text-xs text-gray-400 mb-1">票價（Base Price）</label>
                 <input type="number" id="bc-new-rule-price" min="0" placeholder="{{ page.price or 2000 }}" class="w-24 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-400 mb-1">訂金</label>
-                <input type="number" id="bc-new-rule-deposit" min="0" placeholder="{{ page.deposit or 300 }}" class="w-24 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
               </div>
               <div>
                 <label class="block text-xs text-gray-400 mb-1">說明（選填）</label>
@@ -1774,6 +1815,7 @@ window.addEventListener('load', function() {
     });
     if (cur && _vos.some(v => String(v.id) === cur)) sel.value = cur;
     bcUpdatePricePreview();
+    bcUpdateDepositPreview();
   }
 
   function bcUpdatePricePreview() {
@@ -1806,6 +1848,60 @@ window.addEventListener('load', function() {
     }
     finalEl.textContent = 'NT$' + final.toLocaleString();
   }
+
+  // ── 訂金方式（Deposit Type Enhancement）─────────────────────────────────
+  function bcToggleDepositTypePanel() {
+    const panel = document.getElementById('bc-deposit-type-panel');
+    if (!panel) return;
+    panel.style.display = document.getElementById('bc-deposit-required').checked ? '' : 'none';
+  }
+
+  function bcToggleDepositTypeInputs() {
+    const isPercentage = document.getElementById('bc-deposit-type-percentage').checked;
+    document.getElementById('bc-deposit-fixed-wrap').classList.toggle('hidden', isPercentage);
+    document.getElementById('bc-deposit-percentage-wrap').classList.toggle('hidden', !isPercentage);
+  }
+
+  function bcUpdateDepositFixedLabel() {
+    const labelEl = document.getElementById('bc-deposit-fixed-label');
+    if (!labelEl) return;
+    const isVehicle = document.getElementById('bc-pricing-strategy-vehicle').checked;
+    labelEl.textContent = isVehicle ? '固定金額（每車）' : '固定金額（每人）';
+  }
+
+  // Payment Preview：總價／訂金／尾款，與 booking.html calcTotal()/calcDepositAmount() 同一套公式。
+  // 依人數計價時以活動最少人數（min_group_size）為預覽基準人數。
+  function bcUpdateDepositPreview() {
+    const totalEl = document.getElementById('bc-deposit-preview-total');
+    if (!totalEl) return;
+    const depositEl = document.getElementById('bc-deposit-preview-deposit');
+    const balanceEl = document.getElementById('bc-deposit-preview-balance');
+
+    const isVehicle = document.getElementById('bc-pricing-strategy-vehicle').checked;
+    const base = bcGetBasePrice();
+    const sel  = document.getElementById('bc-preview-vo-select');
+    const vo   = _vos.find(v => String(v.id) === sel.value);
+    const adj  = vo ? (vo.price_adjustment || 0) : 0;
+    const finalPrice = base.price + adj;
+    const n = {{ page.min_group_size or 1 }};
+    const total = isVehicle ? finalPrice : (finalPrice * n);
+
+    const isPercentage = document.getElementById('bc-deposit-type-percentage').checked;
+    let deposit;
+    if (isPercentage) {
+      const pct = parseInt(document.getElementById('bc-deposit-percentage-value').value, 10) || 0;
+      deposit = Math.round(total * pct / 100);
+    } else {
+      const fixedAmt = parseInt(document.getElementById('bc-deposit-fixed-amount').value, 10) || 0;
+      deposit = isVehicle ? fixedAmt : fixedAmt * n;
+    }
+    const balance = Math.max(0, total - deposit);
+
+    totalEl.textContent   = 'NT$' + total.toLocaleString() + (isVehicle ? '' : ('（' + n + ' 人）'));
+    depositEl.textContent = 'NT$' + deposit.toLocaleString();
+    balanceEl.textContent = 'NT$' + balance.toLocaleString();
+  }
+
   function bcRenderVehicleOptions() {
     const el = document.getElementById('bc-vo-list');
     el.innerHTML = _vos.length ? '' : '<p class="text-xs text-gray-400">尚未設定車輛方案</p>';
@@ -1909,7 +2005,6 @@ window.addEventListener('load', function() {
       row.innerHTML = `<span class="text-gray-600">${dateLabel}</span><span class="text-gray-300">×</span><span class="text-gray-600">${locLabel}</span>
         <span class="mx-1 text-gray-300">→</span>
         <span class="font-semibold text-gray-800">NT$${r.price.toLocaleString()}</span>
-        <span class="text-gray-400">訂金 NT$${r.deposit.toLocaleString()}</span>
         ${r.label ? `<span class="text-indigo-500">${r.label}</span>` : ''}
         <button type="button" onclick="bcDeleteRule(${r.id})" class="text-red-500 hover:text-red-700 ml-auto px-2">刪除</button>`;
       el.appendChild(row);
@@ -1922,17 +2017,20 @@ window.addEventListener('load', function() {
     bcUpdateVoPriceHint();
     bcUpdatePricingStrategyHint();
     bcUpdatePricePreview();
+    bcToggleDepositTypePanel();
+    bcToggleDepositTypeInputs();
+    bcUpdateDepositFixedLabel();
+    bcUpdateDepositPreview();
   }
   async function bcAddPriceRule() {
     const dateId  = document.getElementById('bc-new-rule-date').value;
     const locId   = document.getElementById('bc-new-rule-loc').value;
     const price   = document.getElementById('bc-new-rule-price').value;
-    const deposit = document.getElementById('bc-new-rule-deposit').value;
     const label   = document.getElementById('bc-new-rule-label').value.trim();
     if (!price) { bcToast('請輸入票價', false); return; }
     const r = await fetch(API + '/price-rules', {
       method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-      body: JSON.stringify({booking_date_id: dateId || null, location_id: locId || null, price: parseInt(price), deposit: parseInt(deposit || 0), label: label || null})
+      body: JSON.stringify({booking_date_id: dateId || null, location_id: locId || null, price: parseInt(price), label: label || null})
     });
     if (r.ok) { bcToast('已新增規則', true); await bcLoadRules(); }
     else { const e = await r.json(); bcToast(e.error || '新增失敗', false); }
@@ -1996,6 +2094,9 @@ window.addEventListener('load', function() {
       deposit_required: document.getElementById('bc-deposit-required').checked,
       friend_group_enabled: document.getElementById('bc-friend-group-enabled').checked,
       pricing_strategy: document.getElementById('bc-pricing-strategy-vehicle').checked ? 'vehicle' : 'passenger',
+      deposit_type: document.getElementById('bc-deposit-type-percentage').checked ? 'percentage' : 'fixed',
+      deposit: parseInt(document.getElementById('bc-deposit-fixed-amount').value, 10) || 0,
+      deposit_percentage: parseInt(document.getElementById('bc-deposit-percentage-value').value, 10) || 0,
       balance_payment_method: document.getElementById('bc-balance-method').value,
       purchase_notes: document.getElementById('bc-purchase-notes').value,
       cancellation_policy: document.getElementById('bc-cancel-policy').value,
@@ -2022,6 +2123,10 @@ window.addEventListener('load', function() {
   window.bcUpdateVoPriceHint = bcUpdateVoPriceHint;
   window.bcUpdatePricingStrategyHint = bcUpdatePricingStrategyHint;
   window.bcUpdatePricePreview = bcUpdatePricePreview;
+  window.bcToggleDepositTypePanel = bcToggleDepositTypePanel;
+  window.bcToggleDepositTypeInputs = bcToggleDepositTypeInputs;
+  window.bcUpdateDepositFixedLabel = bcUpdateDepositFixedLabel;
+  window.bcUpdateDepositPreview = bcUpdateDepositPreview;
 
   // 開啟 details 時載入資料
   const det = document.querySelector('#booking-config-panel details');

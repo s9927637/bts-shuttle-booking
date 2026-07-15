@@ -84,6 +84,8 @@ class EventPriceRule(db.Model):
         nullable=True,
     )
     price           = db.Column(db.Integer, nullable=False)
+    # 【已停用，保留欄位不刪除】Deposit Type Enhancement 之後，訂金一律由
+    # EventPage.deposit_type／deposit／deposit_percentage 統一決定，不再讀取此欄位。
     deposit         = db.Column(db.Integer, nullable=False, default=0)
     label           = db.Column(db.String(100), nullable=True)   # 後台顯示名稱
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)

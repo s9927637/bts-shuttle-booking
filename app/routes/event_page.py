@@ -1444,9 +1444,14 @@ def api_booking_config_save(ep_id):
     ep.seats_per_vehicle     = _int_or_none(data.get("seats_per_vehicle")) or 8
     ep.deposit_required      = bool(data.get("deposit_required", True))
     ep.friend_group_enabled  = bool(data.get("friend_group_enabled", True))
-    from app.models.event_page import PRICING_STRATEGIES
+    from app.models.event_page import PRICING_STRATEGIES, DEPOSIT_TYPES
     pricing_strategy_in = data.get("pricing_strategy")
     ep.pricing_strategy = pricing_strategy_in if pricing_strategy_in in PRICING_STRATEGIES else "passenger"
+    # 訂金方式（Deposit Type Enhancement）：deposit 沿用既有欄位作為「固定金額」數值。
+    deposit_type_in = data.get("deposit_type")
+    ep.deposit_type       = deposit_type_in if deposit_type_in in DEPOSIT_TYPES else "fixed"
+    ep.deposit             = _int_or_none(data.get("deposit")) or 300
+    ep.deposit_percentage = _int_or_none(data.get("deposit_percentage")) or 30
     ep.balance_payment_method = _str_or_none(data.get("balance_payment_method")) or "transfer"
     ep.purchase_notes        = _str_or_none(data.get("purchase_notes"))
     ep.cancellation_policy   = _str_or_none(data.get("cancellation_policy"))

@@ -531,21 +531,23 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   let PRICE   = {{ price_per_person }};
-  let DEPOSIT = {{ deposit_per_person }};
-  let BALANCE = {{ balance_per_person }};
   const BASE_PRICE   = {{ price_per_person }};
-  const BASE_DEPOSIT = {{ deposit_per_person }};
   const NX200_PAX     = {{ nx200_pax }};
   const NX200_TOTAL   = {{ nx200_total }};
   const NX200_DEPOSIT = {{ nx200_deposit }};
   const NX200_BALANCE = {{ nx200_balance | default(0) }};
   // 包車模式：每筆訂單最少人數（依 EventPage.min_group_size，無活動或未設定則為 1）
   const MIN_GROUP_SIZE = {{ event_page.min_group_size or 1 if event_page else 1 }};
-  // 計價策略（Pricing & Payment Refactor Phase 1）：'vehicle' 或 'passenger'（預設）。
-  // Vehicle Mode 下，價格一律採用 Vehicle Option Final Price，不乘以人數。
+  // 計價策略：'vehicle' 或 'passenger'（預設）。Vehicle Mode 下，價格一律採用 Vehicle Option Final Price，不乘以人數。
   const PRICING_STRATEGY = {{ pricing_strategy | tojson }};
+  // 訂金方式（Deposit Type Enhancement）：訂金不再逐條 Price Rule 設定，一律由事件層級決定。
+  // 'fixed'：DEPOSIT_FIXED（依人數計價 ×人數，依車輛計價為單一金額）。
+  // 'percentage'：訂金 = 總價 × DEPOSIT_PERCENTAGE%。
+  const DEPOSIT_TYPE       = {{ deposit_type | tojson }};
+  const DEPOSIT_FIXED      = {{ deposit_fixed }};
+  const DEPOSIT_PERCENTAGE = {{ deposit_percentage }};
 
-  // 活動價格規則：{dateId|'any': {locId|'any': {price, deposit}}}
+  // 活動價格規則：{dateId|'any': {locId|'any': {price}}}（僅提供 Base Price，訂金已改由上方事件層級設定決定）
   const EP_PRICE_RULES = {{ ep_price_rules_json | tojson | safe }};
   // 活動搭車日期 ID 對照：date_value -> id
   const EP_DATE_IDS = {
@@ -589,15 +591,7 @@
 
   function _applyPriceRule() {
     const rule = _lookupPriceRule(_activeDateId, _activeLocId);
-    if (rule) {
-      PRICE   = rule.price;
-      DEPOSIT = rule.deposit;
-      BALANCE = PRICE - DEPOSIT;
-    } else {
-      PRICE   = BASE_PRICE;
-      DEPOSIT = BASE_DEPOSIT;
-      BALANCE = PRICE - DEPOSIT;
-    }
+    PRICE = rule ? rule.price : BASE_PRICE;
     const ppEl = document.getElementById('price_per_person_display');
     if (ppEl) ppEl.textContent = 'NT$ ' + PRICE.toLocaleString();
     const paxEl = document.getElementById('passenger_count');
@@ -713,23 +707,28 @@
     const hintEl  = document.getElementById('fixed-price-hint');
 
     // Vehicle Option Pricing 簡化版：Final Price = Price Rule（Base Price，PRICE）+ price_adjustment。
-    // Vehicle Mode：總價 = Final Price，完全不乘以人數；訂金／尾款皆為單一金額。
+    // Vehicle Mode：總價 = Final Price，完全不乘以人數。
     // Passenger Mode（預設，含 BTS 傳統流程）：總價 = Final Price × 人數，維持既有共乘邏輯。
     const adjustment = (_activeVehicleOption && _activeVehicleOption.price_adjustment) || 0;
     const finalPrice = PRICE + adjustment;
+    const isVehicleMode = PRICING_STRATEGY === 'vehicle';
+    const total = isVehicleMode ? finalPrice : (n * finalPrice);
 
-    if (PRICING_STRATEGY === 'vehicle') {
-      if (labelEl) labelEl.textContent = '車輛方案價格';
-      if (hintEl) hintEl.classList.remove('hidden');
-      document.getElementById('price_per_person_display').textContent = 'NT$ ' + finalPrice.toLocaleString();
-      _applyDiscountDisplay(finalPrice, DEPOSIT, Math.max(0, finalPrice - DEPOSIT));
-      return;
-    }
-
-    if (labelEl) labelEl.textContent = '每人費用';
-    if (hintEl) hintEl.classList.add('hidden');
+    if (labelEl) labelEl.textContent = isVehicleMode ? '車輛方案價格' : '每人費用';
+    if (hintEl) hintEl.classList.toggle('hidden', !isVehicleMode);
     document.getElementById('price_per_person_display').textContent = 'NT$ ' + finalPrice.toLocaleString();
-    _applyDiscountDisplay(n * finalPrice, n * DEPOSIT, Math.max(0, n * finalPrice - n * DEPOSIT));
+
+    const deposit = calcDepositAmount(total, n);
+    _applyDiscountDisplay(total, deposit, Math.max(0, total - deposit));
+  }
+
+  // 訂金方式（Deposit Type Enhancement）：'percentage' 依總價百分比計算；'fixed' 為固定金額
+  // （依人數計價時 ×人數，依車輛計價時為單一金額，不隨人數變動）。
+  function calcDepositAmount(totalAmount, n) {
+    if (DEPOSIT_TYPE === 'percentage') {
+      return Math.round(totalAmount * DEPOSIT_PERCENTAGE / 100);
+    }
+    return PRICING_STRATEGY === 'vehicle' ? DEPOSIT_FIXED : DEPOSIT_FIXED * n;
   }
 
   // 前端即時限制：人數不得低於 MIN_GROUP_SIZE（點擊減號／手動輸入／blur／change／input 皆會觸發）

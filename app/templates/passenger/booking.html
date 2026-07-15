@@ -253,11 +253,6 @@
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
-              {% if vo.price_adjustment %}
-              <p class="text-xs {{ 'text-purple-300' if vo.price_adjustment > 0 else 'text-emerald-400' }} mt-1">
-                {{ '加價 +NT$' if vo.price_adjustment > 0 else '折扣 -NT$' }}{{ '{:,}'.format(vo.price_adjustment|abs) }}
-              </p>
-              {% endif %}
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </div>
@@ -276,11 +271,6 @@
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
               <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
-              {% if vo.price_adjustment %}
-              <p class="text-xs {{ 'text-purple-300' if vo.price_adjustment > 0 else 'text-emerald-400' }} mt-1">
-                {{ '加價 +NT$' if vo.price_adjustment > 0 else '折扣 -NT$' }}{{ '{:,}'.format(vo.price_adjustment|abs) }}
-              </p>
-              {% endif %}
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </label>
@@ -355,7 +345,7 @@
           <span id="price_per_person_display" class="font-medium text-gray-300">NT$ 2,000</span>
         </div>
         <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-400">人數</span>
+          <span id="count_row_label" class="text-gray-400">人數</span>
           <span id="count_display" class="font-medium text-gray-300">1 人</span>
         </div>
         <!-- 折扣列（動態顯示） -->
@@ -557,10 +547,10 @@
   const EP_LOC_IDS = {
     {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
   };
-  // 車輛方案：id -> {price_adjustment}。Final Price = Price Rule（Base Price）+ price_adjustment，
+  // 車輛方案：id -> {name, price_adjustment}。Final Price = Price Rule（Base Price）+ price_adjustment，
   // 可為負數（折扣）。Vehicle Mode 下不乘以人數，Passenger Mode 下乘以人數，見 calcTotal()。
   const EP_VEHICLE_OPTIONS = {
-    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"price_adjustment": {{ vo.price_adjustment | tojson }}},{% endfor %}
+    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"name": {{ vo.name | tojson }}, "price_adjustment": {{ vo.price_adjustment | tojson }}},{% endfor %}
   };
 
   let _activeDateId   = null;
@@ -701,22 +691,31 @@
   function calcTotal(count) {
     if (currentVehicle === 'nx200') return;
     const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
-    document.getElementById('count_display').textContent = n + ' 人';
 
-    const labelEl = document.getElementById('price_per_person_label');
-    const hintEl  = document.getElementById('fixed-price-hint');
+    const labelEl     = document.getElementById('price_per_person_label');
+    const hintEl      = document.getElementById('fixed-price-hint');
+    const countRowLbl = document.getElementById('count_row_label');
+    const countRowVal = document.getElementById('count_display');
 
     // Vehicle Option Pricing 簡化版：Final Price = Price Rule（Base Price，PRICE）+ price_adjustment。
-    // Vehicle Mode：總價 = Final Price，完全不乘以人數。
-    // Passenger Mode（預設，含 BTS 傳統流程）：總價 = Final Price × 人數，維持既有共乘邏輯。
+    // Vehicle Mode：總價 = Final Price，完全不乘以人數。費用明細顯示「車輛費用／車輛方案」，不顯示人數。
+    // Passenger Mode（預設，含 BTS 傳統流程）：總價 = Final Price × 人數，維持既有共乘邏輯，顯示「每人費用／人數」。
     const adjustment = (_activeVehicleOption && _activeVehicleOption.price_adjustment) || 0;
     const finalPrice = PRICE + adjustment;
     const isVehicleMode = PRICING_STRATEGY === 'vehicle';
     const total = isVehicleMode ? finalPrice : (n * finalPrice);
 
-    if (labelEl) labelEl.textContent = isVehicleMode ? '車輛方案價格' : '每人費用';
+    if (labelEl) labelEl.textContent = isVehicleMode ? '車輛費用' : '每人費用';
     if (hintEl) hintEl.classList.toggle('hidden', !isVehicleMode);
     document.getElementById('price_per_person_display').textContent = 'NT$ ' + finalPrice.toLocaleString();
+
+    if (isVehicleMode) {
+      if (countRowLbl) countRowLbl.textContent = '車輛方案';
+      if (countRowVal) countRowVal.textContent = (_activeVehicleOption && _activeVehicleOption.name) || '—';
+    } else {
+      if (countRowLbl) countRowLbl.textContent = '人數';
+      if (countRowVal) countRowVal.textContent = n + ' 人';
+    }
 
     const deposit = calcDepositAmount(total, n);
     _applyDiscountDisplay(total, deposit, Math.max(0, total - deposit));

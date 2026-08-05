@@ -282,7 +282,7 @@
              class="flex items-center gap-3 p-4 rounded-xl border-2 border-purple-600 bg-purple-950/20 cursor-pointer transition-all"
              onclick="selectVehicle('minibus')">
         <div class="w-4 h-4 rounded-full border-2 border-purple-500 flex items-center justify-center shrink-0" id="radio-minibus">
-          <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+          <div id="radio-minibus-dot" class="w-2 h-2 rounded-full" style="background:#a855f7;"></div>
         </div>
         <div>
           <p class="text-sm font-semibold text-white">九座商旅車</p>
@@ -298,7 +298,7 @@
                class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
                onclick="selectVehicle('nx200')">
           <div class="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0" id="radio-nx200">
-            <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            <div id="radio-nx200-dot" class="w-2 h-2 rounded-full" style="background:transparent;"></div>
           </div>
           <div>
             <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
@@ -636,8 +636,10 @@
       if (cardMinibus) { cardMinibus.classList.remove('border-purple-600','bg-purple-950/20'); cardMinibus.classList.add('border-gray-700','bg-gray-900/50'); }
       if (cardNx200)   { cardNx200.classList.add('border-purple-600','bg-purple-950/20');    cardNx200.classList.remove('border-gray-700','bg-gray-900/50'); }
       // Radio dot
-      if (radioMin) { radioMin.classList.remove('border-purple-500'); radioMin.classList.add('border-gray-600'); radioMin.querySelector('div').style.background = 'transparent'; }
-      if (radioNx)  { radioNx.classList.add('border-purple-500');   radioNx.classList.remove('border-gray-600'); radioNx.querySelector('div').style.background = '#a855f7'; }
+      if (radioMin) { radioMin.classList.remove('border-purple-500'); radioMin.classList.add('border-gray-600'); }
+      document.getElementById('radio-minibus-dot') && (document.getElementById('radio-minibus-dot').style.backgroundColor = 'transparent');
+      if (radioNx)  { radioNx.classList.add('border-purple-500');   radioNx.classList.remove('border-gray-600'); }
+      document.getElementById('radio-nx200-dot') && (document.getElementById('radio-nx200-dot').style.backgroundColor = '#a855f7');
       // 鎖定人數
       paxInput.value    = NX200_PAX;
       paxInput.disabled = true;
@@ -653,8 +655,10 @@
       if (cardMinibus) { cardMinibus.classList.add('border-purple-600','bg-purple-950/20');  cardMinibus.classList.remove('border-gray-700','bg-gray-900/50'); }
       if (cardNx200)   { cardNx200.classList.remove('border-purple-600','bg-purple-950/20'); cardNx200.classList.add('border-gray-700','bg-gray-900/50'); }
       // Radio dot
-      if (radioMin) { radioMin.classList.add('border-purple-500');  radioMin.classList.remove('border-gray-600'); radioMin.querySelector('div').style.background = '#a855f7'; }
-      if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600');  radioNx.querySelector('div').style.background = 'transparent'; }
+      if (radioMin) { radioMin.classList.add('border-purple-500');  radioMin.classList.remove('border-gray-600'); }
+      document.getElementById('radio-minibus-dot') && (document.getElementById('radio-minibus-dot').style.backgroundColor = '#a855f7');
+      if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600'); }
+      document.getElementById('radio-nx200-dot') && (document.getElementById('radio-nx200-dot').style.backgroundColor = 'transparent');
       // 解鎖人數，恢復「每人費用」與「人數」列
       paxInput.disabled = false;
       paxInput.style.opacity = '';

@@ -303,7 +303,7 @@
           <div>
             <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
             <p class="text-xs text-gray-400 mt-0.5">固定 4 人搭乘</p>
-            <p class="text-xs text-purple-300 mt-1">NT$10,000 固定</p>
+            <p class="text-xs text-purple-300 mt-1">NT$13,000 固定</p>
           </div>
         </label>
         {% else %}
@@ -344,7 +344,7 @@
           <span id="price_per_person_label" class="text-gray-400">每人費用</span>
           <span id="price_per_person_display" class="font-medium text-gray-300">NT$ 2,000</span>
         </div>
-        <div class="flex items-center justify-between text-sm">
+        <div id="count-row" class="flex items-center justify-between text-sm">
           <span id="count_row_label" class="text-gray-400">人數</span>
           <span id="count_display" class="font-medium text-gray-300">1 人</span>
         </div>
@@ -642,9 +642,11 @@
       paxInput.value    = NX200_PAX;
       paxInput.disabled = true;
       paxInput.style.opacity = '0.5';
-      // 費用
-      document.getElementById('price_per_person_display').textContent = 'NT$ ' + Math.round(NX200_TOTAL / NX200_PAX).toLocaleString();
-      document.getElementById('count_display').textContent = NX200_PAX + ' 人';
+      // 費用明細：NX200 只顯示「車輛費用」，隱藏「每人費用」與「人數」列
+      document.getElementById('price_per_person_label').textContent = '車輛費用';
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + NX200_TOTAL.toLocaleString();
+      const countRowNx = document.getElementById('count-row');
+      if (countRowNx) countRowNx.style.display = 'none';
       _applyDiscountDisplay(NX200_TOTAL, NX200_DEPOSIT, NX200_BALANCE);
     } else {
       // 卡片邊框
@@ -653,10 +655,13 @@
       // Radio dot
       if (radioMin) { radioMin.classList.add('border-purple-500');  radioMin.classList.remove('border-gray-600'); radioMin.querySelector('div').style.background = '#a855f7'; }
       if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600');  radioNx.querySelector('div').style.background = 'transparent'; }
-      // 解鎖人數，重設為活動最少人數，恢復每人費用
+      // 解鎖人數，恢復「每人費用」與「人數」列
       paxInput.disabled = false;
       paxInput.style.opacity = '';
       paxInput.value = MIN_GROUP_SIZE;
+      document.getElementById('price_per_person_label').textContent = '每人費用';
+      const countRowMin = document.getElementById('count-row');
+      if (countRowMin) countRowMin.style.display = '';
       recalculateBookingSummary(MIN_GROUP_SIZE);
     }
   }

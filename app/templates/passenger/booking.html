@@ -303,8 +303,7 @@
           </div>
           <div>
             <p class="text-sm font-semibold text-white">NX200 專屬包車</p>
-            <p class="text-xs text-gray-400 mt-0.5">固定 4 人搭乘</p>
-            <p class="text-xs text-purple-300 mt-1">NT$13,000 固定</p>
+            <p class="text-xs text-gray-400 mt-0.5">最多 4 位乘客</p>
           </div>
         </label>
         {% else %}
@@ -530,6 +529,9 @@
   const NX200_BALANCE = {{ nx200_balance | default(0) }};
   const NX200_DATES        = new Set({{ nx200_dates | default([]) | tojson }});
   const FRIEND_GROUP_DATES = new Set({{ friend_group_dates | default([]) | tojson }});
+  const MINIBUS_CHARTER_TOTAL   = {{ minibus_charter_total | default(16000) }};
+  const MINIBUS_CHARTER_DEPOSIT = {{ minibus_charter_deposit | default(1200) }};
+  const MINIBUS_CHARTER_BALANCE = {{ minibus_charter_balance | default(14800) }};
   // 包車模式：每筆訂單最少人數（依 EventPage.min_group_size，無活動或未設定則為 1）
   const MIN_GROUP_SIZE = {{ event_page.min_group_size or 1 if event_page else 1 }};
   // 計價策略：'vehicle' 或 'passenger'（預設）。Vehicle Mode 下，價格一律採用 Vehicle Option Final Price，不乘以人數。
@@ -613,6 +615,21 @@
         document.getElementById('vehicle_type').value === 'nx200') {
       selectVehicle('minibus');
     }
+
+    // 包車日期（11/19、11/21）：依當前車輛方案更新費用明細
+    var isCharterDate = dateValue && NX200_DATES.has(dateValue);
+    var vtypeEl = document.getElementById('vehicle_type');
+    var curVehicle = vtypeEl ? vtypeEl.value : 'minibus';
+    if (isCharterDate) {
+      var charterTotal   = (curVehicle === 'nx200') ? NX200_TOTAL   : MINIBUS_CHARTER_TOTAL;
+      var charterDeposit = (curVehicle === 'nx200') ? NX200_DEPOSIT : MINIBUS_CHARTER_DEPOSIT;
+      var charterBalance = (curVehicle === 'nx200') ? NX200_BALANCE : MINIBUS_CHARTER_BALANCE;
+      document.getElementById('price_per_person_label').textContent   = '車輛費用';
+      document.getElementById('price_per_person_display').textContent = 'NT$ ' + charterTotal.toLocaleString();
+      var countRow = document.getElementById('count-row');
+      if (countRow) countRow.style.display = 'none';
+      _applyDiscountDisplay(charterTotal, charterDeposit, charterBalance);
+    }
     {% endif %}
   }
 
@@ -695,14 +712,26 @@
       if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600'); }
       if (dotMin) { dotMin.style.cssText = 'background-color:#a855f7;'; }
       if (dotNx)  { dotNx.style.cssText  = 'background-color:transparent;'; }
-      // 解鎖人數，恢復「每人費用」與「人數」列
+      // 解鎖人數，依日期決定計價模式
       paxInput.disabled = false;
       paxInput.style.opacity = '';
-      paxInput.value = MIN_GROUP_SIZE;
-      document.getElementById('price_per_person_label').textContent = '每人費用';
-      const countRowMin = document.getElementById('count-row');
-      if (countRowMin) countRowMin.style.display = '';
-      recalculateBookingSummary(MIN_GROUP_SIZE);
+      var dateEl2 = document.getElementById('departure_date');
+      var selDate = dateEl2 ? dateEl2.value : '';
+      var isCharter = selDate && NX200_DATES.has(selDate);
+      if (isCharter) {
+        // 包車日期：九座也是固定整台計價，隱藏人數列
+        document.getElementById('price_per_person_label').textContent   = '車輛費用';
+        document.getElementById('price_per_person_display').textContent = 'NT$ ' + MINIBUS_CHARTER_TOTAL.toLocaleString();
+        const countRowM = document.getElementById('count-row');
+        if (countRowM) countRowM.style.display = 'none';
+        _applyDiscountDisplay(MINIBUS_CHARTER_TOTAL, MINIBUS_CHARTER_DEPOSIT, MINIBUS_CHARTER_BALANCE);
+      } else {
+        paxInput.value = MIN_GROUP_SIZE;
+        document.getElementById('price_per_person_label').textContent = '每人費用';
+        const countRowMin = document.getElementById('count-row');
+        if (countRowMin) countRowMin.style.display = '';
+        recalculateBookingSummary(MIN_GROUP_SIZE);
+      }
     }
   }
 
@@ -824,7 +853,9 @@
 
     try {
       const pax = parseInt(document.getElementById('passenger_count').value) || 1;
-      const res = await fetch(`/api/coupon/validate?code=${encodeURIComponent(code)}&vehicle=${encodeURIComponent(currentVehicle)}&pax=${pax}`);
+      const dateEl3 = document.getElementById('departure_date');
+      const selDate3 = dateEl3 ? encodeURIComponent(dateEl3.value) : '';
+      const res = await fetch(`/api/coupon/validate?code=${encodeURIComponent(code)}&vehicle=${encodeURIComponent(currentVehicle)}&pax=${pax}&date=${selDate3}`);
       const data = await res.json();
 
       if (data.valid) {

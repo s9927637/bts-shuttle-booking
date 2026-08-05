@@ -31,6 +31,11 @@ NX200_DEPOSIT = 1200
 NX200_BALANCE = 11800
 NX200_QUOTA   = 1   # 全程只允許 1 台
 
+# 九座包車定價（11/19、11/21 場次，固定整台計價）
+MINIBUS_CHARTER_TOTAL   = 16000
+MINIBUS_CHARTER_DEPOSIT = 1200
+MINIBUS_CHARTER_BALANCE = 14800
+
 
 def _nx200_available() -> bool:
     """NX200 尚有名額（未被任何非取消訂單佔用）"""
@@ -195,6 +200,9 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                            nx200_deposit=NX200_DEPOSIT,
                            nx200_balance=NX200_BALANCE,
                            nx200_available=_nx200_available(),
+                           minibus_charter_total=MINIBUS_CHARTER_TOTAL,
+                           minibus_charter_deposit=MINIBUS_CHARTER_DEPOSIT,
+                           minibus_charter_balance=MINIBUS_CHARTER_BALANCE,
                            nx200_dates=sorted(NX200_DATES),
                            friend_group_dates=sorted(FRIEND_GROUP_DATES),
                            departure_options=DEPARTURE_OPTIONS,
@@ -319,6 +327,7 @@ def booking_submit():
             deposit_percentage = 30
 
         # 車輛方案計價
+        is_charter_date = not event_page and dep in NX200_DATES
         if vehicle_type == "nx200" and not event_page:
             if not _nx200_available():
                 raise ValueError("NX200 專屬包車已售完，請選擇九座商旅車方案。")
@@ -326,6 +335,13 @@ def booking_submit():
             total_amount    = NX200_TOTAL
             deposit_amount  = NX200_DEPOSIT
             balance_amount  = NX200_BALANCE
+        elif is_charter_date:
+            # 11/19、11/21 九座商旅車採整台包車計價
+            vehicle_type    = "minibus"
+            passenger_count = 8
+            total_amount    = MINIBUS_CHARTER_TOTAL
+            deposit_amount  = MINIBUS_CHARTER_DEPOSIT
+            balance_amount  = MINIBUS_CHARTER_BALANCE
         else:
             vehicle_type    = "minibus"
             passenger_count = int(form_data["passenger_count"])
@@ -852,8 +868,11 @@ def api_coupon_validate():
         return jsonify({"valid": False, "message": "折扣碼已過期或已達使用上限"})
 
     # 計算原始總金額
+    date_val = request.args.get("date", "")
     if vehicle == "nx200":
         total = NX200_TOTAL
+    elif date_val in NX200_DATES:
+        total = MINIBUS_CHARTER_TOTAL
     else:
         total = pax * PRICE_PER_PERSON
 

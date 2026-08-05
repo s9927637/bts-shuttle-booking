@@ -201,7 +201,8 @@
 
     <!-- 朋友同行（活動可關閉此功能，例如包車／機場接送／企業包車） -->
     {% if not event_page or event_page.friend_group_enabled %}
-    <div id="friends-section" class="card-dark space-y-4">
+    <div id="friends-section" class="card-dark space-y-4"
+         {% if not event_page %}style="display:none"{% endif %}>
       <h2 class="section-title">朋友同行 <span class="text-xs font-normal text-gray-500">（選填）</span></h2>
 
       <div>
@@ -594,7 +595,8 @@
     var nx200Container  = document.getElementById('nx200-container');
     var friendsSection  = document.getElementById('friends-section');
     var showNx200       = !dateValue || NX200_DATES.has(dateValue);
-    var showFriends     = !dateValue || FRIEND_GROUP_DATES.has(dateValue);
+    // 朋友同行：僅 11/22 顯示；未選日期或 11/19、11/21 一律隱藏
+    var showFriends = dateValue !== '' && FRIEND_GROUP_DATES.has(dateValue);
 
     if (nx200Container) nx200Container.style.display = showNx200 ? '' : 'none';
     if (friendsSection) {
@@ -603,8 +605,8 @@
         // 清除朋友同行相關欄位，避免隱藏資料被送出
         var noRadio = friendsSection.querySelector('input[name="with_friends"][value="no"]');
         if (noRadio) { noRadio.checked = true; }
-        var codeInput = document.getElementById('friend_code');
-        if (codeInput) { codeInput.value = ''; }
+        var fcodeInput = document.getElementById('friend_code');
+        if (fcodeInput) { fcodeInput.value = ''; }
         var codeWrap = document.getElementById('friend-code-wrap');
         if (codeWrap) { codeWrap.classList.add('hidden'); }
       }
@@ -614,21 +616,35 @@
     if (!showNx200 && document.getElementById('vehicle_type') &&
         document.getElementById('vehicle_type').value === 'nx200') {
       selectVehicle('minibus');
+      return; // selectVehicle 已更新費用，不需重複執行
     }
 
-    // 包車日期（11/19、11/21）：依當前車輛方案更新費用明細
-    var isCharterDate = dateValue && NX200_DATES.has(dateValue);
+    // 包車日期（11/19、11/21）：依當前車輛方案鎖定人數並更新費用明細
+    var isCharterDate = dateValue !== '' && NX200_DATES.has(dateValue);
     var vtypeEl = document.getElementById('vehicle_type');
     var curVehicle = vtypeEl ? vtypeEl.value : 'minibus';
+    var paxSel = document.getElementById('passenger_count');
+
     if (isCharterDate) {
-      var charterTotal   = (curVehicle === 'nx200') ? NX200_TOTAL   : MINIBUS_CHARTER_TOTAL;
-      var charterDeposit = (curVehicle === 'nx200') ? NX200_DEPOSIT : MINIBUS_CHARTER_DEPOSIT;
-      var charterBalance = (curVehicle === 'nx200') ? NX200_BALANCE : MINIBUS_CHARTER_BALANCE;
+      var charterTotal   = (curVehicle === 'nx200') ? NX200_TOTAL           : MINIBUS_CHARTER_TOTAL;
+      var charterDeposit = (curVehicle === 'nx200') ? NX200_DEPOSIT         : MINIBUS_CHARTER_DEPOSIT;
+      var charterBalance = (curVehicle === 'nx200') ? NX200_BALANCE         : MINIBUS_CHARTER_BALANCE;
+      var charterPax     = (curVehicle === 'nx200') ? NX200_PAX             : 8;
+      // 鎖定人數
+      if (paxSel) { paxSel.value = String(charterPax); paxSel.disabled = true; paxSel.style.opacity = '0.5'; }
+      // 費用明細
       document.getElementById('price_per_person_label').textContent   = '車輛費用';
       document.getElementById('price_per_person_display').textContent = 'NT$ ' + charterTotal.toLocaleString();
       var countRow = document.getElementById('count-row');
       if (countRow) countRow.style.display = 'none';
       _applyDiscountDisplay(charterTotal, charterDeposit, charterBalance);
+    } else {
+      // 非包車日期（11/22 或未選）：解鎖人數，恢復共乘計價
+      if (paxSel) { paxSel.disabled = false; paxSel.style.opacity = ''; }
+      document.getElementById('price_per_person_label').textContent = '每人費用';
+      var countRowN = document.getElementById('count-row');
+      if (countRowN) countRowN.style.display = '';
+      recalculateBookingSummary(paxSel ? paxSel.value : MIN_GROUP_SIZE);
     }
     {% endif %}
   }
@@ -712,21 +728,25 @@
       if (radioNx)  { radioNx.classList.remove('border-purple-500'); radioNx.classList.add('border-gray-600'); }
       if (dotMin) { dotMin.style.cssText = 'background-color:#a855f7;'; }
       if (dotNx)  { dotNx.style.cssText  = 'background-color:transparent;'; }
-      // 解鎖人數，依日期決定計價模式
-      paxInput.disabled = false;
-      paxInput.style.opacity = '';
+      // 依日期決定計價模式
       var dateEl2 = document.getElementById('departure_date');
       var selDate = dateEl2 ? dateEl2.value : '';
-      var isCharter = selDate && NX200_DATES.has(selDate);
+      var isCharter = selDate !== '' && NX200_DATES.has(selDate);
       if (isCharter) {
-        // 包車日期：九座也是固定整台計價，隱藏人數列
+        // 包車日期：九座固定整台計價，人數鎖定 8
+        paxInput.value    = '8';
+        paxInput.disabled = true;
+        paxInput.style.opacity = '0.5';
         document.getElementById('price_per_person_label').textContent   = '車輛費用';
         document.getElementById('price_per_person_display').textContent = 'NT$ ' + MINIBUS_CHARTER_TOTAL.toLocaleString();
         const countRowM = document.getElementById('count-row');
         if (countRowM) countRowM.style.display = 'none';
         _applyDiscountDisplay(MINIBUS_CHARTER_TOTAL, MINIBUS_CHARTER_DEPOSIT, MINIBUS_CHARTER_BALANCE);
       } else {
-        paxInput.value = MIN_GROUP_SIZE;
+        // 非包車日期：解鎖人數，恢復共乘計價
+        paxInput.disabled = false;
+        paxInput.style.opacity = '';
+        paxInput.value = String(MIN_GROUP_SIZE);
         document.getElementById('price_per_person_label').textContent = '每人費用';
         const countRowMin = document.getElementById('count-row');
         if (countRowMin) countRowMin.style.display = '';

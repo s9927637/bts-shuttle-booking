@@ -369,11 +369,13 @@ def booking_submit():
                 applied_coupon  = coupon
 
         # 同行群組邏輯
+        # 11/19、11/21（NX200_DATES）不開放朋友同行功能
+        friend_group_enabled = event_page or (dep in FRIEND_GROUP_DATES)
         with_friends = request.form.get("with_friends", "no")
         friend_code  = request.form.get("friend_code", "").strip() or None
         show_group   = None   # None / "created" / "joined"
 
-        if with_friends == "yes":
+        if friend_group_enabled and with_friends == "yes":
             if friend_code:
                 ref = Order.query.filter_by(group_id=friend_code).first()
                 if not ref:
@@ -385,8 +387,10 @@ def booking_submit():
             else:
                 group_id   = _gen_group_id(event_page)
                 show_group = "created"
-        else:
+        elif friend_group_enabled:
             group_id = _gen_group_id(event_page)
+        else:
+            group_id = None
 
         order = Order(
             order_no          = "TEMP",
@@ -492,6 +496,7 @@ def order_detail(order_no):
                            vehicle=vehicle,
                            driver=driver,
                            is_new=is_new,
+                           friend_group_dates=FRIEND_GROUP_DATES,
                            passenger_liff_id=PASSENGER_LIFF_ID)
 
 

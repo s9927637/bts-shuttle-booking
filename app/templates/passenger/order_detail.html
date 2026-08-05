@@ -91,7 +91,8 @@
   </div>
 
   {# ── 區塊 2：同行資訊（活動關閉朋友同行功能時不顯示） ── #}
-  {% if order.group_id and (not event_page or event_page.friend_group_enabled) %}
+  {% set _fg_enabled = event_page or (order.departure_date in friend_group_dates) %}
+  {% if order.group_id and _fg_enabled and (not event_page or event_page.friend_group_enabled) %}
   {% set invite_path = ('/events/' + event_page.slug + '/booking') if event_page else '/booking' %}
   {% set invite_link = request.host_url.rstrip('/') + invite_path + '?friend_code=' + order.group_id %}
   <div class="card-dark space-y-4 mb-5">

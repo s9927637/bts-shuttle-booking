@@ -595,7 +595,18 @@
     var showFriends     = !dateValue || FRIEND_GROUP_DATES.has(dateValue);
 
     if (nx200Container) nx200Container.style.display = showNx200 ? '' : 'none';
-    if (friendsSection) friendsSection.style.display = showFriends ? '' : 'none';
+    if (friendsSection) {
+      friendsSection.style.display = showFriends ? '' : 'none';
+      if (!showFriends) {
+        // 清除朋友同行相關欄位，避免隱藏資料被送出
+        var noRadio = friendsSection.querySelector('input[name="with_friends"][value="no"]');
+        if (noRadio) { noRadio.checked = true; }
+        var codeInput = document.getElementById('friend_code');
+        if (codeInput) { codeInput.value = ''; }
+        var codeWrap = document.getElementById('friend-code-wrap');
+        if (codeWrap) { codeWrap.classList.add('hidden'); }
+      }
+    }
 
     // 若當前選的是 NX200 但切換到不支援的日期，強制切回九座
     if (!showNx200 && document.getElementById('vehicle_type') &&

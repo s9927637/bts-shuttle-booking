@@ -41,11 +41,16 @@ def _nx200_available() -> bool:
     return count < NX200_QUOTA
 
 DEPARTURE_OPTIONS = [
-    {"value": "11/19(四)", "label": "11/19（四） 已額滿", "disabled": True},
-    {"value": "11/21(六)", "label": "11/21（六） 已額滿", "disabled": True},
-    {"value": "11/22(日)", "label": "11/22（日）",       "disabled": False},
+    {"value": "11/19(四)", "label": "11/19（四）", "disabled": False},
+    {"value": "11/21(六)", "label": "11/21（六）", "disabled": False},
+    {"value": "11/22(日)", "label": "11/22（日）", "disabled": False},
 ]
 AVAILABLE_DATES = {opt["value"] for opt in DEPARTURE_OPTIONS if not opt["disabled"]}
+
+# 提供 NX200 的場次（前端動態顯示 / 後端驗證）
+NX200_DATES = {"11/19(四)", "11/21(六)"}
+# 顯示「朋友同行」功能的場次（11/22 包車場次不需此功能）
+FRIEND_GROUP_DATES = {"11/22(日)"}
 
 def _pricing_strategy(event_page) -> str:
     """回傳 'vehicle'（依車輛計價）或 'passenger'（依人數計價，預設，含 BTS 傳統流程）。
@@ -190,6 +195,8 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                            nx200_deposit=NX200_DEPOSIT,
                            nx200_balance=NX200_BALANCE,
                            nx200_available=_nx200_available(),
+                           nx200_dates=sorted(NX200_DATES),
+                           friend_group_dates=sorted(FRIEND_GROUP_DATES),
                            departure_options=DEPARTURE_OPTIONS,
                            passenger_liff_id=PASSENGER_LIFF_ID,
                            prefill_friend_code=friend_code,
@@ -303,7 +310,9 @@ def booking_submit():
             pickup_location_val      = None
             pickup_location_text_val = None
             if dep not in AVAILABLE_DATES:
-                raise ValueError("所選場次目前不開放預約，請選擇 11/22（日）場次。")
+                raise ValueError("所選場次目前不開放預約。")
+            if vehicle_type == "nx200" and dep not in NX200_DATES:
+                raise ValueError("所選場次不提供 NX200 專屬包車，請選擇九座商旅車。")
             price_per          = PRICE_PER_PERSON
             deposit_type       = "fixed"
             deposit_fixed      = DEPOSIT_PER_PERSON

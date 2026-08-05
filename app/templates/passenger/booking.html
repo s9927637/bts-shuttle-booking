@@ -82,7 +82,7 @@
           {% endif %}
           {% else %}
           <select id="departure_date" name="departure_date" required
-                  class="input-dark">
+                  class="input-dark" onchange="onDateChange(this.value)">
             <option value="">— 選擇場次 —</option>
             {% for opt in departure_options %}
             <option value="{{ opt.value }}"
@@ -201,7 +201,7 @@
 
     <!-- 朋友同行（活動可關閉此功能，例如包車／機場接送／企業包車） -->
     {% if not event_page or event_page.friend_group_enabled %}
-    <div class="card-dark space-y-4">
+    <div id="friends-section" class="card-dark space-y-4">
       <h2 class="section-title">朋友同行 <span class="text-xs font-normal text-gray-500">（選填）</span></h2>
 
       <div>
@@ -293,6 +293,7 @@
 
       <!-- 方案二：NX200（活動模式不提供） -->
       {% if not event_page %}
+      <div id="nx200-container">
         {% if nx200_available %}
         <label id="plan-nx200"
                class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
@@ -315,6 +316,7 @@
           </div>
         </div>
         {% endif %}
+      </div>
       {% endif %}
     </div>
 
@@ -526,6 +528,8 @@
   const NX200_TOTAL   = {{ nx200_total }};
   const NX200_DEPOSIT = {{ nx200_deposit }};
   const NX200_BALANCE = {{ nx200_balance | default(0) }};
+  const NX200_DATES        = new Set({{ nx200_dates | default([]) | tojson }});
+  const FRIEND_GROUP_DATES = new Set({{ friend_group_dates | default([]) | tojson }});
   // 包車模式：每筆訂單最少人數（依 EventPage.min_group_size，無活動或未設定則為 1）
   const MIN_GROUP_SIZE = {{ event_page.min_group_size or 1 if event_page else 1 }};
   // 計價策略：'vehicle' 或 'passenger'（預設）。Vehicle Mode 下，價格一律採用 Vehicle Option Final Price，不乘以人數。
@@ -582,6 +586,23 @@
   function onDateChange(dateValue) {
     _activeDateId = EP_DATE_IDS[dateValue] || null;
     recalculateBookingSummary(document.getElementById('passenger_count').value);
+
+    // 非活動模式：依日期動態切換車輛方案與朋友同行
+    {% if not event_page %}
+    var nx200Container  = document.getElementById('nx200-container');
+    var friendsSection  = document.getElementById('friends-section');
+    var showNx200       = !dateValue || NX200_DATES.has(dateValue);
+    var showFriends     = !dateValue || FRIEND_GROUP_DATES.has(dateValue);
+
+    if (nx200Container) nx200Container.style.display = showNx200 ? '' : 'none';
+    if (friendsSection) friendsSection.style.display = showFriends ? '' : 'none';
+
+    // 若當前選的是 NX200 但切換到不支援的日期，強制切回九座
+    if (!showNx200 && document.getElementById('vehicle_type') &&
+        document.getElementById('vehicle_type').value === 'nx200') {
+      selectVehicle('minibus');
+    }
+    {% endif %}
   }
 
   function onLocationChange(locName) {
@@ -763,6 +784,12 @@
   }
 
   recalculateBookingSummary(document.getElementById('passenger_count').value);
+
+  // 頁面載入時依預設日期套用車輛/朋友同行顯示狀態
+  (function () {
+    var dateEl = document.getElementById('departure_date');
+    if (dateEl) onDateChange(dateEl.value);
+  })();
 
   // ── 折扣碼邏輯 ────────────────────────────────────────────────────────────
 

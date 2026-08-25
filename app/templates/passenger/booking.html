@@ -261,10 +261,12 @@
           <!-- 多個車輛方案：選擇清單 -->
           {% for vo in ep_vehicle_options %}
           <label id="vo-plan-{{ vo.id }}"
-                 class="flex items-center gap-3 p-4 rounded-xl border-2 {% if vo.is_default %}border-purple-600 bg-purple-950/20{% else %}border-gray-700 bg-gray-900/50{% endif %} cursor-pointer transition-all"
+                 class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
+                 style="{% if vo.is_default %}border-color:var(--ev-primary);background:color-mix(in srgb,var(--ev-primary) 12%,transparent);{% endif %}"
                  onclick="selectVehicleOption({{ vo.id }})">
-            <div class="w-4 h-4 rounded-full border-2 {% if vo.is_default %}border-purple-500{% else %}border-gray-600{% endif %} flex items-center justify-center shrink-0" id="vo-radio-{{ vo.id }}">
-              <div class="w-2 h-2 rounded-full {% if vo.is_default %}bg-purple-500{% else %}bg-transparent{% endif %}"></div>
+            <div class="w-4 h-4 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0" id="vo-radio-{{ vo.id }}"
+                 style="{% if vo.is_default %}border-color:var(--ev-primary);{% endif %}">
+              <div class="w-2 h-2 rounded-full" style="background:{% if vo.is_default %}var(--ev-primary){% else %}transparent{% endif %};"></div>
             </div>
             <div>
               <p class="text-sm font-semibold text-white">{{ vo.name }}</p>
@@ -665,19 +667,29 @@
   }
 
   // Vehicle Options（車輛方案 V2）：多方案清單的選取
+  var _EV_PRIMARY = getComputedStyle(document.documentElement).getPropertyValue('--ev-primary').trim() || '#a855f7';
+
   function selectVehicleOption(id) {
     document.getElementById('vehicle_option_id').value = id;
     document.querySelectorAll('[id^="vo-plan-"]').forEach(function (card) {
       const isSelected = card.id === 'vo-plan-' + id;
       const radio = document.getElementById('vo-radio-' + card.id.replace('vo-plan-', ''));
       if (isSelected) {
-        card.classList.add('border-purple-600', 'bg-purple-950/20');
+        card.style.borderColor = _EV_PRIMARY;
+        card.style.background  = 'color-mix(in srgb,' + _EV_PRIMARY + ' 12%,transparent)';
         card.classList.remove('border-gray-700', 'bg-gray-900/50');
-        if (radio) { radio.classList.add('border-purple-500'); radio.classList.remove('border-gray-600'); radio.querySelector('div').style.background = '#a855f7'; }
+        if (radio) {
+          radio.style.borderColor = _EV_PRIMARY;
+          radio.querySelector('div').style.background = _EV_PRIMARY;
+        }
       } else {
-        card.classList.remove('border-purple-600', 'bg-purple-950/20');
+        card.style.borderColor = '';
+        card.style.background  = '';
         card.classList.add('border-gray-700', 'bg-gray-900/50');
-        if (radio) { radio.classList.remove('border-purple-500'); radio.classList.add('border-gray-600'); radio.querySelector('div').style.background = 'transparent'; }
+        if (radio) {
+          radio.style.borderColor = '';
+          radio.querySelector('div').style.background = 'transparent';
+        }
       }
     });
     // 包車模式：切換車輛方案時，若為固定價格則立即改用固定總價重新計算

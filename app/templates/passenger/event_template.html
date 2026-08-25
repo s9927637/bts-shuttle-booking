@@ -188,7 +188,7 @@
   <picture>
     {%- if ep.landing_image_mobile %}<source media="(max-width: 639px)" srcset="{{ ep.landing_image_mobile }}">{%- endif %}
     {%- if ep.landing_image_tablet %}<source media="(max-width: 1023px)" srcset="{{ ep.landing_image_tablet }}">{%- endif %}
-    <img src="{{ ep.landing_image_desktop }}" class="lp-image" alt="{{ ep.title }}" draggable="false" />
+    <img src="{{ ep.landing_image_desktop or ep.landing_image_tablet or ep.landing_image_mobile }}" class="lp-image" alt="{{ ep.title }}" draggable="false" />
   </picture>
 
   {# Bug Fix Phase 1: Desktop/Tablet/Mobile 各自獨立一組 Hotspot，

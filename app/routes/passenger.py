@@ -190,6 +190,23 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                 'label':    fc.label_override,
             }
 
+    # 計算各車輛方案剩餘可預約人數（capacity - 已預約人數，不含已取消訂單）
+    ep_vo_remaining = {}
+    if ep_vehicle_options:
+        from app.models.order import Order
+        from sqlalchemy import func
+        rows = db.session.query(
+            Order.vehicle_option_id,
+            func.coalesce(func.sum(Order.passenger_count), 0)
+        ).filter(
+            Order.vehicle_option_id.in_([vo.id for vo in ep_vehicle_options]),
+            Order.payment_status != "已取消"
+        ).group_by(Order.vehicle_option_id).all()
+        booked_map = {row[0]: int(row[1]) for row in rows}
+        for vo in ep_vehicle_options:
+            booked = booked_map.get(vo.id, 0)
+            ep_vo_remaining[vo.id] = max(0, (vo.capacity or 0) - booked)
+
     return render_template("passenger/booking.html",
                            price_per_person=price_per,
                            deposit_type=deposit_type,
@@ -214,6 +231,7 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
                            ep_price_rules_json=ep_price_rules_json,
                            ep_form_config=ep_form_config,
                            ep_vehicle_options=ep_vehicle_options,
+                           ep_vo_remaining=ep_vo_remaining,
                            pricing_strategy=_pricing_strategy(event_page),
                            form=form or {})
 

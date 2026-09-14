@@ -253,13 +253,16 @@
               {% if vo.example_models_list %}
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
-              <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              {% set _rem0 = ep_vo_remaining.get(vo.id, vo.capacity) if ep_vo_remaining is defined else vo.capacity %}
+              <p class="text-xs text-gray-400 mt-0.5">最多 {{ _rem0 }} 位乘客</p>
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </div>
         {% else %}
           <!-- 多個車輛方案：選擇清單 -->
           {% for vo in ep_vehicle_options %}
+          {% set _rem = ep_vo_remaining.get(vo.id, vo.capacity) if ep_vo_remaining is defined else vo.capacity %}
+          {% set _booked = vo.capacity - _rem %}
           <label id="vo-plan-{{ vo.id }}"
                  class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-700 bg-gray-900/50 cursor-pointer transition-all"
                  style="{% if vo.is_default %}border-color:var(--ev-primary);background:color-mix(in srgb,var(--ev-primary) 12%,transparent);{% endif %}"
@@ -273,7 +276,7 @@
               {% if vo.example_models_list %}
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
-              <p class="text-xs text-gray-400 mt-0.5">最多 {{ vo.capacity }} 位乘客</p>
+              <p class="text-xs text-gray-400 mt-0.5" id="vo-cap-{{ vo.id }}">最多 {{ _rem }} 位乘客{% if _booked > 0 %}（已有 {{ _booked }} 位預約）{% endif %}</p>
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </label>
@@ -556,11 +559,13 @@
   const EP_LOC_IDS = {
     {% for loc in ep_pickup_locations %}"{{ loc.name }}": {"id": {{ loc.id }}, "map": {{ loc.map_url | tojson | safe if loc.map_url else 'null' }} },{% endfor %}
   };
-  // 車輛方案：id -> {name, price_adjustment}。Final Price = Price Rule（Base Price）+ price_adjustment，
-  // 可為負數（折扣）。Vehicle Mode 下不乘以人數，Passenger Mode 下乘以人數，見 recalculateBookingSummary()。
+  // 車輛方案：id -> {name, price_adjustment, pricing_mode, capacity, remaining}
+  // pricing_mode='per_person'：依人數計算總價；其他模式沿用 PRICING_STRATEGY 決定。
   const EP_VEHICLE_OPTIONS = {
-    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"name": {{ vo.name | tojson }}, "price_adjustment": {{ vo.price_adjustment | tojson }}},{% endfor %}
+    {% for vo in ep_vehicle_options %}{{ vo.id }}: {"name": {{ vo.name | tojson }}, "price_adjustment": {{ vo.price_adjustment | tojson }}, "pricing_mode": {{ vo.pricing_mode | tojson }}, "capacity": {{ vo.capacity }}, "remaining": {{ (ep_vo_remaining or {}).get(vo.id, vo.capacity) }}},{% endfor %}
   };
+  // 活動頁最大人數（切換回非 per_person 方案時恢復）
+  const EP_PAX_MAX = {{ event_page.max_group_size or 50 if event_page else 50 }};
 
   let _activeDateId   = null;
   let _activeLocId    = null;
@@ -692,10 +697,33 @@
         }
       }
     });
-    // 包車模式：切換車輛方案時，若為固定價格則立即改用固定總價重新計算
     _activeVehicleOption = EP_VEHICLE_OPTIONS[id] || null;
+    // per_person 方案：人數上限 = 剩餘可預約數；其他方案恢復活動上限
+    if (_activeVehicleOption) {
+      if (_activeVehicleOption.pricing_mode === 'per_person') {
+        _updatePaxOptions(_activeVehicleOption.remaining, MIN_GROUP_SIZE);
+      } else {
+        _updatePaxOptions(EP_PAX_MAX, MIN_GROUP_SIZE);
+      }
+    }
     const paxEl = document.getElementById('passenger_count');
     if (paxEl) recalculateBookingSummary(paxEl.value);
+  }
+
+  // 重建人數 <select> 的 <option> 清單（min～max）
+  function _updatePaxOptions(newMax, newMin) {
+    var paxEl = document.getElementById('passenger_count');
+    if (!paxEl || newMax < 1) return;
+    var curVal = parseInt(paxEl.value) || newMin;
+    var clampedVal = Math.min(Math.max(curVal, newMin), newMax);
+    paxEl.innerHTML = '';
+    for (var i = newMin; i <= newMax; i++) {
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = i + ' 人';
+      if (i === clampedVal) opt.selected = true;
+      paxEl.appendChild(opt);
+    }
   }
 
   function selectVehicle(type) {
@@ -811,15 +839,17 @@
     const countRowVal = document.getElementById('count_display');
 
     // 步驟 2-3：Final Price = Price Rule（Base Price）+ price_adjustment；
-    // Vehicle Mode：Total = Final Price，完全不乘以人數。
+    // per_person 方案：Total = Final Price × 人數（無論 PRICING_STRATEGY）。
+    // Vehicle Mode（非 per_person）：Total = Final Price，完全不乘以人數。
     // Passenger Mode（預設，含 BTS 傳統流程）：Total = Final Price × 人數。
     const adjustment = (_activeVehicleOption && _activeVehicleOption.price_adjustment) || 0;
     const finalPrice = PRICE + adjustment;
-    const isVehicleMode = PRICING_STRATEGY === 'vehicle';
+    const isPPMode = _activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person';
+    const isVehicleMode = !isPPMode && PRICING_STRATEGY === 'vehicle';
     const total = isVehicleMode ? finalPrice : (n * finalPrice);
 
     if (labelEl) labelEl.textContent = isVehicleMode ? '車輛費用' : '每人費用';
-    if (hintEl) hintEl.classList.toggle('hidden', !isVehicleMode);
+    if (hintEl) hintEl.classList.toggle('hidden', !isPPMode && isVehicleMode);
     document.getElementById('price_per_person_display').textContent = 'NT$ ' + finalPrice.toLocaleString();
 
     if (isVehicleMode) {
@@ -843,7 +873,9 @@
     if (DEPOSIT_TYPE === 'percentage') {
       return Math.round(totalAmount * DEPOSIT_PERCENTAGE / 100);
     }
-    return PRICING_STRATEGY === 'vehicle' ? DEPOSIT_FIXED : DEPOSIT_FIXED * n;
+    const isPPMode = _activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person';
+    const isVehicleMode = !isPPMode && PRICING_STRATEGY === 'vehicle';
+    return isVehicleMode ? DEPOSIT_FIXED : DEPOSIT_FIXED * n;
   }
 
   // 前端即時限制：人數不得低於 MIN_GROUP_SIZE（點擊減號／手動輸入／blur／change／input 皆會觸發）
@@ -855,6 +887,10 @@
     recalculateBookingSummary(el.value);
   }
 
+  // 頁面載入：依預設車輛方案初始化人數上限（per_person 方案限制為剩餘可預約數）
+  if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person') {
+    _updatePaxOptions(_activeVehicleOption.remaining || MIN_GROUP_SIZE, MIN_GROUP_SIZE);
+  }
   recalculateBookingSummary(document.getElementById('passenger_count').value);
 
   // 頁面載入時依預設日期套用車輛/朋友同行顯示狀態

@@ -850,7 +850,9 @@
   //   6. 寫回 DOM：費用明細（Booking Summary）＋ 付款方式（Payment Summary）
   function recalculateBookingSummary(count) {
     if (currentVehicle === 'nx200') return;
-    const n = Math.max(MIN_GROUP_SIZE, parseInt(count) || MIN_GROUP_SIZE);
+    const _isPP = _activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person';
+    const _nMin = _isPP ? 1 : MIN_GROUP_SIZE;
+    const n = Math.max(_nMin, parseInt(count) || _nMin);
 
     // 步驟 1：重新查 Price Rule（每次都重新查，不依賴是否曾觸發過 onDateChange/onLocationChange，
     // 修正單一日期／單一地點活動〔無下拉選單可觸發 onchange〕從未套用正確 Price Rule 的問題）。

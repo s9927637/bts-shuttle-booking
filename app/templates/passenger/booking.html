@@ -114,7 +114,11 @@
             {% set _init_min = pax_min %}
             {% set _init_max = pax_max %}
           {% endif %}
-          {% set _init_selected = [_init_min, [pax_selected, _init_max]|min]|max %}
+          {% if _def_vo and _def_vo.pricing_mode == 'per_person' %}
+            {% set _init_selected = _init_min %}
+          {% else %}
+            {% set _init_selected = [_init_min, [pax_selected, _init_max]|min]|max %}
+          {% endif %}
           <select id="passenger_count" name="passenger_count" required
                   onchange="onPaxInput(this)"
                   class="input-dark">
@@ -718,6 +722,8 @@
     // per_person 方案：人數上限 = 剩餘可預約數；其他方案恢復活動上限
     if (_activeVehicleOption) {
       if (_activeVehicleOption.pricing_mode === 'per_person') {
+        var paxEl2 = document.getElementById('passenger_count');
+        if (paxEl2) paxEl2.value = '1';
         _updatePaxOptions(_activeVehicleOption.remaining, 1);
       } else {
         var cap = _activeVehicleOption.capacity || EP_PAX_MAX;

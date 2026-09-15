@@ -575,9 +575,19 @@
             </div>
           </div>
 
-          <!-- LINE 資訊（唯讀） -->
+          <!-- LINE 資訊 -->
           <div class="col-span-2 pt-2 border-t border-gray-100">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">LINE 資訊</p>
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">LINE 資訊</p>
+              <div class="flex gap-2">
+                <button type="button" id="btn-line-edit"
+                        class="hidden text-xs text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                        onclick="openLineEditPanel()">手動設定</button>
+                <button type="button" id="btn-line-unbind"
+                        class="hidden text-xs text-red-500 hover:text-red-700 underline underline-offset-2"
+                        onclick="doLineUnbind()">解除綁定</button>
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <p class="text-xs text-gray-400 mb-1">LINE 顯示名稱</p>
@@ -591,6 +601,25 @@
                 <p class="text-xs text-gray-400 mb-1">LINE User ID</p>
                 <p id="edit_line_user_id" class="text-xs font-mono text-gray-500 break-all">—</p>
               </div>
+            </div>
+            <!-- 手動設定 panel -->
+            <div id="line-edit-panel" class="hidden mt-3 p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+              <p class="text-xs text-gray-500">輸入乘客的 LINE User ID（格式：U 開頭 32 位）</p>
+              <input id="input-manual-line-uid" type="text" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                     class="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900" />
+              <input id="input-manual-display-name" type="text" placeholder="LINE 顯示名稱（選填）"
+                     class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900" />
+              <div class="flex gap-2 pt-1">
+                <button type="button" onclick="doLineBind()"
+                        class="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                  確認設定
+                </button>
+                <button type="button" onclick="closeLineEditPanel()"
+                        class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  取消
+                </button>
+              </div>
+              <p id="line-edit-msg" class="hidden text-xs"></p>
             </div>
           </div>
 
@@ -638,6 +667,7 @@ function calcEditBalancePreview() {
 
 function fillEditModal(btn) {
   const d = btn.dataset;
+  document.getElementById('editModal').setAttribute('data-order-id', d.orderId);
   document.getElementById('editForm').action =
     '/admin/orders/' + d.orderId + '/edit';
   document.getElementById('edit_contact_name').value    = d.contactName;
@@ -662,12 +692,94 @@ function fillEditModal(btn) {
   document.getElementById('edit_event_price').textContent   = d.eventPrice  ? 'NT$ ' + parseInt(d.eventPrice).toLocaleString() : '—';
   document.getElementById('edit_event_deposit').textContent = d.eventDeposit ? 'NT$ ' + parseInt(d.eventDeposit).toLocaleString() : '—';
 
-  // LINE 資訊（唯讀）
+  // LINE 資訊
   document.getElementById('edit_line_display_name').textContent = d.displayName || '—';
   document.getElementById('edit_line_user_id').textContent      = d.lineUserId  || '—';
   document.getElementById('edit_line_status').innerHTML = d.lineUserId
     ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已綁定</span>'
     : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>未綁定</span>';
+  document.getElementById('btn-line-edit').classList.toggle('hidden', !!d.lineUserId);
+  document.getElementById('btn-line-unbind').classList.toggle('hidden', !d.lineUserId);
+  closeLineEditPanel();
+}
+
+// ── LINE 手動綁定 ────────────────────────────────────────────────────────────
+
+function openLineEditPanel() {
+  document.getElementById('line-edit-panel').classList.remove('hidden');
+  document.getElementById('input-manual-line-uid').value = '';
+  document.getElementById('input-manual-display-name').value = '';
+  document.getElementById('line-edit-msg').classList.add('hidden');
+}
+function closeLineEditPanel() {
+  document.getElementById('line-edit-panel').classList.add('hidden');
+}
+
+async function doLineBind() {
+  const orderId = document.getElementById('editModal').getAttribute('data-order-id');
+  const uid  = document.getElementById('input-manual-line-uid').value.trim();
+  const name = document.getElementById('input-manual-display-name').value.trim();
+  const msg  = document.getElementById('line-edit-msg');
+
+  if (!uid) { showLineMsg('請輸入 LINE User ID', 'red'); return; }
+
+  try {
+    const res  = await fetch(`/admin/orders/${orderId}/line-bind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_user_id: uid, display_name: name || null }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showLineMsg('✅ 已更新 LINE 綁定', 'green');
+      // 更新顯示
+      document.getElementById('edit_line_user_id').textContent = uid;
+      document.getElementById('edit_line_display_name').textContent = name || '—';
+      document.getElementById('edit_line_status').innerHTML =
+        '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已綁定</span>';
+      document.getElementById('btn-line-edit').classList.add('hidden');
+      document.getElementById('btn-line-unbind').classList.remove('hidden');
+      // 更新列表 badge
+      const badge = document.querySelector(`[data-order-id="${orderId}"] .line-badge`);
+      if (badge) badge.innerHTML = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>已綁定</span>';
+    } else {
+      showLineMsg(data.error || '更新失敗', 'red');
+    }
+  } catch {
+    showLineMsg('網路錯誤，請稍後再試', 'red');
+  }
+}
+
+async function doLineUnbind() {
+  if (!confirm('確定要解除此訂單的 LINE 綁定？')) return;
+  const orderId = document.getElementById('editModal').getAttribute('data-order-id');
+
+  try {
+    const res  = await fetch(`/admin/orders/${orderId}/line-unbind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('edit_line_user_id').textContent = '—';
+      document.getElementById('edit_line_display_name').textContent = '—';
+      document.getElementById('edit_line_status').innerHTML =
+        '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>未綁定</span>';
+      document.getElementById('btn-line-edit').classList.remove('hidden');
+      document.getElementById('btn-line-unbind').classList.add('hidden');
+    } else {
+      alert(data.error || '解除失敗');
+    }
+  } catch {
+    alert('網路錯誤，請稍後再試');
+  }
+}
+
+function showLineMsg(text, color) {
+  const el = document.getElementById('line-edit-msg');
+  el.textContent = text;
+  el.className = `text-xs ${color === 'green' ? 'text-green-600' : 'text-red-500'}`;
+  el.classList.remove('hidden');
 }
 
 // 新增 modal 開啟時初始化

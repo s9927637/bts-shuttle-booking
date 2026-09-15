@@ -532,6 +532,52 @@ def order_delete(order_id):
     return redirect(url_for("admin.orders"))
 
 
+# ── Order LINE binding management ─────────────────────────────────────────
+
+@admin_bp.route("/orders/<int:order_id>/line-bind", methods=["POST"])
+def order_line_bind(order_id):
+    """管理員手動設定訂單的 LINE User ID。"""
+    guard = require_admin()
+    if guard:
+        return guard
+
+    order = Order.query.get_or_404(order_id)
+    data = request.get_json(silent=True) or {}
+    line_user_id = (data.get("line_user_id") or "").strip()
+    display_name = (data.get("display_name") or "").strip() or None
+
+    if not line_user_id:
+        return jsonify({"ok": False, "error": "請提供 LINE User ID"}), 400
+
+    order.line_user_id = line_user_id
+    if display_name:
+        order.display_name = display_name
+    try:
+        db.session.commit()
+        return jsonify({"ok": True, "message": "LINE 綁定已更新"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@admin_bp.route("/orders/<int:order_id>/line-unbind", methods=["POST"])
+def order_line_unbind(order_id):
+    """管理員清除訂單的 LINE User ID。"""
+    guard = require_admin()
+    if guard:
+        return guard
+
+    order = Order.query.get_or_404(order_id)
+    order.line_user_id = None
+    order.display_name = None
+    try:
+        db.session.commit()
+        return jsonify({"ok": True, "message": "LINE 綁定已清除"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ── Payments list ──────────────────────────────────────────────────────────
 
 PAYMENT_RECORD_STATUSES = ["待確認", "訂金已確認", "已退款"]

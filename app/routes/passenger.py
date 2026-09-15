@@ -864,7 +864,29 @@ def api_line_bind():
             db.session.rollback()
             return jsonify({"ok": False, "error": "系統暫時無法處理，請稍後再試。"}), 500
 
+        # 綁定成功後推送確認訊息
+        try:
+            from app.services.line_service import _push_passenger
+            name_tag = f"，{display_name}" if display_name else ""
+            confirm_msg = (
+                f"✅ LINE 綁定成功{name_tag}！\n\n"
+                f"您的 {updated} 筆訂單已完成綁定，\n"
+                f"派車通知將自動傳送到此 LINE 帳號。\n\n"
+                f"感謝您的使用 🎵"
+            )
+            _push_passenger(line_user_id, confirm_msg)
+        except Exception:
+            pass  # 確認訊息失敗不影響主流程
+
     return jsonify({"ok": True, "updated": updated})
+
+
+# ── 乘客 LIFF 綁定頁 ──────────────────────────────────────────────────────
+
+@passenger_bp.route("/passenger/bind")
+def passenger_bind():
+    """乘客 LIFF 綁定專屬頁面：輸入電話後將所有相符訂單補上 line_user_id。"""
+    return render_template("passenger/bind.html", passenger_liff_id=PASSENGER_LIFF_ID)
 
 
 # ── 折扣碼驗證 API ─────────────────────────────────────────────────────────

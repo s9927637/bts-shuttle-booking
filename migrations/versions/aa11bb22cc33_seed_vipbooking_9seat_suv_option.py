@@ -1,6 +1,6 @@
 """Seed vipbooking 九座休旅車 vehicle option
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: aa11bb22cc33
 Revises: z4t5u6v7w8x9
 Create Date: 2026-09-15
 
@@ -8,7 +8,7 @@ Create Date: 2026-09-15
 from alembic import op
 import sqlalchemy as sa
 
-revision = 'a1b2c3d4e5f6'
+revision = 'aa11bb22cc33'
 down_revision = 'z4t5u6v7w8x9'
 branch_labels = None
 depends_on = None

@@ -15,19 +15,27 @@ depends_on = None
 
 
 def upgrade():
-    # 1. 把 bb22cc33dd44 錯誤更新的九座休旅車還原回原始狀態（容量8、一般計價、非預設）
+    # 1. 把 bb22cc33dd44 錯誤更新的九座休旅車還原回原始狀態（容量8、一般計價、非預設、排最後）
     op.execute("""
         UPDATE event_vehicle_options
         SET capacity      = 8,
             pricing_mode  = 'event_price',
-            sort_order    = 0,
+            sort_order    = 10,
             is_default    = false,
             updated_at    = NOW()
         WHERE name = '九座休旅車'
           AND event_id = (SELECT id FROM event_pages WHERE slug = 'vipbooking' LIMIT 1)
     """)
 
-    # 2. 把所有方案的 is_default 設為 false
+    # 2a. 確保五座休旅車 sort_order=0（排第二）
+    op.execute("""
+        UPDATE event_vehicle_options
+        SET sort_order = 0, updated_at = NOW()
+        WHERE name = '五座休旅車'
+          AND event_id = (SELECT id FROM event_pages WHERE slug = 'vipbooking' LIMIT 1)
+    """)
+
+    # 2b. 把所有方案的 is_default 設為 false
     op.execute("""
         UPDATE event_vehicle_options
         SET is_default = false

@@ -204,7 +204,7 @@ def _render_booking_page(event_page=None, friend_code=None, form=None):
         ).group_by(Order.vehicle_option_id).all()
         booked_map = {row[0]: int(row[1]) for row in rows}
         for vo in ep_vehicle_options:
-            booked = booked_map.get(vo.id, 0)
+            booked = booked_map.get(vo.id, 0) + (vo.reserved_count or 0)
             ep_vo_remaining[vo.id] = max(0, (vo.capacity or 0) - booked)
 
     return render_template("passenger/booking.html",

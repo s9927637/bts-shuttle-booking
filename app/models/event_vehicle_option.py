@@ -43,6 +43,9 @@ class EventVehicleOption(db.Model):
     # 可為負數（折扣），預設 0（與 Base Price 相同）。
     price_adjustment  = db.Column(db.Integer, nullable=False, default=0)
 
+    # 預填已佔用席位數（不需真實訂單，用於共乘方案的「事先保留」席位顯示）
+    reserved_count = db.Column(db.Integer, nullable=False, default=0)
+
     badge      = db.Column(db.String(50), nullable=True)       # 推薦標籤，例：👑 尊榮推薦
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     is_default = db.Column(db.Boolean, nullable=False, default=False)  # 預約頁預設選中

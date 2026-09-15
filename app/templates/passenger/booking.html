@@ -102,11 +102,16 @@
           {% set pax_min = event_page.min_group_size or 1 if event_page else 1 %}
           {% set pax_max = event_page.max_group_size or 50 if event_page else 50 %}
           {% set pax_selected = (form.passenger_count | int) if form.passenger_count else pax_min %}
+          {# 若預設車輛方案為共乘（per_person），人數從 1 開始，上限為剩餘席位 #}
+          {% set _def_vo = ep_vehicle_options|selectattr('is_default')|first if ep_vehicle_options else none %}
+          {% set _init_min = 1 if (_def_vo and _def_vo.pricing_mode == 'per_person') else pax_min %}
+          {% set _init_max = (ep_vo_remaining or {}).get(_def_vo.id, _def_vo.capacity) if (_def_vo and _def_vo.pricing_mode == 'per_person') else pax_max %}
+          {% set _init_selected = [_init_min, [pax_selected, _init_max]|min]|max %}
           <select id="passenger_count" name="passenger_count" required
                   onchange="onPaxInput(this)"
                   class="input-dark">
-            {% for n in range(pax_min, pax_max + 1) %}
-            <option value="{{ n }}" {% if n == pax_selected %}selected{% endif %}>{{ n }} 人</option>
+            {% for n in range(_init_min, _init_max + 1) %}
+            <option value="{{ n }}" {% if n == _init_selected %}selected{% endif %}>{{ n }} 人</option>
             {% endfor %}
           </select>
           <p id="fixed-price-hint" class="hidden mt-1.5 text-xs text-gray-500">本活動採包車預約。價格依車輛方案計算，不依乘車人數計費。</p>
@@ -705,7 +710,7 @@
     // per_person 方案：人數上限 = 剩餘可預約數；其他方案恢復活動上限
     if (_activeVehicleOption) {
       if (_activeVehicleOption.pricing_mode === 'per_person') {
-        _updatePaxOptions(_activeVehicleOption.remaining, MIN_GROUP_SIZE);
+        _updatePaxOptions(_activeVehicleOption.remaining, 1);
       } else {
         _updatePaxOptions(EP_PAX_MAX, MIN_GROUP_SIZE);
       }
@@ -893,7 +898,7 @@
 
   // 頁面載入：依預設車輛方案初始化人數上限（per_person 方案限制為剩餘可預約數）
   if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person') {
-    _updatePaxOptions(_activeVehicleOption.remaining || MIN_GROUP_SIZE, MIN_GROUP_SIZE);
+    _updatePaxOptions(_activeVehicleOption.remaining || 1, 1);
   }
   recalculateBookingSummary(document.getElementById('passenger_count').value);
 

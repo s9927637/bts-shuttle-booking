@@ -102,10 +102,18 @@
           {% set pax_min = event_page.min_group_size or 1 if event_page else 1 %}
           {% set pax_max = event_page.max_group_size or 50 if event_page else 50 %}
           {% set pax_selected = (form.passenger_count | int) if form.passenger_count else pax_min %}
-          {# 若預設車輛方案為共乘（per_person），人數從 1 開始，上限為剩餘席位 #}
+          {# 依預設車輛方案決定初始人數範圍 #}
           {% set _def_vo = ep_vehicle_options|selectattr('is_default')|first if ep_vehicle_options else none %}
-          {% set _init_min = 1 if (_def_vo and _def_vo.pricing_mode == 'per_person') else pax_min %}
-          {% set _init_max = (ep_vo_remaining or {}).get(_def_vo.id, _def_vo.capacity) if (_def_vo and _def_vo.pricing_mode == 'per_person') else pax_max %}
+          {% if _def_vo and _def_vo.pricing_mode == 'per_person' %}
+            {% set _init_min = 1 %}
+            {% set _init_max = (ep_vo_remaining or {}).get(_def_vo.id, _def_vo.capacity) %}
+          {% elif _def_vo %}
+            {% set _init_min = _def_vo.capacity %}
+            {% set _init_max = _def_vo.capacity %}
+          {% else %}
+            {% set _init_min = pax_min %}
+            {% set _init_max = pax_max %}
+          {% endif %}
           {% set _init_selected = [_init_min, [pax_selected, _init_max]|min]|max %}
           <select id="passenger_count" name="passenger_count" required
                   onchange="onPaxInput(this)"
@@ -712,7 +720,8 @@
       if (_activeVehicleOption.pricing_mode === 'per_person') {
         _updatePaxOptions(_activeVehicleOption.remaining, 1);
       } else {
-        _updatePaxOptions(EP_PAX_MAX, MIN_GROUP_SIZE);
+        var cap = _activeVehicleOption.capacity || EP_PAX_MAX;
+        _updatePaxOptions(cap, cap);
       }
     }
     const paxEl = document.getElementById('passenger_count');
@@ -897,8 +906,13 @@
   }
 
   // 頁面載入：依預設車輛方案初始化人數上限（per_person 方案限制為剩餘可預約數）
-  if (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person') {
-    _updatePaxOptions(_activeVehicleOption.remaining || 1, 1);
+  if (_activeVehicleOption) {
+    if (_activeVehicleOption.pricing_mode === 'per_person') {
+      _updatePaxOptions(_activeVehicleOption.remaining || 1, 1);
+    } else {
+      var _initCap = _activeVehicleOption.capacity || EP_PAX_MAX;
+      _updatePaxOptions(_initCap, _initCap);
+    }
   }
   recalculateBookingSummary(document.getElementById('passenger_count').value);
 

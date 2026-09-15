@@ -276,7 +276,11 @@
               {% if vo.example_models_list %}
               <p class="text-xs text-gray-500 mt-0.5">車型範例：{{ vo.example_models_list|join('、') }}（實際依當日派車為準）</p>
               {% endif %}
+              {% if vo.pricing_mode == 'per_person' %}
+              <p class="text-xs text-gray-400 mt-0.5" id="vo-cap-{{ vo.id }}">{% if _booked > 0 %}已有 {{ _booked }} 位共乘，{% endif %}剩餘 {{ _rem }} 個位子</p>
+              {% else %}
               <p class="text-xs text-gray-400 mt-0.5" id="vo-cap-{{ vo.id }}">最多 {{ _rem }} 位乘客{% if _booked > 0 %}（已有 {{ _booked }} 位預約）{% endif %}</p>
+              {% endif %}
               {% if vo.badge %}<p class="text-xs text-purple-300 mt-1">{{ vo.badge }}</p>{% endif %}
             </div>
           </label>

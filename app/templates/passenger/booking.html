@@ -907,8 +907,9 @@
   // 前端即時限制：人數不得低於 MIN_GROUP_SIZE（點擊減號／手動輸入／blur／change／input 皆會觸發）
   function onPaxInput(el) {
     const n = parseInt(el.value, 10);
-    if (isNaN(n) || n < MIN_GROUP_SIZE) {
-      el.value = MIN_GROUP_SIZE;
+    const _paxMin = (_activeVehicleOption && _activeVehicleOption.pricing_mode === 'per_person') ? 1 : MIN_GROUP_SIZE;
+    if (isNaN(n) || n < _paxMin) {
+      el.value = _paxMin;
     }
     recalculateBookingSummary(el.value);
   }

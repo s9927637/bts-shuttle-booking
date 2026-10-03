@@ -311,8 +311,18 @@ def orders():
     # 新增訂單表單的「活動」欄位預設帶入該活動，不需要管理員重選。
     create_default_event_id = int(event_filter) if event_filter and event_filter.isdigit() else None
 
+    from app.models.event_booking import EventBookingDate
+    event_dates_map = {}
+    for _bd in EventBookingDate.query.filter_by(is_active=True).order_by(
+        EventBookingDate.event_page_id, EventBookingDate.sort_order, EventBookingDate.date_value
+    ).all():
+        event_dates_map.setdefault(_bd.event_page_id, []).append(
+            {"value": _bd.date_value, "label": _bd.label or _bd.date_value}
+        )
+
     return render_template(
         "admin/orders.html",
+        event_dates_map=event_dates_map,
         orders=orders_list,
         total=total,
         page=page,

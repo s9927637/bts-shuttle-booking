@@ -153,7 +153,7 @@
           <option value="{{ loc.name }}"
                   data-address="{{ loc.address or '' }}"
                   data-map="{{ loc.map_url or '' }}"
-                  {% if form.get('pickup_location') == loc.name %}selected{% endif %}>
+                  {% if form.get('pickup_location') == loc.name or ep_pickup_locations|length == 1 %}selected{% endif %}>
             {{ loc.name }}{% if loc.address %} — {{ loc.address }}{% endif %}
           </option>
           {% endfor %}
@@ -923,6 +923,8 @@
       _updatePaxOptions(_initCap, _initCap);
     }
   }
+  var _locSel = document.getElementById('pickup_location');
+  if (_locSel && _locSel.value) onLocationChange(_locSel.value);
   recalculateBookingSummary(document.getElementById('passenger_count').value);
 
   // 頁面載入時依預設日期套用車輛/朋友同行顯示狀態

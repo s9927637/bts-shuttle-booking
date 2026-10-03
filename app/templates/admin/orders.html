@@ -12,7 +12,7 @@
 <div class="col-span-2">
   <label class="block text-xs font-medium text-gray-500 mb-1">活動（Event）<span class="text-red-400">*</span></label>
   <select name="event_page_id" id="create_event_page_id" required
-          onchange="calcCreateTotal(document.querySelector('.create-count-input').value)"
+          onchange="syncCreateDates(); calcCreateTotal(document.querySelector('.create-count-input').value)"
           class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
     <option value="">— 請選擇活動 —</option>
     {% for ep in event_pages %}
@@ -50,7 +50,7 @@
 
 <div>
   <label class="block text-xs font-medium text-gray-500 mb-1">出發日期 <span class="text-red-400">*</span></label>
-  <select name="departure_date" required
+  <select name="departure_date" required {% if event_pages is not none %}id="create_departure_date"{% endif %}
           class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900">
     <option value="">— 選擇班次 —</option>
     {% for opt in departure_options %}
@@ -614,6 +614,24 @@
 
 <script>
 const PRICE_PER_PERSON = {{ price_per_person }};
+
+// 新增訂單：出發日期依所選活動的日期設定載入；活動未設定日期（如 BTS）則維持預設班次。
+const EVENT_DATES = {{ (event_dates_map or {}) | tojson }};
+const DEFAULT_DEPARTURES = {{ departure_options | tojson }};
+function syncCreateDates() {
+  const epSel = document.getElementById('create_event_page_id');
+  const dateSel = document.getElementById('create_departure_date');
+  if (!epSel || !dateSel) return;
+  const list = EVENT_DATES[epSel.value] || DEFAULT_DEPARTURES.map(function (v) { return {value: v, label: v}; });
+  dateSel.innerHTML = '<option value="">— 選擇班次 —</option>';
+  list.forEach(function (d) {
+    const o = document.createElement('option');
+    o.value = d.value; o.textContent = d.label;
+    dateSel.appendChild(o);
+  });
+  if (list.length === 1) dateSel.value = list[0].value;
+}
+document.addEventListener('DOMContentLoaded', syncCreateDates);
 
 // 新增訂單：總金額預覽依所選活動的票價估算（實際金額以送出後伺服器依當日價格規則
 // 精算為準，此處僅為即時預覽，日期／地點專屬價格規則可能與此預覽略有差異）。

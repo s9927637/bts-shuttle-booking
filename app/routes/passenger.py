@@ -365,7 +365,8 @@ def booking_submit():
             passenger_count = int(form_data["passenger_count"])
             # 活動模式：驗證人數限制
             if event_page:
-                min_g = event_page.min_group_size or 1
+                _is_pp = bool(vehicle_option and vehicle_option.pricing_mode == "per_person")
+                min_g = 1 if _is_pp else (event_page.min_group_size or 1)
                 max_g = event_page.max_group_size
                 if passenger_count < min_g:
                     raise ValueError(f"最少需預約 {min_g} 人。")
@@ -378,6 +379,8 @@ def booking_submit():
             adjustment  = (vehicle_option.price_adjustment or 0) if vehicle_option else 0
             final_price = price_per + adjustment
             strategy = _pricing_strategy(event_page)
+            if vehicle_option and vehicle_option.pricing_mode == "per_person":
+                strategy = "passenger"
             total_amount = final_price if strategy == "vehicle" else passenger_count * final_price
 
             # 訂金方式（Deposit Type Enhancement）：

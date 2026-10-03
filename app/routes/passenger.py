@@ -564,6 +564,12 @@ def order_lookup_by_name():
 
 @passenger_bp.route("/orders/lookup")
 def order_lookup():
+    q = request.args.get("q", "").strip()
+    if q:
+        order = Order.query.filter_by(order_no=q).first()
+        ep = order.event_page if order and order.event_page_id else None
+        if ep and ep.slug:
+            return redirect(f"/events/{ep.slug}/orders")
     return redirect(url_for("passenger.order_search"))
 
 

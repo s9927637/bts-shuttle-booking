@@ -58,6 +58,26 @@ def _event_label(order) -> str:
 def notify_new_order(order) -> None:
     """🎉 新訂單建立通知"""
     vehicle_label = "NX200 專屬包車" if order.vehicle_type == "nx200" else "九座商旅車"
+    if getattr(order, "vehicle_option_name", None):
+        vehicle_label = order.vehicle_option_name
+    carpool_line = ""
+    if getattr(order, "vehicle_option_id", None):
+        try:
+            from sqlalchemy import func
+            from app import db
+            from app.models.order import Order
+            from app.models.event_vehicle_option import EventVehicleOption
+            vo = EventVehicleOption.query.get(order.vehicle_option_id)
+            if vo and vo.pricing_mode == "per_person":
+                booked = db.session.query(func.coalesce(func.sum(Order.passenger_count), 0)).filter(
+                    Order.vehicle_option_id == vo.id,
+                    Order.payment_status != "已取消",
+                ).scalar() or 0
+                booked = int(booked) + (vo.reserved_count or 0)
+                remaining = max(0, (vo.capacity or 0) - booked)
+                carpool_line = f"共乘狀況：已有 {booked} 位共乘，剩餘 {remaining} 個位子\n"
+        except Exception:
+            carpool_line = ""
     msg = (
         f"🎉 新訂單\n\n"
         f"【{_event_label(order)}】\n"
@@ -66,6 +86,7 @@ def notify_new_order(order) -> None:
         f"日期：{order.departure_date}\n"
         f"人數：{order.passenger_count} 人\n"
         f"車型：{vehicle_label}\n"
+        f"{carpool_line}"
         f"總金額：NT${order.total_amount:,}\n"
         f"付款狀態：{order.payment_status}"
     )

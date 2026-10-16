@@ -439,14 +439,15 @@
               onclick="toggleTerms()"
               aria-checked="false" role="checkbox"
               style="width:20px;height:20px;min-width:20px;border-radius:5px;border:2px solid #4b5563;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;">
-        <svg id="terms-check-icon" class="hidden" style="width:12px;height:12px;" fill="none" stroke="#a855f7" stroke-width="3" viewBox="0 0 12 12">
+        <svg id="terms-check-icon" class="hidden" style="width:12px;height:12px;" fill="none" stroke="{{ 'var(--ev-primary)' if event_page else '#a855f7' }}" stroke-width="3" viewBox="0 0 12 12">
           <polyline points="1.5,6 4.5,9 10.5,3"/>
         </svg>
       </button>
       <p class="text-xs text-gray-400 leading-relaxed">
         我已閱讀並同意
         <button type="button" onclick="openTermsModal()"
-                class="text-purple-400 underline underline-offset-2 hover:text-purple-300 transition-colors">
+                class="text-purple-400 underline underline-offset-2 hover:text-purple-300 transition-colors"
+                {% if event_page %}style="color:var(--ev-primary);"{% endif %}>
           《服務條款與訂購須知》
         </button>
       </p>
@@ -519,7 +520,18 @@
           <li style="margin-bottom:6px;">因乘客提供錯誤帳戶資料、資料不完整或其他可歸責於乘客之因素，致退款延遲或失敗者，本單位不負相關責任。</li>
         </ol>
 
+        {% if event_page and event_page.slug == 'vipbooking' %}
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">六、包車時間與超時費用</h4>
+        <ol style="padding-left:18px;margin:0;color:#9ca3af;">
+          <li style="margin-bottom:6px;">包車時間為 12:00–22:00。</li>
+          <li style="margin-bottom:6px;">超出包車時間者，每小時加收 NT$800，由全體乘客每人平均分攤。</li>
+          <li style="margin-bottom:6px;">超時費用於乘車當日以現金交付予司機即可。</li>
+        </ol>
+
+        <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">七、其他事項</h4>
+        {% else %}
         <h4 style="color:#e5e7eb;font-size:13px;font-weight:600;margin:16px 0 6px;">六、其他事項</h4>
+        {% endif %}
         <ol style="padding-left:18px;margin:0;color:#9ca3af;">
           <li style="margin-bottom:6px;">本單位保留車型、座位配置、集合地點及發車安排調整之權利。</li>
           <li style="margin-bottom:6px;">如遇天災、交通管制、政府公告停班停課、重大事故或其他不可抗力因素，本單位保留延期、變更或取消服務之權利。</li>
@@ -533,8 +545,8 @@
     <!-- Modal 底部按鈕 -->
     <div style="padding:14px 20px;border-top:1px solid #1f2937;flex-shrink:0;">
       <button type="button" onclick="acceptTermsFromModal()"
-              style="width:100%;padding:12px;border-radius:12px;background:#7c3aed;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background 0.15s;"
-              onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+              style="width:100%;padding:12px;border-radius:12px;background:{{ 'var(--ev-primary)' if event_page else '#7c3aed' }};color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='{{ 'var(--ev-primary-hover)' if event_page else '#6d28d9' }}'" onmouseout="this.style.background='{{ 'var(--ev-primary)' if event_page else '#7c3aed' }}'">
         完成
       </button>
     </div>
@@ -994,8 +1006,8 @@
     const icon = document.getElementById('terms-check-icon');
     const block = document.getElementById('terms-block');
     if (_termsAccepted) {
-      btn.style.borderColor   = '#a855f7';
-      btn.style.background    = 'rgba(168,85,247,0.15)';
+      btn.style.borderColor   = {{ "'var(--ev-primary)'" if event_page else "'#a855f7'" }};
+      btn.style.background    = {{ "'color-mix(in srgb, var(--ev-primary) 15%, transparent)'" if event_page else "'rgba(168,85,247,0.15)'" }};
       icon.classList.remove('hidden');
       block.style.outline = 'none';
     } else {

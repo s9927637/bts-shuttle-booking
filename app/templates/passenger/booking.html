@@ -1006,8 +1006,8 @@
     const icon = document.getElementById('terms-check-icon');
     const block = document.getElementById('terms-block');
     if (_termsAccepted) {
-      btn.style.borderColor   = {{ "'var(--ev-primary)'" if event_page else "'#a855f7'" }};
-      btn.style.background    = {{ "'color-mix(in srgb, var(--ev-primary) 15%, transparent)'" if event_page else "'rgba(168,85,247,0.15)'" }};
+      btn.style.borderColor   = {{ ('var(--ev-primary)' if event_page else '#a855f7') | tojson }};
+      btn.style.background    = {{ ('color-mix(in srgb, var(--ev-primary) 15%, transparent)' if event_page else 'rgba(168,85,247,0.15)') | tojson }};
       icon.classList.remove('hidden');
       block.style.outline = 'none';
     } else {

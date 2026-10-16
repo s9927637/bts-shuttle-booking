@@ -109,6 +109,11 @@
         <li>・如有任何疑問請聯繫客服。</li>
       </ul>
       {% endif %}
+      {% if order.event_page and order.event_page.slug == 'vipbooking' and receipt.receipt_type != 'refund' %}
+      <ul class="text-xs text-gray-400 space-y-1 mt-1">
+        <li>・服務時間為 12:00–22:00，超時每小時加收 NT$800，由全體乘客每人平均分攤，現金交付予司機即可。</li>
+      </ul>
+      {% endif %}
 
       {% if receipt.status == 'void' %}
       <div class="mt-4 p-3 rounded-xl bg-red-50 border border-red-100">

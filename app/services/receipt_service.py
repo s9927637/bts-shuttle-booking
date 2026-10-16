@@ -77,6 +77,32 @@ RECEIPT_ITEM_LABELS = {
 }
 
 EVENT_NAME = "BTS WORLD TOUR 'PERMISSION TO DANCE' — 高雄"
+BTS_TITLE = "BTS 高雄演唱會來回包車服務"
+
+# 藤井風（vipbooking）收據備註：服務時間與超時費用（退款收據不附）
+SERVICE_TIME_NOTES = {
+    "vipbooking": [
+        "服務時間為 12:00–22:00，超時每小時加收 NT$800，由全體乘客每人平均分攤，現金交付予司機即可。",
+    ],
+}
+
+
+def _event_name_for(order) -> str:
+    ep = getattr(order, "event_page", None)
+    return ep.event_display_name if ep else EVENT_NAME
+
+
+def _title_for(order) -> str:
+    ep = getattr(order, "event_page", None)
+    return ep.event_display_name if ep else BTS_TITLE
+
+
+def _notes_for(receipt, order) -> list:
+    notes = list(RECEIPT_TYPE_NOTES.get(receipt.receipt_type, []))
+    ep = getattr(order, "event_page", None)
+    if ep and receipt.receipt_type != "refund":
+        notes += SERVICE_TIME_NOTES.get(ep.slug, [])
+    return notes
 
 
 def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
@@ -130,7 +156,7 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
 
     # ── 標題 ────────────────────────────────────────────────────────────────
     story.append(Spacer(1, 4 * mm))
-    story.append(Paragraph("BTS 高雄演唱會來回包車服務", s_title))
+    story.append(Paragraph(_title_for(order), s_title))
     story.append(Spacer(1, 2 * mm))
     story.append(Paragraph(f"{receipt.type_label}收據", s_subtitle))
     story.append(Spacer(1, 6 * mm))
@@ -163,7 +189,7 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
             [Paragraph("訂單編號", s_label), Paragraph(order.order_no, s_value)],
             [Paragraph("姓名",     s_label), Paragraph(order.contact_name, s_value)],
             [Paragraph("聯絡電話", s_label), Paragraph(order.phone, s_value)],
-            [Paragraph("活動名稱", s_label), Paragraph(EVENT_NAME, s_value)],
+            [Paragraph("活動名稱", s_label), Paragraph(_event_name_for(order), s_value)],
             [Paragraph("搭乘日期", s_label), Paragraph(order.departure_date, s_value)],
             [Paragraph("付款完成日期", s_label), Paragraph(paid_at_str, s_value)],
             [Paragraph("開立日期", s_label), Paragraph(issued_at_str, s_value)],
@@ -174,7 +200,7 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
             [Paragraph("訂單編號", s_label), Paragraph(order.order_no, s_value)],
             [Paragraph("姓名",     s_label), Paragraph(order.contact_name, s_value)],
             [Paragraph("聯絡電話", s_label), Paragraph(order.phone, s_value)],
-            [Paragraph("活動名稱", s_label), Paragraph(EVENT_NAME, s_value)],
+            [Paragraph("活動名稱", s_label), Paragraph(_event_name_for(order), s_value)],
             [Paragraph("搭乘日期", s_label), Paragraph(order.departure_date, s_value)],
             [Paragraph("付款項目", s_label), Paragraph(RECEIPT_ITEM_LABELS.get(receipt.receipt_type, "—"), s_value)],
             [Paragraph("付款方式", s_label), Paragraph(payment_src, s_value)],
@@ -255,7 +281,7 @@ def generate_receipt_pdf(receipt, order, payment=None) -> bytes:
     story.append(Spacer(1, 6 * mm))
 
     # ── 備註 ────────────────────────────────────────────────────────────────
-    notes = RECEIPT_TYPE_NOTES.get(receipt.receipt_type, [])
+    notes = _notes_for(receipt, order)
     if notes:
         story.append(Paragraph("備註", s_note_head))
         story.append(Spacer(1, 2 * mm))

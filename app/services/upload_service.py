@@ -11,6 +11,7 @@ Upload Service — Cloudflare R2 backend
 若環境變數未設定，fallback 到本地 static/uploads（僅供本機開發）。
 """
 import os
+import time
 import logging
 from pathlib import Path
 from flask import current_app
@@ -112,14 +113,15 @@ def save_hero_image(file, event_id: int, slot: str, prefix: str = "hero") -> str
             Body=content,
             ContentType=content_type,
         )
-        return f"{_r2_public_url()}/{key}"
+        return f"{_r2_public_url()}/{key}?v={int(time.time())}"
     else:
         logger.warning("R2 未設定，fallback 到本地儲存")
         delete_hero_image(event_id, slot, prefix=prefix)
         dest = _upload_dir(event_id) / filename
         with open(dest, 'wb') as f:
             f.write(content)
-        return f"/static/uploads/events/{event_id}/{filename}"
+        # 檔名固定，加版本參數避免瀏覽器／Cloudflare 繼續顯示舊圖
+        return f"/static/uploads/events/{event_id}/{filename}?v={int(time.time())}"
 
 
 def delete_hero_image(event_id: int, slot: str, prefix: str = "hero") -> None:
